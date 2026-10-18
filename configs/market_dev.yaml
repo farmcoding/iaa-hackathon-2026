@@ -1,0 +1,49 @@
+# Market assumptions for Part 1 (developed market). FROZEN for the experiment agent.
+# Every value here is an actuarial assumption: changes need a human decision and a
+# note in reports/assumptions_log.md.
+market: developed
+valuation_date: "2024-12-31"
+history_years: [2021, 2022, 2023, 2024]
+predict_year: 2025
+
+development:
+  # chain ladder on reported net cost by loss month x report-delay month,
+  # one triangle per (line, peril group). Case reserves on open claims are taken
+  # as unbiased (IBNER = 0); sensitivity +/-10% on open motor bodily injury.
+  method: report_delay_cost_chain_ladder
+  max_delay_months: 48
+  peril_groups:
+    motor: {bodily_injury: [bodily_injury], other: [own_damage, third_party_prop, theft, glass_hail]}
+    buildings: {weather: [storm, flood, subsidence], water: [escape_of_water], fire: [fire], ad: [accidental_damage]}
+    contents: {all: [theft, escape_of_water, accidental_damage, flood]}
+  ibner_open_factor: 1.0
+  # Motor bodily injury: case estimates on open claims understate final cost (same
+  # report-delay cohorts show falling severity in younger years while costs inflate),
+  # so it is projected as ultimate count (count chain ladder) x trended severity of the
+  # most mature cohort. Sensitivity: sev_trend +/-2%, base_year 2021 vs 2022.
+  freq_sev:
+    motor.bodily_injury: {base_year: 2021, sev_trend: 0.035}
+
+trend:
+  # annual loss-cost trend used to on-level each year to the prediction year.
+  # Log-linear fit to developed loss cost per exposure (see reports/assumptions_log.md):
+  # motor 2.9% (21-24) / 3.6% (21-23); buildings 8.0% / 6.3% (2024 weather-elevated,
+  # weather enters the model directly); contents 5.1% / 5.4%.
+  motor: 0.030
+  buildings: 0.065
+  contents: 0.050
+
+harness:
+  folds:
+    A: {train: [2021, 2022], valid: 2023}
+    B: {train: [2021, 2022, 2023], valid: 2024}
+  final: {train: [2021, 2022, 2023, 2024], predict: 2025}
+  time_budget_seconds: 900
+  # keep rule: mean fold D2 must beat the best kept run by more than the seed noise
+  # floor, and the worse fold must not fall by more than the floor
+  # measured 2026-10-18: single-seed sd 0.0026; experiments bag 3 seeds (sd ~0.0015)
+  noise_floor: 0.002
+
+large_loss:
+  # per-claim cap applied to the training target; the excess is reloaded per line
+  caps: {motor_bodily_injury: null}

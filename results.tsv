@@ -1,0 +1,2 @@
+timestamp	commit	verdict	primary	d2_A	d2_B	min_fold	d2_motor_B	d2_buildings_B	d2_contents_B	ae_motor_B	ae_buildings_B	ae_contents_B	gini_B	seconds	description
+2026-10-18T01:39:46	ec0919f+dirty	keep	0.10559	0.08998	0.12120	0.08998	0.06390	0.09456	0.06745	0.98847	1.04916	0.99711	0.42702	152	baseline: per-line LightGBM tweedie 1.5 (3-seed bag), rate target, exposure weight, base features, level anchored
