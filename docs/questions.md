@@ -16,6 +16,7 @@ The dashboard renders this file.
 | Q8 | 2026-10-18 | Karl | Have predictors been treated properly (feature generation, binning, outliers)? | exploring | So far minimal: raw features into the GBM, native missing values, no binning (trees don't need it), no predictor winsorising, no engineered interactions. Backlog 2.1, 2.2, 2.8-2.10 |
 | H1 | 2026-10-18 | Work | Fold A overstates gains; fold B tracks the leaderboard | exploring | Baseline to best: fold A +0.024, fold B +0.005, public +0.006. Primary now weights B twice. Recheck with every submission |
 | H2 | 2026-10-18 | Work | The gap to the leader (0.017) is mainly ranking within lines, not line levels | open | Test with a per-line trended constant submission (backlog 3.8), awaiting approval |
-| H3 | 2026-10-18 | Work | Motor bodily injury noise limits motor D² | open | Backlog 1.1 |
-| H4 | 2026-10-18 | Work | Anchoring hides weather-driven years for buildings | open | Fold B buildings A/E 1.049; backlog 1.2 |
+| H3 | 2026-10-18 | Work | Motor bodily injury noise limits motor D² | answered (supported) | Modelling BI as claim frequency with anchored severity lifted the score from 0.1224 to 0.1267 (backlog 1.1) |
+| H4 | 2026-10-18 | Work | Anchoring hides weather-driven years for buildings | exploring | Fold B buildings A/E 1.049. First float attempt scored 0.1213 (below best); a weather-indexed level is the next try |
 | H5 | 2026-10-18 | Work | Model under-predicts out of time because some features drift with calendar time | open | Without anchoring A/E 1.15 (fold A) and 1.09 (fold B). Backlog 3.7 |
+| Q9 | 2026-10-18 | Karl | Why does the leaderboard show my full name? | answered | Kaggle froze the team name at entry; profile changes don't carry over and the API cannot rename teams. Rename in the competition's Team tab |

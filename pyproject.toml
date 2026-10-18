@@ -40,3 +40,9 @@ extend-select = ["S102", "S105", "S106", "S107", "S110", "S113", "S324", "S501",
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]  # assert is fine in tests
+# the agent's seed-bag helper is called inside the same loop iteration it closes over
+"src/iaa/experiment.py" = ["B023"]
+# deliberate: re-runs historical experiment.py versions taken from git
+"scripts/backfill_preds.py" = ["S102", "E701", "E702"]
+# one failed illustration must not stop the others; the error is printed
+"scripts/gen_images.py" = ["BLE001"]

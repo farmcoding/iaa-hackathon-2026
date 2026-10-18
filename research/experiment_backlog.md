@@ -4,9 +4,10 @@ The loop agent takes the highest open item in Tiers 1 and 2. Items marked OWNER 
 human-only (they change the frozen target or need GPU permission); the agent skips them.
 Status: open / tried (see results.tsv) / parked. Sources: research/sources.md.
 
-Best so far (2026-10-18): training Tweedie power 1.1, num_leaves 15, min_data_in_leaf
-2000, 3-seed bag, monotone constraints (owner), level anchored. Fold A 0.1135, fold B
-0.1265; public leaderboard 0.1120 (for the version before the monotone constraints).
+Best so far (2026-10-18, batch 2 start): motor bodily injury as a Poisson frequency model with
+severity from anchoring, other perils Tweedie power 1.1, num_leaves 15, min_data_in_leaf
+2000, 3-seed bag, monotone constraints (owner), level anchored. Score 0.1267 (fold A
+0.1160, fold B 0.1320). Earlier best: fold A 0.1135, fold B 0.1265; public leaderboard 0.1120 (for the version before the monotone constraints).
 Primary metric now weights fold B twice (it tracks the leaderboard; fold A inflated
 gains about fourfold).
 
@@ -23,10 +24,10 @@ constraints (owner keep).
 
 | # | Idea | Why | Expected | Source | Status |
 |---|---|---|---|---|---|
-| 1.1 | Motor split: bodily injury as Poisson frequency on BI claim counts x a flat trended BI severity; other motor perils as Tweedie on their cost | BI severity is barely predictable from rating factors; modelling BI cost directly puts one 11.9m claim into every split | Motor D² up in both folds | Advisor review; J2, J3 | open |
-| 1.2 | Weather perils float: for buildings and contents, model weather perils (storm, flood, subsidence, escape of water) separately with 2025 weather, letting their level move with the weather; anchor only non-weather perils | Host supplied 2025 weather; anchoring hides weather years (buildings A/E 1.049 in fold B) | Buildings A/E nearer 1.00; buildings D² up | Advisor review; J5 | open |
-| 1.3 | Anchor the level on the most recent one or two on-levelled years instead of all training years | Portfolio mix drifts over time | Per-line A/E nearer 1.00 in both folds | Advisor review | open |
-| 1.4 | sample_weight = exposure x completion (`comp_*` columns), so immature, assumption-heavy targets count less | Developed targets for immature periods carry 1/c variance | Fold B and motor up | Advisor review; reserving research | open |
+| 1.1 | Motor split: bodily injury as Poisson frequency on BI claim counts x a flat trended BI severity; other motor perils as Tweedie on their cost | BI severity is barely predictable from rating factors; modelling BI cost directly puts one 11.9m claim into every split | Motor D² up in both folds | Advisor review; J2, J3 | kept: score 0.1267 (fold B 0.1320), largest single gain so far |
+| 1.2 | Weather perils float: for buildings and contents, model weather perils (storm, flood, subsidence, escape of water) separately with 2025 weather, letting their level move with the weather; anchor only non-weather perils | Host supplied 2025 weather; anchoring hides weather years (buildings A/E 1.049 in fold B) | Buildings A/E nearer 1.00; buildings D² up | Advisor review; J5 | tried: 0.1213, below best; retry with weather features on the peril model only and the level floated by weather index |
+| 1.3 | Anchor the level on the most recent one or two on-levelled years instead of all training years | Portfolio mix drifts over time | Per-line A/E nearer 1.00 in both folds | Advisor review | tried: +0.0000, inside noise |
+| 1.4 | sample_weight = exposure x completion (`comp_*` columns), so immature, assumption-heavy targets count less | Developed targets for immature periods carry 1/c variance | Fold B and motor up | Advisor review; reserving research | tried: -0.0000, inside noise |
 
 ## Tier 2: likely gains, cheap
 

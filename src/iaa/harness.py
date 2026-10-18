@@ -47,6 +47,7 @@ FIELDS = [
     "gini_B",
     "seconds",
     "description",
+    "run_id",
 ]
 
 
