@@ -249,7 +249,7 @@ def main() -> None:
         perm = {}
         for c in cols:
             v = va.copy()
-            v[c] = v[c].to_numpy()[rng.permutation(len(v))]
+            v[c] = v[c].iloc[rng.permutation(len(v))].set_axis(v.index)  # keeps the dtype
             perm[c] = base - d2_rate(m, v, cols, tr)
         rep["permutation"] = perm
         sample = va.sample(min(50_000, len(va)), random_state=0)
