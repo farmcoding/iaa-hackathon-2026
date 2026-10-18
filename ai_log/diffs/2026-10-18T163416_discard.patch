@@ -1,0 +1,27 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 8a0e254..17c3331 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -109,6 +109,22 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         tr = train[train["line"] == line]
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
++        if line in ("buildings", "contents"):
++            # backlog 2.28: written_premium is the incumbent's absolute price and
++            # correlates with sum_insured (which stays as its own feature), so trees
++            # split on size twice. Premium per unit of sum insured removes the
++            # inflation/size confound; sum_insured has no missing values on either
++            # property line (reports/features/feature_study.json).
++            tr = tr.assign(
++                written_premium=(tr["written_premium"] / tr["sum_insured"]).replace(
++                    [np.inf, -np.inf], np.nan
++                )
++            )
++            va = va.assign(
++                written_premium=(va["written_premium"] / va["sum_insured"]).replace(
++                    [np.inf, -np.inf], np.nan
++                )
++            )
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
