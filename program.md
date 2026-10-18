@@ -29,20 +29,24 @@ or the scorer; those are actuarial assumptions owned by the human.
    unless you change something material, and say what.
 3. Edit `src/iaa/experiment.py` to test it. Keep the change small enough that a
    reviewer can read the diff in two minutes.
-4. Run exactly: `.venv/bin/python -I -m iaa.harness "<hypothesis in one line>"`
-   The harness runs both folds, prints per-line scores, appends to `results.tsv` and
-   prints `RESULT ... verdict=keep|discard|over_budget`.
-5. Stop and write a final message with these four lines:
-   HYPOTHESIS: what you tested and why (cite the backlog item or past run)
-   CHANGE: what you edited
-   RESULT: primary, min_fold, verdict, and the per-line D² that moved
-   NEXT: what the result suggests trying next
+4. Do not run anything. You have no shell; the driver runs the frozen harness on your
+   change after you finish, appends the result to `results.tsv` and commits or
+   reverts. You will see the outcome in `results.tsv` on the next iteration, so read
+   the code carefully: a crash costs an iteration. Check column names against
+   `src/iaa/features.py` and the contract in the experiment docstring.
+5. Finish with a final message whose first line is exactly:
+   HYPOTHESIS: <what you are testing and why, one line, cite the backlog item or run>
+   then:
+   CHANGE: <what you edited>
+   EXPECTED: <which fold or line you expect to move, and why>
 
-The driver, not you, commits a kept change or reverts a discarded one.
+Edit only `src/iaa/experiment.py`. Any other file you touch is reverted and the
+iteration is logged as a violation.
 
 ## Rules
 
-- Time budget: the harness marks a run `over_budget` above 900 seconds. Seed-bag
+- Time budget: the harness marks a run `over_budget` above 900 seconds (the baseline
+  takes about 150). Seed-bag
   (`SEEDS`) every model; single-seed noise is about 0.0026, bigger than most gains.
 - Keep rule (applied by the harness): mean fold D² must beat the best kept run by more
   than 0.002 and the worse fold must not fall by more than 0.002.
