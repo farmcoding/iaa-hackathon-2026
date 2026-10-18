@@ -97,6 +97,15 @@ def build(kind: str = "train") -> pd.DataFrame:
     return df
 
 
+def finalize(df: pd.DataFrame) -> pd.DataFrame:
+    """Dataset-level typing, applied once after train and test rows are joined. Lives here,
+    not in the harness, so the dataset fingerprint covers it."""
+    df = categorize(df)
+    for col in ID_COLS:
+        df[col] = df[col].astype("string")
+    return df
+
+
 def categorize(df: pd.DataFrame) -> pd.DataFrame:
     """Text and boolean feature columns become categoricals (shared levels across splits)."""
     for col in df.columns:

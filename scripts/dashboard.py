@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.offline import get_plotlyjs
+from plotly.subplots import make_subplots
 
 # Reference palette (dataviz skill, light mode, validated)
 S = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
@@ -552,6 +553,77 @@ details summary{cursor:pointer;color:var(--accent);margin:6px 0}
 """
 
 
+GROUP_LABEL = {
+    "driver": "Driver",
+    "vehicle": "Vehicle",
+    "property": "Property",
+    "location_hazard": "Location and hazard",
+    "weather": "Weather",
+    "policy_admin": "Policy and premium",
+    "customer_marketing": "Customer and marketing",
+    "claim_history": "Claim history",
+}
+
+
+def fig_perm(study: dict) -> go.Figure:
+    lines = list(study["lines"])
+    fig = make_subplots(
+        rows=1,
+        cols=len(lines),
+        subplot_titles=[ln.title() for ln in lines],
+        horizontal_spacing=0.16,
+    )
+    for i, ln in enumerate(lines, start=1):
+        perm = study["lines"][ln]["permutation"]
+        top = sorted(perm.items(), key=lambda kv: kv[1], reverse=True)[:10][::-1]
+        fig.add_trace(
+            go.Bar(
+                x=[v for _, v in top],
+                y=[k.replace("_", " ") for k, _ in top],
+                orientation="h",
+                marker={"color": LINE_COLOR[ln], "line": {"color": SURF, "width": 2}},
+                showlegend=False,
+                hovertemplate="%{y}: D² falls by %{x:.4f} when shuffled<extra></extra>",
+            ),
+            row=1,
+            col=i,
+        )
+    layout(
+        fig,
+        "Which variables the model relies on (fold B, drop in D² when the variable is shuffled)",
+        height=420,
+    )
+    fig.update_xaxes(tickformat=".3f")
+    fig.update_annotations(font={"size": 13, "color": INK})
+    return fig
+
+
+def fig_groups(study: dict) -> go.Figure:
+    fig = go.Figure()
+    groups = list(GROUP_LABEL)
+    for ln, rep in study["lines"].items():
+        drops = rep["group_drop"]
+        g = [k for k in groups if k in drops]
+        fig.add_trace(
+            go.Bar(
+                x=[GROUP_LABEL[k] for k in g],
+                y=[drops[k] for k in g],
+                name=ln.title(),
+                marker={"color": LINE_COLOR[ln], "line": {"color": SURF, "width": 2}},
+                hovertemplate=f"{ln.title()}<br>%{{x}}: %{{y:+.4f}}<extra></extra>",
+            )
+        )
+    fig.add_hline(y=0, line={"color": AXIS, "width": 1})
+    layout(
+        fig,
+        "What each group of variables adds (fold B; below zero, the line scores better without it)",
+        height=380,
+        barmode="group",
+    )
+    fig.update_yaxes(title="D² lost without the group", tickformat=".3f")
+    return fig
+
+
 def section(sid: str, title: str, body: str) -> str:
     return f'<section id="{sid}"><h2>{html.escape(title)}</h2>{body}</section>'
 
@@ -571,9 +643,17 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
     lb = [float(m.group(1)) for ln in subs if (m := re.search(r"\| (0\.\d{4,5}) \|", ln))]
     n_runs = len(df) - 1
 
+    blends = df[df["verdict"] == "blend_pass"]
+    blend_tile = (
+        f'<div class="tile"><div class="v">{blends["score"].max():.4f}</div>'
+        '<div class="l">Best blend with the TabM neural net (validation)</div></div>'
+        if not blends.empty
+        else ""
+    )
     tiles = f"""<div class="tiles">
 <div class="tile"><div class="v">{best["score"]:.4f}</div><div class="l">Best validation score (run {best["n"]})</div></div>
 <div class="tile"><div class="v">{max(lb):.4f}</div><div class="l">Best public leaderboard score</div></div>
+{blend_tile}
 <div class="tile"><div class="v">{n_runs}</div><div class="l">Experiments after the baseline</div></div>
 <div class="tile"><div class="v">{(df["verdict"].isin(["keep", "keep_owner"])).sum() - 1}</div><div class="l">Kept improvements</div></div>
 <div class="tile"><div class="v">{len(subs)}</div><div class="l">Leaderboard submissions</div></div>
@@ -584,7 +664,8 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
 - Local validation predicts the leaderboard well on the later validation year (fold B) and overstates gains on the earlier one (fold A). The score now weights fold B twice for that reason.
 - Three data problems were found and fixed before modelling: exposure recorded in days on about 0.4% of rows, a field that leaks claim information in the training data only, and motor bodily injury case reserves that are too light. Each is logged with its treatment.
 - An AI agent proposes one change at a time; a frozen harness scores it; a fixed rule keeps or reverts it; nothing reaches the leaderboard without the actuary's sign-off.
-- The largest remaining opportunities are motor bodily injury (noisy and heavy-tailed) and letting 2025 weather move the buildings and contents level. Both are at the top of the queue.
+- A neural network for tables (TabM), trained on the Mac's GPU and averaged 50/50 with the best boosted-tree model, scores higher on both validation years than either model alone. The gain is largest on buildings and contents. The actuary approved it and it was submitted on 18 October: public leaderboard 0.1230, up from 0.1191, the largest single gain so far.
+- A study of every rating variable (see Variables) found that a few groups of fields cost accuracy on some lines, and that written premium, the strongest variable, drifts between training and 2025. Both are now in the experiment queue.
 """)
 
     evals = md("""
@@ -719,15 +800,60 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
 """)
 
     compute = md("""
-**Time budget per experiment:** 30 minutes (doubled today from 15). The original limit was about six times the baseline run time, so the loop finishes six to eight experiments an hour and a runaway run cannot use up the night. Current runs take about 4 minutes plus a 20-second crash check.
+**Time budget per experiment:** 30 minutes (doubled today from 15). The original limit was about six times the baseline run time, so the loop finishes six to eight experiments an hour and a runaway run cannot use up the night. Current runs take 5 to 8 minutes plus a crash check on a small sample.
 
 **GPU:** the Mac mini's own GPU (Apple Metal) is free and is tried first. Kaggle notebooks offer roughly 30 GPU-hours a week (secondary sources); Kaggle shows the remaining balance only in its notebook editor, not through its API, so balances are read there. Private notebooks on competition data are allowed. No GPU run starts without your approval, an estimate of run time, and the balance before and after.
+
+**What the GPU has done so far:** TabM ran on the Mac's GPU only (approved). Each validation year took 25 to 35 minutes and the 2025 fit about 40, far less than the first estimate of 3 hours, because training stops early after four or five passes through the data. No Kaggle GPU time has been used.
 """)
 
     questions = (root / "docs" / "questions.md").read_text().split("\n", 2)[2]
     gov = img(assets / "governance.png", "Governance layers") + md(
         """Every artefact maps to a CIA standard: data checks (1440), the frozen harness and validation (1450), the ledger, logs and assumptions record (1490), and the report structure (1700). The IAA AI Task Force papers on governance, testing and documentation set the structure; the CAS AI Primer covers agent risks. Full map: `docs/governance.md`."""
     )
+
+    study_path = root / "reports" / "features" / "feature_study.json"
+    variables = md("The variable study has not run yet.")
+    if study_path.exists():
+        study = json.loads(study_path.read_text())
+        rows = []
+        for ln, rep in study["lines"].items():
+            ow = rep["one_way"]
+            drift = sorted(
+                ((k, v.get("drift_test_sd", 0.0)) for k, v in ow.items()),
+                key=lambda kv: -abs(kv[1]),
+            )[:3]
+            inter = list(rep["interactions"])[:3]
+            rows.append(
+                f"| {ln.title()} | {rep['d2_full']:.3f} | {len(ow)} | "
+                + ", ".join(f"{k.replace('_', ' ')} ({v:+.2f})" for k, v in drift)
+                + " | "
+                + "; ".join(i.replace("_", " ") for i in inter)
+                + " |"
+            )
+        variables = (
+            md(f"""The study asks three questions of every candidate rating variable, line by line, using the later validation year (train 2021-2023, score 2024). It ran on {study["generated"]}.
+
+1. **On its own:** how cost varies across the variable's levels, whether that pattern held in 2024, and how far the 2025 test data has drifted from training.
+2. **Inside the model:** how much accuracy is lost if the variable's values are shuffled (permutation importance), and how much each variable moves individual predictions (SHAP).
+3. **In combination:** how much accuracy is lost when a whole group of related variables is removed and the model refitted, and which pairs of variables interact most.""")
+            + chart(fig_perm(study))
+            + chart(fig_groups(study))
+            + md(
+                "| Line | Study model D² | Variables | Largest train-to-test drift (standard deviations) | Strongest interactions |\n|---|---|---|---|---|\n"
+                + "\n".join(rows)
+            )
+            + md("""**What it shows, plainly**
+
+- **Written premium is the strongest single variable on every line.** It carries the previous insurer's view of the risk. It also drifts: contents premiums in 2025 sit 0.4 standard deviations above training. A tree that splits on absolute premium amounts will misplace 2025 policies, so the queue tests premium as a relativity within each year (item 2.19).
+- **Motor** is driven by the driver: mileage, no-claims years, years licensed and age. Removing the driver group costs 0.011 of D², more than any other group.
+- **Buildings and contents** are driven by location hazard (elevation, flood zone, distance to river) and size (sum insured). Flood zone with elevation is the strongest interaction in contents.
+- **Some groups cost accuracy.** Without the vehicle group, motor scores 0.006 better. Without the customer and marketing fields, buildings and contents each score 0.0035 better. The study model is simpler than the production model (it uses LightGBM's own category handling, not credibility encoding), so these are leads, not conclusions. The loop now tests them under the full harness (items 2.17 and 2.18).
+
+<p class="note">The study model is one fit per line without seed averaging, so differences under about 0.002 are noise. Full output: reports/features/feature_study.json.</p>
+
+**Variables that need an actuarial decision, not just a score.** Customer age, marital status, occupation, email domain and credit band may predict cost but raise fairness, regulatory or public-acceptability questions. Age and marital status are protected or restricted rating factors in some jurisdictions. These are flagged for the owner's review (stage 5 of the study), with a discrimination-free pricing check (Lindholm, Richman, Tsanakas and Wüthrich) as the method if any are kept.""")
+        )
 
     nav = "".join(
         f'<a href="#{i}">{t}</a>'
@@ -737,6 +863,7 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
             ("data", "Data"),
             ("ultimate", "Ultimate cost"),
             ("progress", "Progress"),
+            ("variables", "Variables"),
             ("tested", "Ideas tested"),
             ("next", "Next"),
             ("alt", "Directions"),
@@ -756,6 +883,7 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
 {section("data", "The data, sample and validation approach", data_body)}
 {section("ultimate", "Getting the target right: developing claims to ultimate", ult_body)}
 {section("progress", "Experiment progress", progress_body)}
+{section("variables", "Rating variables: individual and combined predictive power", variables)}
 {section("tested", "Ideas tested so far", tested)}
 {section("next", "What comes next, and why", md(backlog))}
 {section("alt", "Alternative directions", alternatives)}

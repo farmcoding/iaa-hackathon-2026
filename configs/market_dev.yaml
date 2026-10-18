@@ -47,6 +47,9 @@ harness:
   # floor, and the worse fold must not fall by more than the floor
   # measured 2026-10-18: single-seed sd 0.0026; experiments bag 3 seeds (sd ~0.0015)
   noise_floor: 0.002
+  # kept runs retired from the comparison bar by owner decision (timestamps from
+  # results.tsv); empty = every keep counts. Q16: 2026-10-18T09:52:00 is a candidate.
+  superseded: []
 
 large_loss:
   # per-claim cap applied to the training target; the excess is reloaded per line

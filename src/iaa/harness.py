@@ -14,6 +14,7 @@ import argparse
 import csv
 import hashlib
 import importlib
+import json
 import subprocess
 import time
 from datetime import datetime
@@ -29,6 +30,10 @@ RESULTS = data.ROOT / "results.tsv"
 PREDS = CACHE / "preds"  # per-run validation predictions for lift charts (gitignored)
 SUBMISSIONS = data.ROOT / "submissions"
 FROZEN = ["data.py", "target.py", "ultimate.py", "features.py", "score.py", "harness.py"]
+# The dataset cache depends only on these files and on the config outside `harness:`.
+# Harness logic (folds, keep rule, logging) can change without rebuilding the dataset or
+# orphaning artefacts tagged with the fingerprint (TabM predictions).
+DATA_CODE = ["data.py", "target.py", "ultimate.py", "features.py"]
 TARGET_COLS_PREFIX = ("cost_", "n_", "ult_", "comp_")
 FIELDS = [
     "timestamp",
@@ -53,9 +58,10 @@ FIELDS = [
 
 def _fingerprint() -> str:
     h = hashlib.sha256()
-    for name in FROZEN:
+    for name in DATA_CODE:
         h.update((data.ROOT / "src" / "iaa" / name).read_bytes())
-    h.update(ultimate.CONFIG.read_bytes())
+    cfg = {k: v for k, v in ultimate.load_config().items() if k != "harness"}
+    h.update(json.dumps(cfg, sort_keys=True, default=str).encode())
     return h.hexdigest()[:12]
 
 
@@ -72,11 +78,11 @@ def dataset() -> pd.DataFrame:
     te = features.build("test")
     tr["split"], te["split"] = "train", "test"
     df = pd.concat([tr, te], ignore_index=True)
-    df = features.categorize(df)
-    for col in features.ID_COLS:
-        df[col] = df[col].astype("string")
+    df = features.finalize(df)
     df.to_parquet(path)
-    return df
+    # read back, so the first run after a rebuild sees exactly what later runs see
+    # (the in-memory frame's categoricals differ from the parquet round trip)
+    return pd.read_parquet(path)
 
 
 def on_level(df: pd.DataFrame, to_year: int, cfg: dict) -> np.ndarray:
@@ -141,7 +147,14 @@ def best_kept(cfg: dict | None = None) -> dict | None:
         return None
     cfg = cfg or ultimate.load_config()
     kept = ("keep", "keep_owner")
-    rows = [r for r in csv.DictReader(RESULTS.open(), delimiter="\t") if r["verdict"] in kept]
+    # owner can retire a kept row from the comparison bar (e.g. a favourable unseeded
+    # draw later re-baselined); listed by timestamp under harness.superseded
+    superseded = set(cfg["harness"].get("superseded") or [])
+    rows = [
+        r
+        for r in csv.DictReader(RESULTS.open(), delimiter="\t")
+        if r["verdict"] in kept and r["timestamp"] not in superseded
+    ]
     for r in rows:
         r["_primary"] = primary_of({"A": float(r["d2_A"]), "B": float(r["d2_B"])}, cfg)
     return max(rows, key=lambda r: r["_primary"]) if rows else None

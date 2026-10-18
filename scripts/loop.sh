@@ -82,6 +82,7 @@ for i in $(seq 1 "$ITER"); do
       err="timed out after 300 s on 50k rows per line"
     else
       err=$(grep -v -E "^\s*$|Warning|warn" "$LOG_DIR/last_run.txt" | tail -1 | tr '\t' ' ' | cut -c1-200)
+      [[ -z "$err" ]] && err="exit code $smoke_rc, no error text"
     fi
     verdict="crash"
     desc="SMOKE CRASH ($err): $desc"
@@ -104,8 +105,15 @@ for i in $(seq 1 "$ITER"); do
       -m "loop iteration $i, $ts; primary $(echo "$row" | cut -f4), min_fold $(echo "$row" | cut -f7)"
     action="committed $(git rev-parse --short HEAD)"
   else
+    # keep the discarded change, so it can be reviewed or re-run on fresh seeds
+    patch_file=""
+    if ! git diff --quiet -- "$EXP"; then
+      mkdir -p "$LOG_DIR/diffs"
+      patch_file="$LOG_DIR/diffs/${ts//:/}_${verdict}.patch"
+      git diff -- "$EXP" > "$patch_file"
+    fi
     git restore --source=HEAD -- "$EXP"
-    action="reverted experiment.py"
+    action="reverted experiment.py${patch_file:+ (diff saved to ${patch_file#$ROOT/})}"
   fi
   {
     echo "## Iteration $i, $ts, verdict: $verdict"
@@ -114,7 +122,8 @@ for i in $(seq 1 "$ITER"); do
     echo
     [[ "$verdict" == "keep" || "$verdict" == "discard" || "$verdict" == "over_budget" ]] && \
       echo "Ledger row: \`$row\`" && echo
-    [[ "$verdict" == "crash" ]] && echo "Harness output:" && echo && tail -15 "$LOG_DIR/last_run.txt" | sed 's/^/    /' && echo
+    [[ "$verdict" == "crash" ]] && echo "Harness output (warnings removed):" && echo && \
+      grep -v -E "Warning|warnings.warn" "$LOG_DIR/last_run.txt" | tail -25 | sed 's/^/    /' && echo
     echo "Agent report:"
     echo
     echo "$out" | tail -20 | sed 's/^/> /'
@@ -125,6 +134,7 @@ for i in $(seq 1 "$ITER"); do
   rm -f "$LOG_DIR/last_run.txt"
   if [[ "$verdict" != "keep" ]]; then
     git add results.tsv "$DAYLOG"
+    [[ -d "$LOG_DIR/diffs" ]] && git add "$LOG_DIR/diffs"
   else
     git add "$DAYLOG"
   fi
