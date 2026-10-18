@@ -13,7 +13,9 @@
 set -u
 ROOT="${0:A:h:h}"
 cd "$ROOT" || exit 1
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/.local/bin"
+# /usr/sbin is needed: joblib (glum, scikit-learn) calls sysctl to count CPU cores
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export LOKY_MAX_CPU_COUNT=8
 ITER="${1:-5}"
 LOCK="$ROOT/.loop.lock"
 LOG_DIR="$ROOT/ai_log"

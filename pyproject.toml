@@ -11,6 +11,13 @@ dependencies = [
     "lightgbm>=4.5",
     "glum>=3.0",
     "pyyaml>=6.0",
+    # approved by Karl 2026-10-18 (not society-linked; licences checked)
+    "catboost>=1.2",
+    "xgboost>=3.0",
+    "interpret-core>=0.7",
+    "model-diagnostics>=1.5",
+    "plotly>=6.0",
+    "markdown>=3.5",
 ]
 
 [project.optional-dependencies]

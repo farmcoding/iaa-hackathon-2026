@@ -70,5 +70,7 @@ iteration is logged as a violation.
   methods that would transfer (rates, ratios, generic encodings) over hard-coded
   levels, thresholds or category lists from this market.
 - Prediction must be finite and non-negative for every valid row.
-- Use only open-source libraries already installed (lightgbm, glum, scikit-learn,
-  numpy, pandas). Do not install packages or use the network.
+- Use only open-source libraries already installed: lightgbm, catboost, xgboost,
+  interpret (EBM: `from interpret.glassbox import ExplainableBoostingRegressor`), glum,
+  scikit-learn, numpy, pandas. All were licence-checked and approved. Do not install
+  packages or use the network.

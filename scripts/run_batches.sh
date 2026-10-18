@@ -8,7 +8,8 @@
 set -u
 ROOT="${0:A:h:h}"
 cd "$ROOT" || exit 1
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/.local/bin"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
+export LOKY_MAX_CPU_COUNT=8
 MAX="${1:-4}"
 PER="${2:-5}"
 
