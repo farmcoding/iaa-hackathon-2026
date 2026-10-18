@@ -12,3 +12,4 @@ values live in `configs/market_dev.yaml`.
 | 2026-10-18 | Overall level of predictions | Line loss cost = on-levelled historical loss cost; the model supplies relativities | Model alone predicted about 9% low out of time (feature drift) | Anchor on 2023-24 only |
 | 2026-10-18 | Validation scorer | Tweedie D2, power 1.5, constant-mean baseline (sklearn definition) | Calibration submission: public 0.0305 vs local 0.0395 (constant) and -0.0004 (rate) | n/a |
 | 2026-10-18 | Keep rule noise floor | 0.002 on mean fold D2 | Single-seed sd 0.0026; experiments bag 3 seeds | n/a |
+| 2026-10-18 | Level anchoring kept for all lines (decision) | As above | Variant with training-fit balance and blanked history features still under-predicted out of time: A/E 1.15 (fold A) and 1.09 (fold B), buildings 1.18 in fold A; CV 0.1050 vs 0.1056 anchored. History blanking alone does not remove the drift | Revisit after the drift experiment (backlog 13) |
