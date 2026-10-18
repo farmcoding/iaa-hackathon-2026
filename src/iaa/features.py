@@ -92,7 +92,8 @@ def build(kind: str = "train") -> pd.DataFrame:
     df = df.drop(columns=[c for c in FORBIDDEN if c in df.columns])
     df = pd.concat([df, claim_history(df)], axis=1)
     holdings = data.all_policies(kind).groupby(["customer_id", "year"])["line"].nunique()
-    df["n_lines_held"] = df.set_index(["customer_id", "year"]).index.map(holdings).to_numpy()
+    # no n_ prefix: the harness treats n_ columns as claim counts and hides them
+    df["lines_held"] = df.set_index(["customer_id", "year"]).index.map(holdings).to_numpy()
     return df
 
 

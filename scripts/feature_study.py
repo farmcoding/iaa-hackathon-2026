@@ -155,7 +155,7 @@ GROUPS = {
         "campaign_code",
         "branch_id",
         "marketing_segment",
-        "n_lines_held",
+        "lines_held",
         "policyholder_age",
     ],
     "claim_history": ["hist_n_policy", "hist_cost_policy", "hist_n_customer", "hist_cost_customer"],
@@ -167,9 +167,7 @@ def features(df: pd.DataFrame) -> list[str]:
     return [
         c
         for c in df.columns
-        if c not in NON
-        and df[c].notna().any()
-        and (c == "n_lines_held" or not c.startswith(target_like))
+        if c not in NON and df[c].notna().any() and not c.startswith(target_like)
     ]
 
 

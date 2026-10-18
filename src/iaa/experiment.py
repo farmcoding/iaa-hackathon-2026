@@ -30,6 +30,8 @@ NON_FEATURES = {
     "year",
     "line",
     "exposure",
+    # owner 2026-10-18: tested once restored (primary 0.1334 vs 0.1339), no gain
+    "lines_held",
 }
 # Owner decision 2026-10-18 (Karl): monotone constraints adopted for defensible,
 # portable relativities even though the score effect is inside seed noise. Adding
@@ -87,8 +89,9 @@ def _credibility_encode(
     if not high_card:
         return tr_x, va_x
     # fit_transform cross-fits internally so a row's own target doesn't leak into its
-    # own encoding; transform() on valid reuses the mapping fit on all of tr.
-    enc = TargetEncoder(target_type="continuous", smooth="auto")
+    # own encoding; transform() on valid reuses the mapping fit on all of tr. Seeded so
+    # runs reproduce (unseeded folds moved the primary score by up to 0.0007).
+    enc = TargetEncoder(target_type="continuous", smooth="auto", random_state=0)
     tr_x[high_card] = enc.fit_transform(tr[high_card], target)
     va_x[high_card] = enc.transform(va[high_card])
     return tr_x, va_x

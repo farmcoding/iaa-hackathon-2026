@@ -67,7 +67,7 @@ constraints (owner keep).
 
 | # | Idea | Notes | Status |
 |---|---|---|---|
-| 4.1 | TabM with a Tweedie loss, adapted from RonRichman/frmtpl-scaling-laws (GPL-2.0) | Richman 2026: TabM scales best of the deep tabular models on motor pricing data. Time one epoch on 100k rows locally (M4 Metal, free) before estimating | open |
+| 4.1 | TabM with a Tweedie loss, adapted from RonRichman/frmtpl-scaling-laws (GPL-2.0) | Richman 2026: TabM scales best of the deep tabular models on motor pricing data. Time one epoch on 100k rows locally (M4 Metal, free) before estimating | **go (fold B, 2026-10-18 13:00)**: TabM alone D² 0.1355 vs LightGBM 0.1362 on the same rows; 50/50 blend 0.1397 (+0.0035), flat between weights 0.4 and 0.6. Gain is on property (buildings +0.0086, contents +0.0059); motor -0.0007. 32 minutes on Metal, early stop after 4 epochs. Weight fixed at 0.5 by the owner; fold A is the honest check (`scripts/blend_submission.py`) |
 | 4.2 | RealMLP (pytabkit, Apache-2.0) as a second neural blend member | Cheaper to tune than TabM | open |
 
 ## Tier 3b: reserving lab (OWNER; Balona & Richman replay, adapted to one valuation date)
