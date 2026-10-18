@@ -14,6 +14,7 @@ from __future__ import annotations
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import TargetEncoder
 
 NON_FEATURES = {
     "row_id",
@@ -44,6 +45,11 @@ MONOTONE = {
     "prior_claims_5y": 1,
 }
 SEEDS = (0, 1, 2)
+# backlog 2.1: categoricals above this many levels (e.g. make_model, occupation,
+# previous_insurer) get out-of-fold credibility encoding instead of LightGBM's native
+# categorical splits; low-cardinality ones (e.g. the 12 regions) stay native. Detected
+# by cardinality rather than named, since Part 2's market will have different columns.
+HIGH_CARD_MIN = 15
 PARAMS = {
     "objective": "tweedie",
     "tweedie_variance_power": 1.1,
@@ -69,6 +75,25 @@ def _feature_cols(df: pd.DataFrame) -> list[str]:
     return [c for c in cols if df[c].notna().any()]
 
 
+def _credibility_encode(
+    tr: pd.DataFrame, va: pd.DataFrame, cols: list[str], target: pd.Series
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    high_card = [
+        c
+        for c in cols
+        if isinstance(tr[c].dtype, pd.CategoricalDtype) and tr[c].nunique() > HIGH_CARD_MIN
+    ]
+    tr_x, va_x = tr[cols].copy(), va[cols].copy()
+    if not high_card:
+        return tr_x, va_x
+    # fit_transform cross-fits internally so a row's own target doesn't leak into its
+    # own encoding; transform() on valid reuses the mapping fit on all of tr.
+    enc = TargetEncoder(target_type="continuous", smooth="auto")
+    tr_x[high_card] = enc.fit_transform(tr[high_card], target)
+    va_x[high_card] = enc.transform(va[high_card])
+    return tr_x, va_x
+
+
 def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
     # level anchoring: the model supplies relativities; the overall loss cost is the
     # on-levelled historical loss cost (trend assumption in the config)
@@ -83,6 +108,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         va = valid[mask]
         cols = _feature_cols(tr)
         mono = [MONOTONE.get(c, 0) for c in cols]
+        tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
 
         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
         # than most real improvements, so every model is an average over SEEDS
@@ -94,8 +120,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
                     monotone_constraints=mono,
                     monotone_constraints_method="advanced",
                 )
-                model.fit(tr[cols], target, sample_weight=weight)
-                out += model.predict(va[cols]) / len(SEEDS)
+                model.fit(tr_x, target, sample_weight=weight)
+                out += model.predict(va_x) / len(SEEDS)
             return out
 
         if line == "motor":
