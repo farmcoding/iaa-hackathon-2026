@@ -1,0 +1,17 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 8a0e254..8e4cd43 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -109,6 +109,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         tr = train[train["line"] == line]
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
++        # backlog 2.21: frequency is not proportional to exposure (partial-year rows
++        # run at a different claims-per-exposure-year rate), so give the trees
++        # log(exposure) as a feature instead of only using exposure as the weight and
++        # the rate denominator.
++        tr = tr.assign(log_exposure=np.log1p(tr["exposure"]))
++        va = va.assign(log_exposure=np.log1p(va["exposure"]))
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
