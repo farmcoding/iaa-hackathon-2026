@@ -69,6 +69,12 @@ def _feature_cols(df: pd.DataFrame) -> list[str]:
     return [c for c in cols if df[c].notna().any()]
 
 
+def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+    # level anchoring: the model supplies relativities; the overall loss cost is the
+    # on-levelled historical loss cost (trend assumption in the config)
+    return rate * target_lc / np.average(rate, weights=va["exposure"])
+
+
 def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
     pred = np.zeros(len(valid))
     for line in ("motor", "buildings", "contents"):
@@ -76,22 +82,43 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         mask = (valid["line"] == line).to_numpy()
         va = valid[mask]
         cols = _feature_cols(tr)
+        mono = [MONOTONE.get(c, 0) for c in cols]
+
         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
         # than most real improvements, so every model is an average over SEEDS
-        rate = np.zeros(len(va))
-        for seed in SEEDS:
-            mono = [MONOTONE.get(c, 0) for c in cols]
-            model = lgb.LGBMRegressor(
-                **{**PARAMS, "seed": seed},
-                monotone_constraints=mono,
-                monotone_constraints_method="advanced",
-            )
-            # rate target with exposure weight
-            model.fit(tr[cols], tr["y"] / tr["exposure"], sample_weight=tr["exposure"])
-            rate += model.predict(va[cols]) / len(SEEDS)
-        # level anchoring: the model supplies relativities; the line's overall loss cost
-        # is the on-levelled historical loss cost (trend assumption in the config)
-        target_lc = tr["y"].sum() / tr["exposure"].sum()
-        rate *= target_lc / np.average(rate, weights=va["exposure"])
+        def bag(target: pd.Series, weight: pd.Series, params: dict = PARAMS) -> np.ndarray:
+            out = np.zeros(len(va))
+            for seed in SEEDS:
+                model = lgb.LGBMRegressor(
+                    **{**params, "seed": seed},
+                    monotone_constraints=mono,
+                    monotone_constraints_method="advanced",
+                )
+                model.fit(tr[cols], target, sample_weight=weight)
+                out += model.predict(va[cols]) / len(SEEDS)
+            return out
+
+        if line == "motor":
+            # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+            # Tweedie on the combined target. BI claim frequency is far more
+            # predictable than its severity, so BI relativities come from a Poisson
+            # count model; severity is a flat level shared by every policy, supplied
+            # entirely by anchoring to the developed BI loss cost. Other motor perils
+            # keep the original Tweedie-on-cost treatment.
+            bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+            bi_params["objective"] = "poisson"
+            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
+            bi_lc = (tr["ult_bodily_injury"] * tr["trend_factor"]).sum() / tr["exposure"].sum()
+            bi_rate = _anchor(freq, bi_lc, va)
+
+            other = tr["ult_other"] * tr["trend_factor"]
+            other_rate = bag(other / tr["exposure"], tr["exposure"])
+            other_lc = other.sum() / tr["exposure"].sum()
+            other_rate = _anchor(other_rate, other_lc, va)
+
+            rate = bi_rate + other_rate
+        else:
+            rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+            rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
         pred[mask] = rate * va["exposure"].to_numpy()
     return pred
