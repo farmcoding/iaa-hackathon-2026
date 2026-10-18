@@ -128,20 +128,30 @@ def _commit() -> str:
     return out.stdout.strip() + ("+dirty" if dirty.stdout.strip() else "")
 
 
-def best_kept() -> dict | None:
+def primary_of(fold_scores: dict[str, float], cfg: dict) -> float:
+    """Weighted mean of fold D2. Fold B (train 2021-23, score 2024) tracks the public
+    leaderboard; fold A inflated gains about fourfold, so B carries double weight."""
+    w = cfg["harness"]["primary_weights"]
+    return sum(w[k] * fold_scores[k] for k in w) / sum(w.values())
+
+
+def best_kept(cfg: dict | None = None) -> dict | None:
     if not RESULTS.exists():
         return None
+    cfg = cfg or ultimate.load_config()
     kept = ("keep", "keep_owner")
     rows = [r for r in csv.DictReader(RESULTS.open(), delimiter="\t") if r["verdict"] in kept]
-    return max(rows, key=lambda r: float(r["primary"])) if rows else None
+    for r in rows:
+        r["_primary"] = primary_of({"A": float(r["d2_A"]), "B": float(r["d2_B"])}, cfg)
+    return max(rows, key=lambda r: r["_primary"]) if rows else None
 
 
 def verdict(res: dict, cfg: dict) -> str:
     floor = cfg["harness"]["noise_floor"] or 0.0
-    best = best_kept()
+    best = best_kept(cfg)
     if best is None:
         return "keep"
-    better = res["primary"] > float(best["primary"]) + floor
+    better = res["primary"] > best["_primary"] + floor
     stable = res["min_fold"] >= float(best["min_fold"]) - floor
     return "keep" if better and stable else "discard"
 
@@ -171,7 +181,8 @@ def validate(
         print(f"fold {name}: " + "  ".join(f"{k}={v:.5f}" for k, v in card.items()), flush=True)
     res["seconds"] = round(time.time() - t0)
     folds = [res[f"d2_{n}"] for n in cfg["harness"]["folds"]]
-    res["primary"], res["min_fold"] = float(np.mean(folds)), float(np.min(folds))
+    res["primary"] = primary_of({n: res[f"d2_{n}"] for n in cfg["harness"]["folds"]}, cfg)
+    res["min_fold"] = float(np.min(folds))
     if res["seconds"] > cfg["harness"]["time_budget_seconds"]:
         res["verdict"] = "over_budget"
     elif owner_keep:
@@ -201,6 +212,18 @@ def validate(
     return res
 
 
+def smoke(module: str = "iaa.experiment", rows_per_line: int = 50_000) -> None:
+    """Run the experiment on a small subsample of both folds to catch crashes fast."""
+    cfg = ultimate.load_config()
+    df = dataset()
+    df = df.groupby(["split", "line", "year"], group_keys=False).head(rows_per_line // 4)
+    exp = importlib.import_module(module)
+    for name, fold in cfg["harness"]["folds"].items():
+        tr, va = split(df, fold["train"], fold["valid"], cfg)
+        check_predictions(exp.fit_predict(tr, hide_target(va)), len(va))
+        print(f"smoke fold {name}: ok ({len(tr)} train rows, {len(va)} valid rows)")
+
+
 def final(description: str, module: str = "iaa.experiment") -> Path:
     cfg = ultimate.load_config()
     df = dataset()
@@ -226,8 +249,11 @@ def main() -> None:
     ap.add_argument("--module", default="iaa.experiment")
     ap.add_argument("--no-log", action="store_true")
     ap.add_argument("--owner-keep", action="store_true", help="human decision to keep")
+    ap.add_argument("--smoke", action="store_true", help="fast crash check on a subsample")
     a = ap.parse_args()
-    if a.final:
+    if a.smoke:
+        smoke(a.module)
+    elif a.final:
         final(a.description, a.module)
     else:
         validate(a.description, a.module, log=not a.no_log, owner_keep=a.owner_keep)

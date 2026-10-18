@@ -57,6 +57,9 @@ PARAMS = {
     "n_estimators": 1200,
     "verbose": -1,
     "seed": 0,
+    # reproducibility (owner, 2026-10-18): identical results on rerun
+    "deterministic": True,
+    "force_row_wise": True,
 }
 
 

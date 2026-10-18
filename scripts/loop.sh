@@ -17,7 +17,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$HOME/.local/bin"
 ITER="${1:-5}"
 LOCK="$ROOT/.loop.lock"
 LOG_DIR="$ROOT/ai_log"
-HARNESS_TIMEOUT=1500
+HARNESS_TIMEOUT=2400
 mkdir -p "$LOG_DIR"
 DAYLOG="$LOG_DIR/loop_$(date +%Y-%m-%d).md"
 EXP="src/iaa/experiment.py"
@@ -55,19 +55,34 @@ for i in $(seq 1 "$ITER"); do
     git clean -fdq
     verdict="violation"
     desc="agent edited files outside experiment.py: $(echo $violations | tr '\n' ' ')"
+  elif echo "$out" | grep -q '^HYPOTHESIS: *NONE'; then
+    git restore --source=HEAD -- "$EXP" 2>/dev/null
+    echo "agent reports no open ideas left; stopping" | tee -a "$DAYLOG"
+    git add "$DAYLOG"; git -c core.hooksPath=/dev/null commit -q -m "loop log: backlog exhausted" || true
+    exit 3
   elif git diff --quiet -- "$EXP"; then
     verdict="no_change"
     desc="agent made no change"
   else
+    verdict="pending"
     desc=$(echo "$out" | grep -m1 '^HYPOTHESIS:' | sed 's/^HYPOTHESIS: *//' | tr '\t' ' ' | cut -c1-240)
     [[ -z "$desc" ]] && desc="(no HYPOTHESIS line)"
+  fi
+  if [[ "$verdict" == "pending" ]] && ! perl -e 'alarm shift; exec @ARGV' 300 \
+       .venv/bin/python -I -m iaa.harness --smoke x > "$LOG_DIR/last_run.txt" 2>&1; then
+    # 20-second crash check on a subsample before spending a full run
+    err=$(grep -E "Error|error" "$LOG_DIR/last_run.txt" | tail -1 | tr '\t' ' ' | cut -c1-160)
+    verdict="crash"
+    desc="SMOKE CRASH ($err): $desc"
+    printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv
+  elif [[ "$verdict" == "pending" ]]; then
     # The driver, not the agent, runs the harness and writes the ledger.
     if perl -e 'alarm shift; exec @ARGV' "$HARNESS_TIMEOUT" \
          .venv/bin/python -I -m iaa.harness "$desc" > "$LOG_DIR/last_run.txt" 2>&1; then
       verdict=$(tail -1 results.tsv | cut -f3)
     else
       verdict="crash"
-      printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv
+      printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv
     fi
   fi
 

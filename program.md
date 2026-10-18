@@ -23,7 +23,8 @@ or the scorer; those are actuarial assumptions owned by the human.
 ## One iteration
 
 1. Read `results.tsv` (all past runs and verdicts), `research/experiment_backlog.md`
-   (ranked ideas with sources) and the current `src/iaa/experiment.py`.
+   (ranked ideas with sources; items marked OWNER are human-only, skip them) and the
+   current `src/iaa/experiment.py`.
 2. Pick ONE hypothesis. Prefer the highest-ranked backlog idea not yet tried, or a
    follow-up that a past result clearly suggests. Do not repeat a discarded idea
    unless you change something material, and say what.
@@ -49,8 +50,16 @@ iteration is logged as a violation.
 - Time budget: the harness marks a run `over_budget` above 1800 seconds (the current
   model takes about 230). Seed-bag
   (`SEEDS`) every model; single-seed noise is about 0.0026, bigger than most gains.
-- Keep rule (applied by the harness): mean fold D² must beat the best kept run by more
-  than 0.002 and the worse fold must not fall by more than 0.002.
+- Keep rule (applied by the harness): the primary score, a weighted mean of fold D²
+  with fold B (score 2024) counted twice because it tracks the public leaderboard, must
+  beat the best kept run by more than 0.002, and the worse fold must not fall by more
+  than 0.002. Gains that only show in fold A have not reached the leaderboard.
+- The driver runs a 20-second smoke test on a subsample first. A smoke crash is
+  recorded as `crash` with the error text in the ledger description; read it before
+  retrying the idea.
+- When every backlog item is tried, parked or owner-only and no follow-up is
+  justified by the ledger, finish with exactly `HYPOTHESIS: NONE` and make no edit.
+  The loop then stops.
 - Leakage: never use `renewal_decision`, `customer_service_contacts`, any target
   column (`cost_*`, `n_*`, `ult_*`, `comp_*`, `y`, `y_ult`) or the row's year as a
   feature. Encodings fitted on the target must be fitted inside `fit_predict` on the
