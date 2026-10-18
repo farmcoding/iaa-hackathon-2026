@@ -19,7 +19,7 @@ export LOKY_MAX_CPU_COUNT=8
 ITER="${1:-5}"
 LOCK="$ROOT/.loop.lock"
 LOG_DIR="$ROOT/ai_log"
-HARNESS_TIMEOUT=2400
+HARNESS_TIMEOUT=4200  # two full runs when a keep is confirmed
 mkdir -p "$LOG_DIR"
 DAYLOG="$LOG_DIR/loop_$(date +%Y-%m-%d).md"
 EXP="src/iaa/experiment.py"

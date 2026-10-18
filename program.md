@@ -25,7 +25,8 @@ or the scorer; those are actuarial assumptions owned by the human.
 1. Read `results.tsv` (all past runs and verdicts), `research/experiment_backlog.md`
    (ranked ideas with sources; items marked OWNER are human-only, skip them) and the
    current `src/iaa/experiment.py`.
-2. Pick ONE hypothesis. Prefer the highest-ranked backlog idea not yet tried, or a
+2. Pick ONE hypothesis. Tier 0 of the backlog (re-tests) comes first, in its order.
+   Otherwise prefer the highest-ranked backlog idea not yet tried, or a
    follow-up that a past result clearly suggests. Do not repeat a discarded idea
    unless you change something material, and say what.
 3. Edit `src/iaa/experiment.py` to test it. Keep the change small enough that a
@@ -54,6 +55,12 @@ iteration is logged as a violation.
   with fold B (score 2024) counted twice because it tracks the public leaderboard, must
   beat the best kept run by more than 0.002, and the worse fold must not fall by more
   than 0.002. Gains that only show in fold A have not reached the leaderboard.
+  A run that passes is re-run with every seed shifted (`IAA_SEED_OFFSET`) and must pass
+  again; otherwise it is logged `unconfirmed`. So every random choice you add (model
+  seeds, sampling, CV splits, encoders) must derive from `SEED_OFFSET` or `SEEDS` in
+  `experiment.py`. A model with a fixed literal seed cannot be confirmed.
+- Discarded changes are saved as patches in `ai_log/diffs/` (from 2026-10-18 16:09);
+  read one before re-testing an idea.
 - The driver runs a 20-second smoke test on a subsample first. A smoke crash is
   recorded as `crash` with the error text in the ledger description; read it before
   retrying the idea.

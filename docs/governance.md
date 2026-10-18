@@ -58,7 +58,9 @@ The older numbering (1500 for models, 1800 for reporting) is out of date.
    tests are frozen; the driver reverts anything else and logs a violation.
 2. Tests run before every iteration. A failing test stops the loop.
 3. The keep rule is mechanical (beat the best run by more than seed noise on both folds),
-   so the agent cannot argue a result in.
+   so the agent cannot argue a result in. A run that passes is re-run on fresh seeds and
+   must pass again (from 2026-10-18), which cuts the false keeps a single test lets
+   through at this noise floor (about one change in six with no real effect).
 4. Every iteration is logged: hypothesis, change, result, and the driver's action.
 5. No submission without human sign-off in `docs/SIGNOFF.md`: the reviewer reads the
    diff, the scorecard and the actual-to-expected by line, and records the reason.

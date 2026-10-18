@@ -20,6 +20,24 @@ Already tried (batch 1): training power 1.3 and 1.1 (kept), per-line powers (dis
 stronger regularisation (kept), BI cap without reload (inside noise), monotone
 constraints (owner keep).
 
+## Tier 0: re-tests under the corrected keep bar (do these first, in order)
+
+On 2026-10-18 the owner re-based the keep bar on the seeded champion (primary 0.1330, run
+20261018T135452) instead of the favourable unseeded draw (0.1339), and added a
+confirmation run on fresh seeds. These discarded runs scored close to or above the
+corrected bar and are re-tested under it. Runs before 13:54 used the unseeded encoder,
+whose draws of the same model averaged about 0.1334, so their scores are not directly
+comparable. Re-implement from the CHANGE text in `ai_log/loop_2026-10-18.md` (search the
+ledger timestamp) or from the saved patch where one exists.
+
+| # | Idea | Why | Expected | Source | Status |
+|---|---|---|---|---|---|
+| 0.1 | Re-test 2.14: XGBoost reg:tweedie blended 50/50 with LightGBM on buildings and contents only | 15:55 run: 0.13504 (A 0.1300 / B 0.1376), both folds above the seeded champion; the only discard that clears the corrected bar | Keep if it confirms | ledger 2026-10-18T15:55:03 | open |
+| 0.2 | Re-test the all-lines XGBoost blend if 0.1 confirms, as a follow-up (motor added) | 16:34 run: 0.13491 (A 0.1317 / B 0.1365); stronger fold A, weaker fold B than 0.1 | Keep only if it beats the new champion | `ai_log/diffs/2026-10-18T163416_discard.patch` | open |
+| 0.3 | Re-test 2.3: isotonic recalibration of each sub-rate | 10:32 run: 0.13474 on the unseeded encoder | Small gain if real | ledger 2026-10-18T10:32:32 | open |
+| 0.4 | Re-test 2.17 (property part): drop the customer and marketing fields on buildings and contents | 15:34 run: 0.13442, +0.0014 vs the seeded champion | Inside the floor; confirm or close | ledger 2026-10-18T15:34:58 | open |
+| 0.5 | Re-test the wider seed bag (8 seeds, feature and bagging fractions varied per seed), seeds derived from SEED_OFFSET | 11:27 run: 0.13409 on the unseeded encoder | Small, steadier gain | ledger 2026-10-18T11:27:18 | open |
+
 ## Tier 1: expected to move the score
 
 | # | Idea | Why | Expected | Source | Status |

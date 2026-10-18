@@ -11,6 +11,8 @@ Both frames hold all three lines; `line` says which.
 
 from __future__ import annotations
 
+import os
+
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
@@ -46,7 +48,10 @@ MONOTONE = {
     "flood_zone": 1,
     "prior_claims_5y": 1,
 }
-SEEDS = (0, 1, 2)
+# The harness re-runs a candidate keep with IAA_SEED_OFFSET set, to confirm the gain on
+# fresh seeds. Every random choice in this file must derive from SEED_OFFSET or SEEDS.
+SEED_OFFSET = int(os.environ.get("IAA_SEED_OFFSET", "0"))
+SEEDS = tuple(SEED_OFFSET + s for s in (0, 1, 2))
 # backlog 2.1: categoricals above this many levels (e.g. make_model, occupation,
 # previous_insurer) get out-of-fold credibility encoding instead of LightGBM's native
 # categorical splits; low-cardinality ones (e.g. the 12 regions) stay native. Detected
@@ -91,7 +96,7 @@ def _credibility_encode(
     # fit_transform cross-fits internally so a row's own target doesn't leak into its
     # own encoding; transform() on valid reuses the mapping fit on all of tr. Seeded so
     # runs reproduce (unseeded folds moved the primary score by up to 0.0007).
-    enc = TargetEncoder(target_type="continuous", smooth="auto", random_state=0)
+    enc = TargetEncoder(target_type="continuous", smooth="auto", random_state=SEED_OFFSET)
     tr_x[high_card] = enc.fit_transform(tr[high_card], target)
     va_x[high_card] = enc.transform(va[high_card])
     return tr_x, va_x

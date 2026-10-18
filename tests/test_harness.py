@@ -81,3 +81,19 @@ def test_keep_rule_needs_both_margin_and_stability(toy):
     assert harness.verdict(better, toy) == "keep"
     assert harness.verdict({**better, "primary": best + 0.0019}, toy) == "discard"
     assert harness.verdict({**better, "min_fold": 0.1275}, toy) == "discard"
+
+
+def test_experiment_seeds_follow_the_confirmation_offset(monkeypatch):
+    # the confirmation run only means something if every seed moves with the offset
+    import importlib
+
+    from iaa import experiment
+
+    monkeypatch.setenv("IAA_SEED_OFFSET", "100")
+    try:
+        mod = importlib.reload(experiment)
+        assert mod.SEED_OFFSET == 100
+        assert mod.SEEDS and min(mod.SEEDS) >= 100
+    finally:
+        monkeypatch.delenv("IAA_SEED_OFFSET")
+        importlib.reload(experiment)

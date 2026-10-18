@@ -15,6 +15,7 @@ import csv
 import hashlib
 import importlib
 import json
+import os
 import subprocess
 import time
 from datetime import datetime
@@ -53,6 +54,8 @@ FIELDS = [
     "seconds",
     "description",
     "run_id",
+    "confirm_primary",
+    "confirm_min_fold",
 ]
 
 
@@ -177,32 +180,18 @@ def validate(
     df = dataset()
     exp = importlib.import_module(module)
     t0 = time.time()
-    res: dict = {}
     run_id = datetime.now().strftime("%Y%m%dT%H%M%S")
-    saved = []
-    for name, fold in cfg["harness"]["folds"].items():
-        tr, va = split(df, fold["train"], fold["valid"], cfg)
-        pred = check_predictions(exp.fit_predict(tr, hide_target(va)), len(va))
-        va = va.assign(pred=pred, y=va["y_ult"])
-        saved.append(va[["row_id", "line", "exposure", "y", "pred"]].assign(fold=name))
-        card = score.scorecard(va)
-        res[f"d2_{name}"] = card["d2"]
-        if name == "B":
-            for k in ("motor", "buildings", "contents"):
-                res[f"d2_{k}_B"] = card[f"d2_{k}"]
-                res[f"ae_{k}_B"] = card[f"ae_{k}"]
-            res["gini_B"] = card["gini"]
-        print(f"fold {name}: " + "  ".join(f"{k}={v:.5f}" for k, v in card.items()), flush=True)
+    res, saved = _score_folds(exp, df, cfg)
     res["seconds"] = round(time.time() - t0)
-    folds = [res[f"d2_{n}"] for n in cfg["harness"]["folds"]]
-    res["primary"] = primary_of({n: res[f"d2_{n}"] for n in cfg["harness"]["folds"]}, cfg)
-    res["min_fold"] = float(np.min(folds))
     if res["seconds"] > cfg["harness"]["time_budget_seconds"]:
         res["verdict"] = "over_budget"
     elif owner_keep:
         res["verdict"] = "keep_owner"  # human decision, recorded in assumptions_log.md
     else:
         res["verdict"] = verdict(res, cfg)
+        offset = cfg["harness"].get("confirm_seed_offset")
+        if res["verdict"] == "keep" and offset:
+            _confirm(res, saved, module, df, cfg, offset)
     res["run_id"] = run_id
     if log:
         PREDS.mkdir(parents=True, exist_ok=True)
@@ -224,6 +213,52 @@ def validate(
         f"verdict={res['verdict']} seconds={res['seconds']}"
     )
     return res
+
+
+def _confirm(res: dict, saved: list, module: str, df: pd.DataFrame, cfg: dict, offset: int) -> None:
+    """A candidate keep must pass the keep rule a second time on fresh seeds (owner
+    decision 2026-10-18): at a 0.002 floor about one change in six with no real effect
+    clears the rule once by chance."""
+    os.environ["IAA_SEED_OFFSET"] = str(offset)
+    try:
+        exp = importlib.reload(importlib.import_module(module))
+        res2, saved2 = _score_folds(exp, df, cfg)
+    finally:
+        os.environ.pop("IAA_SEED_OFFSET", None)
+        importlib.reload(importlib.import_module(module))
+    res["confirm_primary"], res["confirm_min_fold"] = res2["primary"], res2["min_fold"]
+    same = np.allclose(pd.concat(saved)["pred"].to_numpy(), pd.concat(saved2)["pred"].to_numpy())
+    if same:
+        print("confirmation run reproduced the first run exactly: the seed hook is not used")
+    ok = not same and verdict(res2, cfg) == "keep"
+    print(
+        f"confirmation (seed offset {offset}): primary={res2['primary']:.5f} "
+        f"min_fold={res2['min_fold']:.5f} -> {'confirmed' if ok else 'not confirmed'}"
+    )
+    if not ok:
+        res["verdict"] = "unconfirmed"
+
+
+def _score_folds(exp, df: pd.DataFrame, cfg: dict) -> tuple[dict, list]:
+    res: dict = {}
+    saved = []
+    for name, fold in cfg["harness"]["folds"].items():
+        tr, va = split(df, fold["train"], fold["valid"], cfg)
+        pred = check_predictions(exp.fit_predict(tr, hide_target(va)), len(va))
+        va = va.assign(pred=pred, y=va["y_ult"])
+        saved.append(va[["row_id", "line", "exposure", "y", "pred"]].assign(fold=name))
+        card = score.scorecard(va)
+        res[f"d2_{name}"] = card["d2"]
+        if name == "B":
+            for k in ("motor", "buildings", "contents"):
+                res[f"d2_{k}_B"] = card[f"d2_{k}"]
+                res[f"ae_{k}_B"] = card[f"ae_{k}"]
+            res["gini_B"] = card["gini"]
+        print(f"fold {name}: " + "  ".join(f"{k}={v:.5f}" for k, v in card.items()), flush=True)
+    folds = [res[f"d2_{n}"] for n in cfg["harness"]["folds"]]
+    res["primary"] = primary_of({n: res[f"d2_{n}"] for n in cfg["harness"]["folds"]}, cfg)
+    res["min_fold"] = float(np.min(folds))
+    return res, saved
 
 
 def smoke(module: str = "iaa.experiment", rows_per_line: int = 50_000) -> None:

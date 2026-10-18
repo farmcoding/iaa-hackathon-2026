@@ -43,6 +43,7 @@ VERDICT = {
     "discard": (MUTED, "Discarded"),
     "crash": (CRIT, "Crashed"),
     "over_budget": (WARN, "Over time budget"),
+    "unconfirmed": (WARN, "Passed once, not confirmed on fresh seeds"),
     "blend_pass": (S[2], "Blend passes keep rule"),
     "blend_fail": (MUTED, "Blend fails keep rule"),
 }

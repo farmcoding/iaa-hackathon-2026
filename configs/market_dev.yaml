@@ -48,8 +48,12 @@ harness:
   # measured 2026-10-18: single-seed sd 0.0026; experiments bag 3 seeds (sd ~0.0015)
   noise_floor: 0.002
   # kept runs retired from the comparison bar by owner decision (timestamps from
-  # results.tsv); empty = every keep counts. Q16: 2026-10-18T09:52:00 is a candidate.
-  superseded: []
+  # results.tsv). 2026-10-18 (Karl, Q16): the 09:52 keep (0.1339) was a favourable draw of
+  # the then-unseeded encoder; the bar is the seeded re-baseline of the same model (0.1330)
+  superseded: ["2026-10-18T09:52:00"]
+  # a candidate keep is re-run with seeds shifted by this offset and must pass the keep
+  # rule again (Karl, 2026-10-18); the experiment reads IAA_SEED_OFFSET
+  confirm_seed_offset: 100
 
 large_loss:
   # per-claim cap applied to the training target; the excess is reloaded per line
