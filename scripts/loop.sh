@@ -71,7 +71,7 @@ for i in $(seq 1 "$ITER"); do
   if [[ "$verdict" == "pending" ]] && ! perl -e 'alarm shift; exec @ARGV' 300 \
        .venv/bin/python -I -m iaa.harness --smoke x > "$LOG_DIR/last_run.txt" 2>&1; then
     # 20-second crash check on a subsample before spending a full run
-    err=$(grep -E "Error|error" "$LOG_DIR/last_run.txt" | tail -1 | tr '\t' ' ' | cut -c1-160)
+    err=$(grep -v -E "^\s*$|Warning|warn" "$LOG_DIR/last_run.txt" | tail -1 | tr '\t' ' ' | cut -c1-200)
     verdict="crash"
     desc="SMOKE CRASH ($err): $desc"
     printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv

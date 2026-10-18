@@ -40,6 +40,18 @@ The older numbering (1500 for models, 1800 for reporting) is out of date.
 | OSFI Guideline E-23, Model Risk Management (effective 1 May 2027) | Not binding here; cited as the Canadian direction for model inventory, independent validation and monitoring |
 | ASOP 23, 41, 56 (US) | Cross-reference only |
 
+## Third-party code and models
+
+- Code is used only under an OSI-approved licence with no commercial-use limit
+  (competition rule 3.6.c). Each library's licence is verified from its LICENSE file.
+- Libraries maintained by an actuarial professional society (for example the CAS GitHub
+  organisation) may be used once licence-checked. Any other library needs Karl's
+  approval first; the list and decisions live in the backlog (Tier 5).
+- Repositories without a usable licence (for example the Credibility Transformer code,
+  CC-BY-NC-ND, and the AI Tools for Actuaries notebooks, no licence) are reference only.
+  Methods are rebuilt from the published papers, not by copying or translating code,
+  and the paper is cited where the method is used.
+
 ## How the agent loop is governed
 
 1. The agent may edit one file. The data, target, development, trend, folds, scorer and
