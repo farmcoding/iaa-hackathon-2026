@@ -33,7 +33,7 @@ NON_FEATURES = {
 SEEDS = (0, 1, 2)
 PARAMS = {
     "objective": "tweedie",
-    "tweedie_variance_power": 1.5,
+    "tweedie_variance_power": 1.3,
     "learning_rate": 0.05,
     "num_leaves": 31,
     "min_data_in_leaf": 500,
