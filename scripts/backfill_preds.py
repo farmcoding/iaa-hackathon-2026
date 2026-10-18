@@ -28,7 +28,7 @@ log = subprocess.run(
     check=True,
     timeout=30,
 ).stdout.splitlines()
-commits = {s: h for h, s in (l.split("\t", 1) for l in log)}
+commits = {s: h for h, s in (ln.split("\t", 1) for ln in log)}
 df = None
 for r in rows:
     ts = datetime.fromisoformat(r["timestamp"])
