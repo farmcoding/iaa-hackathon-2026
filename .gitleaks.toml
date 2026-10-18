@@ -1,0 +1,18 @@
+# gitleaks config — extends the default ruleset with a project allowlist.
+# Used by both the local pre-commit hook and the CI secrets job.
+title = "farmcoding gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Project-wide false positives"
+# Type annotations that look like private-key assignments but are not secrets.
+regexes = [
+  '''_private_key:\s*(Ed25519PrivateKey|RSAPrivateKey|str|bytes)''',
+]
+# Vendored / example files that legitimately contain public or placeholder tokens.
+paths = [
+  '''(.*/)?custom_components/edge_tts/.*''',
+  '''(.*/)?\.env\.example$''',
+]

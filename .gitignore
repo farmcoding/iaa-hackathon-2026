@@ -1,0 +1,10 @@
+# Competition data must never leave this machine (rules 2.5.b)
+data/
+scratch/
+*.parquet
+*.zip
+submissions/
+.env
+.venv/
+__pycache__/
+.DS_Store
