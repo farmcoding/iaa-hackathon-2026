@@ -15,9 +15,12 @@ PER="${2:-5}"
 
 in_sweep_window() { local hm=$(date +%H%M); (( 10#$hm >= 1840 && 10#$hm < 1920 )); }
 
-for b in $(seq 1 "$MAX"); do
+# batch numbers continue from the last dashboard snapshot, so reruns don't overwrite them
+START=$(ls reports/dashboard/after_batch_*.html 2>/dev/null | sed -E 's/.*_([0-9]+)\.html/\1/' | sort -n | tail -1)
+START=$(( ${START:-0} + 1 ))
+for b in $(seq "$START" $(( START + MAX - 1 ))); do
   while in_sweep_window; do sleep 120; done
-  echo "== batch $b of $MAX ($(date +%H:%M))"
+  echo "== batch $b ($(date +%H:%M))"
   scripts/loop.sh "$PER"
   rc=$?
   if [[ -f scripts/dashboard.py ]]; then

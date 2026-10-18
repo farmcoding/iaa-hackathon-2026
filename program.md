@@ -74,3 +74,7 @@ iteration is logged as a violation.
   interpret (EBM: `from interpret.glassbox import ExplainableBoostingRegressor`), glum,
   scikit-learn, numpy, pandas. All were licence-checked and approved. Do not install
   packages or use the network.
+- CatBoost: pass `allow_writing_files=False` (otherwise it writes `catboost_info/` into
+  the repo and the driver stops), and convert categorical NaN to a string such as
+  `"missing"`. The smoke test allows 300 s on 50k rows per line across both folds and
+  all seeds; keep iterations and threads modest so it fits.

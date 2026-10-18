@@ -70,10 +70,19 @@ for i in $(seq 1 "$ITER"); do
     desc=$(echo "$out" | grep -m1 '^HYPOTHESIS:' | sed 's/^HYPOTHESIS: *//' | tr '\t' ' ' | cut -c1-240)
     [[ -z "$desc" ]] && desc="(no HYPOTHESIS line)"
   fi
-  if [[ "$verdict" == "pending" ]] && ! perl -e 'alarm shift; exec @ARGV' 300 \
-       .venv/bin/python -I -m iaa.harness --smoke x > "$LOG_DIR/last_run.txt" 2>&1; then
+  smoke_rc=0
+  if [[ "$verdict" == "pending" ]]; then
     # 20-second crash check on a subsample before spending a full run
-    err=$(grep -v -E "^\s*$|Warning|warn" "$LOG_DIR/last_run.txt" | tail -1 | tr '\t' ' ' | cut -c1-200)
+    perl -e 'alarm shift; exec @ARGV' 300 \
+      .venv/bin/python -I -m iaa.harness --smoke x > "$LOG_DIR/last_run.txt" 2>&1
+    smoke_rc=$?
+  fi
+  if (( smoke_rc != 0 )); then
+    if (( smoke_rc == 142 )); then
+      err="timed out after 300 s on 50k rows per line"
+    else
+      err=$(grep -v -E "^\s*$|Warning|warn" "$LOG_DIR/last_run.txt" | tail -1 | tr '\t' ' ' | cut -c1-200)
+    fi
     verdict="crash"
     desc="SMOKE CRASH ($err): $desc"
     printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv

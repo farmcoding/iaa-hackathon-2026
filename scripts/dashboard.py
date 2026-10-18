@@ -42,6 +42,8 @@ VERDICT = {
     "discard": (MUTED, "Discarded"),
     "crash": (CRIT, "Crashed"),
     "over_budget": (WARN, "Over time budget"),
+    "blend_pass": (S[2], "Blend passes keep rule"),
+    "blend_fail": (MUTED, "Blend fails keep rule"),
 }
 
 
@@ -113,6 +115,8 @@ def load_ledger(root: Path) -> pd.DataFrame:
 
 
 FAMILIES = [  # checked in order: most specific first
+    ("Neural blend (TabM)", r"tabm"),
+    ("Reproducibility", r"re-baseline|reproduc"),
     ("Large losses", r"\bcap\b|capp|large loss|excess reload"),
     (
         "Target structure",

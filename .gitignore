@@ -9,3 +9,4 @@ submissions/
 __pycache__/
 .DS_Store
 .loop.lock/
+catboost_info/
