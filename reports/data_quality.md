@@ -15,3 +15,11 @@ Each finding: what, how found, size, treatment, where it is enforced.
 
 Open item: why 2021-2023 orphan claims fall outside every policy period (cancelled or
 lapsed rows, or date errors) is not yet explained.
+
+## Pipeline issues (code, not data)
+
+| # | Issue | How found | Effect | Treatment | Status |
+|---|---|---|---|---|---|
+| P1 | `n_lines_held` shared the `n_` prefix of the claim-count columns, so the experiment filter and the harness's `hide_target` both removed it | Reading the feature filter while preparing TabM | The feature was never used by any model before 2026-10-18 | Renamed `lines_held` in `features.py`; tested (no gain) and excluded from LightGBM; TabM uses it | fixed |
+| P2 | The credibility encoder's cross-fitting folds were unseeded | The best model did not reproduce after a dataset rebuild | Same model scored 0.1332 to 0.1339 across four runs | `random_state=0`; best model re-baselined (0.1330) | fixed |
+| P3 | On the run that rebuilds the dataset cache, `harness.dataset()` returns the in-memory frame, whose categorical columns differ from the parquet round-trip; the target encoder then crashes | First harness run after the P1 rename | Loud crash, never a wrong score; every later run reads the cache and works | Workaround: run again. Fix (return `pd.read_parquet(path)` after writing) waits for the next frozen-file change, because it changes the dataset fingerprint that the TabM predictions are tagged with | open |

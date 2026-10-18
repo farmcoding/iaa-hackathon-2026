@@ -25,6 +25,12 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
 ]
+# TabM on Apple Metal; installed in a separate venv (~/.cache/iaa-gpu) to keep the loop's
+# environment small. Approved by the owner 2026-10-18.
+gpu = [
+    "torch==2.14.1",
+    "tabm==0.0.3",
+]
 
 [build-system]
 requires = ["hatchling"]
