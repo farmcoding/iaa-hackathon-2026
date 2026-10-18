@@ -34,14 +34,14 @@ SEEDS = (0, 1, 2)
 PARAMS = {
     "objective": "tweedie",
     "tweedie_variance_power": 1.1,
-    "learning_rate": 0.05,
-    "num_leaves": 31,
-    "min_data_in_leaf": 500,
+    "learning_rate": 0.03,
+    "num_leaves": 15,
+    "min_data_in_leaf": 2000,
     "feature_fraction": 0.8,
     "bagging_fraction": 0.8,
     "bagging_freq": 1,
     "lambda_l2": 1.0,
-    "n_estimators": 600,
+    "n_estimators": 1200,
     "verbose": -1,
     "seed": 0,
 }
