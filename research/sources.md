@@ -50,7 +50,55 @@ summaries.
 
 ## R: Ron Richman and co-authors
 
-Pending (research agent still running).
+Verified joint work (2020-2026):
+
+| Co-authors | Paper | Link |
+|---|---|---|
+| Wüthrich | LocalGLMnet: interpretable deep learning for tabular data (2021, Brian Hey Prize) | arXiv 2107.11059 |
+| Wüthrich | Nagging predictors (Risks 2020) | Risks 8(3) |
+| Wüthrich | ICEnet: smoothness and monotonicity for neural nets (Annals of Actuarial Science 2024) | arXiv 2305.08807 |
+| Wüthrich | LASSO regularisation within LocalGLMnet (2022) | |
+| Scognamiglio, Wüthrich | The Credibility Transformer (2024) | arXiv 2409.16653 |
+| Padayachy, Scognamiglio, Wüthrich | In-context learning enhanced Credibility Transformer (2025, rev. 2026) | arXiv 2509.08122 |
+| Lindholm, Tsanakas, Wüthrich | Multi-task network for discrimination-free insurance prices (ASTIN Bulletin 2022) | arXiv 2207.02799 |
+| Wüthrich, Avanzi, Lindholm, Maggi, Mayer, Schelldorfer, Scognamiglio | AI Tools for Actuaries (lecture notes, 2025) | SSRN 5162304 |
+| (solo) | Scaling laws, tabular data and actuarial ratemaking models (2026) | arXiv 2609.03106 |
+
+Corrections to common attributions: CANN is Wüthrich & Merz ("Yes, we CANN!", ASTIN
+Bulletin 2019), not Richman. Isotonic recalibration and the balance property are
+Wüthrich & Ziegel (Scand. Actuarial J. 2024, arXiv 2301.02692), not Richman. No joint
+pricing paper with Balona, Ferrario or Merz was found.
+
+- R1. Credibility Transformer: a credibility token blends a portfolio prior with the
+  risk's own representation inside attention (Bühlmann-Straub logic). On freMTPL2freq
+  the ensemble improves out-of-sample Poisson deviance only slightly (23.717 vs 23.726
+  x 10^-2). No public code.
+- R2. The in-context-learning extension handles unseen categorical levels (for example
+  a new vehicle model) from a context batch of similar risks without retraining; it
+  speaks directly to Part 2. No public code.
+- R3. CANN: GLM in a skip connection, network learns the residual. Re-implemented here
+  as GLM linear predictor = LightGBM init_score.
+- R4. Practical CPU analogues: credibility-shrunk categorical encodings and offset
+  transfer from the Part 1 model (CANN used as a credibility prior).
+- R5. Wüthrich & Ziegel: isotonic recalibration restores auto-calibration; a log-link
+  GBM does not satisfy the balance property by construction, which is why the level
+  anchoring step exists.
+- R6. Nagging predictors: portfolio-level stability after about 20 seeds, policy level
+  sometimes hundreds.
+- R7. Validation framing: Murphy decomposition of deviance into uncertainty,
+  discrimination and miscalibration (Fissler, Lorentzen, Mayer, arXiv 2202.12780;
+  Brauer, Menzel, Wüthrich, arXiv 2510.04556, model monitoring with Gini and
+  deviance decomposition).
+- Code: no official repos for LocalGLMnet, ICEnet, Credibility Transformer. The
+  ActuarialDataScience tutorials repo has no licence file, so its code is not reused.
+  TabPFN v2 carries a custom licence and is out of scope. LocalGLMnet, ICEnet and the
+  Credibility Transformer need PyTorch and exceed the 5-minute budget; cited as
+  rationale, not run.
+
+Part 2 plan from this work: (a) offset transfer, the Part 1 model's log prediction as
+init_score for a small residual GBM on the new market; (b) Bühlmann-Straub shrinkage of
+new-market segment factors toward developed-market factors, weight e/(e+k);
+(c) shrunk encodings that fall back to the mean for unseen levels.
 
 ## S: Standards and governance
 
