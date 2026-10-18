@@ -32,7 +32,8 @@ or the scorer; those are actuarial assumptions owned by the human.
 4. Do not run anything. You have no shell; the driver runs the frozen harness on your
    change after you finish, appends the result to `results.tsv` and commits or
    reverts. You will see the outcome in `results.tsv` on the next iteration, so read
-   the code carefully: a crash costs an iteration. Check column names against
+   the code carefully: a crash costs an iteration. Runs marked `keep_owner` are human
+   decisions (e.g. monotone constraints): build on them, don't remove them. Check column names against
    `src/iaa/features.py` and the contract in the experiment docstring.
 5. Finish with a final message whose first line is exactly:
    HYPOTHESIS: <what you are testing and why, one line, cite the backlog item or run>
@@ -45,8 +46,8 @@ iteration is logged as a violation.
 
 ## Rules
 
-- Time budget: the harness marks a run `over_budget` above 900 seconds (the baseline
-  takes about 150). Seed-bag
+- Time budget: the harness marks a run `over_budget` above 1800 seconds (the current
+  model takes about 230). Seed-bag
   (`SEEDS`) every model; single-seed noise is about 0.0026, bigger than most gains.
 - Keep rule (applied by the harness): mean fold D² must beat the best kept run by more
   than 0.002 and the worse fold must not fall by more than 0.002.

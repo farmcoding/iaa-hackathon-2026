@@ -26,6 +26,7 @@ from iaa import data, features, score, target, ultimate
 
 CACHE = data.ROOT / "data" / "cache"
 RESULTS = data.ROOT / "results.tsv"
+PREDS = CACHE / "preds"  # per-run validation predictions for lift charts (gitignored)
 SUBMISSIONS = data.ROOT / "submissions"
 FROZEN = ["data.py", "target.py", "ultimate.py", "features.py", "score.py", "harness.py"]
 TARGET_COLS_PREFIX = ("cost_", "n_", "ult_", "comp_")
@@ -130,7 +131,8 @@ def _commit() -> str:
 def best_kept() -> dict | None:
     if not RESULTS.exists():
         return None
-    rows = [r for r in csv.DictReader(RESULTS.open(), delimiter="\t") if r["verdict"] == "keep"]
+    kept = ("keep", "keep_owner")
+    rows = [r for r in csv.DictReader(RESULTS.open(), delimiter="\t") if r["verdict"] in kept]
     return max(rows, key=lambda r: float(r["primary"])) if rows else None
 
 
@@ -144,16 +146,21 @@ def verdict(res: dict, cfg: dict) -> str:
     return "keep" if better and stable else "discard"
 
 
-def validate(description: str, module: str = "iaa.experiment", log: bool = True) -> dict:
+def validate(
+    description: str, module: str = "iaa.experiment", log: bool = True, owner_keep: bool = False
+) -> dict:
     cfg = ultimate.load_config()
     df = dataset()
     exp = importlib.import_module(module)
     t0 = time.time()
     res: dict = {}
+    run_id = datetime.now().strftime("%Y%m%dT%H%M%S")
+    saved = []
     for name, fold in cfg["harness"]["folds"].items():
         tr, va = split(df, fold["train"], fold["valid"], cfg)
         pred = check_predictions(exp.fit_predict(tr, hide_target(va)), len(va))
         va = va.assign(pred=pred, y=va["y_ult"])
+        saved.append(va[["row_id", "line", "exposure", "y", "pred"]].assign(fold=name))
         card = score.scorecard(va)
         res[f"d2_{name}"] = card["d2"]
         if name == "B":
@@ -167,8 +174,14 @@ def validate(description: str, module: str = "iaa.experiment", log: bool = True)
     res["primary"], res["min_fold"] = float(np.mean(folds)), float(np.min(folds))
     if res["seconds"] > cfg["harness"]["time_budget_seconds"]:
         res["verdict"] = "over_budget"
+    elif owner_keep:
+        res["verdict"] = "keep_owner"  # human decision, recorded in assumptions_log.md
     else:
         res["verdict"] = verdict(res, cfg)
+    res["run_id"] = run_id
+    if log:
+        PREDS.mkdir(parents=True, exist_ok=True)
+        pd.concat(saved).to_parquet(PREDS / f"{run_id}.parquet")
     res.update(
         timestamp=datetime.now().isoformat(timespec="seconds"),
         commit=_commit(),
@@ -212,11 +225,12 @@ def main() -> None:
     ap.add_argument("--final", action="store_true")
     ap.add_argument("--module", default="iaa.experiment")
     ap.add_argument("--no-log", action="store_true")
+    ap.add_argument("--owner-keep", action="store_true", help="human decision to keep")
     a = ap.parse_args()
     if a.final:
         final(a.description, a.module)
     else:
-        validate(a.description, a.module, log=not a.no_log)
+        validate(a.description, a.module, log=not a.no_log, owner_keep=a.owner_keep)
 
 
 if __name__ == "__main__":

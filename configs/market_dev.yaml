@@ -38,7 +38,8 @@ harness:
     A: {train: [2021, 2022], valid: 2023}
     B: {train: [2021, 2022, 2023], valid: 2024}
   final: {train: [2021, 2022, 2023, 2024], predict: 2025}
-  time_budget_seconds: 900
+  # doubled 2026-10-18 (owner): heavier experiments (GLM+GBM, peril models, wider bags)
+  time_budget_seconds: 1800
   # keep rule: mean fold D2 must beat the best kept run by more than the seed noise
   # floor, and the worse fold must not fall by more than the floor
   # measured 2026-10-18: single-seed sd 0.0026; experiments bag 3 seeds (sd ~0.0015)

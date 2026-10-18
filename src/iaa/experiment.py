@@ -30,6 +30,19 @@ NON_FEATURES = {
     "line",
     "exposure",
 }
+# Owner decision 2026-10-18 (Karl): monotone constraints adopted for defensible,
+# portable relativities even though the score effect is inside seed noise. Adding
+# missed_payments_12m and sum_insured cost 0.0008 (worse fold -0.0026), so they are left
+# unconstrained.
+# +1 = cost may only rise with the feature, -1 = only fall. See assumptions_log.md.
+MONOTONE = {
+    "voluntary_excess": -1,
+    "compulsory_excess": -1,
+    "ncb_years": -1,
+    "licence_points": 1,
+    "flood_zone": 1,
+    "prior_claims_5y": 1,
+}
 SEEDS = (0, 1, 2)
 PARAMS = {
     "objective": "tweedie",
@@ -64,7 +77,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         # than most real improvements, so every model is an average over SEEDS
         rate = np.zeros(len(va))
         for seed in SEEDS:
-            model = lgb.LGBMRegressor(**{**PARAMS, "seed": seed})
+            mono = [MONOTONE.get(c, 0) for c in cols]
+            model = lgb.LGBMRegressor(
+                **{**PARAMS, "seed": seed},
+                monotone_constraints=mono,
+                monotone_constraints_method="advanced",
+            )
             # rate target with exposure weight
             model.fit(tr[cols], tr["y"] / tr["exposure"], sample_weight=tr["exposure"])
             rate += model.predict(va[cols]) / len(SEEDS)
