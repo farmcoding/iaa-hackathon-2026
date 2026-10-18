@@ -47,6 +47,7 @@ constraints (owner keep).
 | 2.13 | CatBoost Tweedie (variance_power 1.1-1.5, monotone constraints, native categoricals) as a bake-off against LightGBM per line, then as a blend member | Different tree-building and categorical handling; native ordered target statistics | Small gain in a blend | Research Part B (approved 5.1) | open |
 | 2.14 | XGBoost reg:tweedie as a second challenger and blend member | Community default for this metric | Small gain in a blend | Research Part D (approved 5.2) | open |
 | 2.15 | Explainable Boosting Machine (tweedie_deviance power 1.5) per line: score alone and as a blend member | Interpretable model with near-GBM accuracy; governance evidence | Neutral alone, small gain blended | Research Part B (approved 5.4) | open |
+| 2.16 | Property lines (buildings, contents) less regularised than motor: per-line num_leaves and min_data_in_leaf, e.g. 31 leaves and min_data 500 for property only | TabM (a neural net) beats LightGBM on buildings and contents on both folds (fold A buildings 0.103 vs 0.084), so the property trees are probably over-regularised; the current settings were tuned on the pooled score | Gain on property lines, motor unchanged | TabM go/no-go 2026-10-18 | open |
 | 2.12 | Speed: build each line's lgb.Dataset once per fold and reuse across seeds | Binning is a large share of run time | Same score, faster | Advisor review | open |
 
 ## Tier 3: OWNER track (human-run; changes the frozen target or the evaluation)
