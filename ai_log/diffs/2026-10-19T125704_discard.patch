@@ -1,0 +1,68 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3df5eb0..25a47d1 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -17,6 +17,7 @@ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
++from sklearn.linear_model import TweedieRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
+ NON_FEATURES = {
+@@ -103,6 +104,38 @@ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+     return x
+ 
+ 
++# backlog 2.7: sklearn GLM as a third property blend member, program.md's stated solver
++# (newton-cholesky, not lbfgs). The only prior attempt (results.tsv `760ab72`) blew up
++# (contents fold B D2 -180) because an out-of-time valid row pushed the linear predictor
++# far outside the train range with no guard; `reports/reviews/2026-10-19_cann.md` hit the
++# same failure mode on a GLM blend and fixed it by clipping to the train range, which
++# `_glm_rate` does below.
++def _glm_design(
++    x: pd.DataFrame, num_cols: list[str], med: pd.Series, mu: pd.Series, sd: pd.Series
++) -> np.ndarray:
++    cat_cols = [c for c in x.columns if isinstance(x[c].dtype, pd.CategoricalDtype)]
++    d = pd.get_dummies(x, columns=cat_cols, dummy_na=True, drop_first=True)
++    d[num_cols] = ((d[num_cols].fillna(med) - mu) / sd).clip(-5, 5)
++    return d.to_numpy(dtype=float)
++
++
++def _glm_rate(
++    tr_x: pd.DataFrame, va_x: pd.DataFrame, target: pd.Series, weight: pd.Series, power: float
++) -> np.ndarray:
++    num_cols = [c for c in tr_x.columns if not isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
++    med, mu = tr_x[num_cols].median(), tr_x[num_cols].mean()
++    sd = tr_x[num_cols].std().replace(0, 1)
++    design_tr = _glm_design(tr_x, num_cols, med, mu, sd)
++    design_va = _glm_design(va_x, num_cols, med, mu, sd)
++    model = TweedieRegressor(power=power, link="log", solver="newton-cholesky", max_iter=300)
++    model.fit(design_tr, target, sample_weight=weight)
++    # guard against exactly the blow-up above: an out-of-time row's one-hot/standardised
++    # design can sit far outside train, and exp(eta) then dwarfs every other prediction
++    # in `_anchor`'s weighted mean, crushing the whole line toward zero.
++    cap = target.max() * 3
++    return np.clip(model.predict(design_va), 0.0, cap)
++
++
+ # owner 2026-10-19 (Karl): fields without a rating rationale on a line. written_premium is
+ # the incumbent's price, an output of someone else's tariff, so no line rates on it (motor
+ # renewal premium also carries experience re-rating on claims reported after renewal).
+@@ -222,8 +255,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            rate_target = tr["y"] / tr["exposure"]
++            lgbm_rate = bag(rate_target, tr["exposure"])
++            glm_rate = _glm_rate(
++                tr_x, va_x, rate_target, tr["exposure"], PARAMS["tweedie_variance_power"]
++            )
++            rate = (
++                0.425 * lgbm_rate + 0.425 * ebm_rate(rate_target, tr["exposure"]) + 0.15 * glm_rate
++            )
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
