@@ -167,6 +167,10 @@ def best_kept(cfg: dict | None = None) -> dict | None:
         for r in csv.DictReader(RESULTS.open(), delimiter="\t")
         if r["verdict"] in kept and r["timestamp"] not in superseded
     ]
+    # an owner keep re-bases the model on purpose (an admissibility or assumption change can
+    # lower the score), so the bar is the best keep from the latest owner keep onward
+    owner = [i for i, r in enumerate(rows) if r["verdict"] == "keep_owner"]
+    rows = rows[owner[-1] :] if owner else rows
     for r in rows:
         r["_primary"] = primary_of({"A": float(r["d2_A"]), "B": float(r["d2_B"])}, cfg)
     return max(rows, key=lambda r: r["_primary"]) if rows else None

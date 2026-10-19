@@ -104,11 +104,13 @@ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
 
 
 # owner 2026-10-19 (Karl): fields without a rating rationale on a line. written_premium is
-# the incumbent's price: on property the other fields explain 93-97% of it and dropping it
-# costs nothing measurable; licence_points is a driving record stored on the customer.
-# Motor keeps the address and weather fields: hail and flood drive its glass/hail and own
-# damage perils. reports/reviews/2026-10-19_features.md
+# the incumbent's price, an output of someone else's tariff, so no line rates on it (motor
+# renewal premium also carries experience re-rating on claims reported after renewal).
+# licence_points is a driving record stored on the customer. Motor keeps the address and
+# weather fields: hail and flood drive its glass/hail and own damage perils.
+# reports/reviews/2026-10-19_features.md
 LINE_DROP = {
+    "motor": {"written_premium"},
     "buildings": {"written_premium", "licence_points"},
     "contents": {"written_premium", "licence_points"},
 }

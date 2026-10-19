@@ -67,15 +67,22 @@ def toy(tmp_path, monkeypatch):
 
 
 def test_best_kept_ignores_blends_and_discards(toy):
+    toy["harness"]["superseded"] = ["t3"]
     assert harness.best_kept(toy)["timestamp"] == "t2"
 
 
 def test_superseded_run_leaves_the_comparison_bar(toy):
-    toy["harness"]["superseded"] = ["t2"]
+    toy["harness"]["superseded"] = ["t3"]
+    assert harness.best_kept(toy)["timestamp"] == "t2"
+
+
+def test_owner_keep_rebases_the_bar(toy):
+    # t3 is an owner keep scoring below t2: the bar is the model now in use
     assert harness.best_kept(toy)["timestamp"] == "t3"
 
 
 def test_keep_rule_needs_both_margin_and_stability(toy):
+    toy["harness"]["superseded"] = ["t3"]  # compare against t2 (min fold 0.13)
     best = harness.best_kept(toy)["_primary"]
     better = {"primary": best + 0.0021, "min_fold": 0.13}
     assert harness.verdict(better, toy) == "keep"

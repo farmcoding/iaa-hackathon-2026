@@ -672,6 +672,91 @@ def fig_groups(study: dict) -> go.Figure:
     return fig
 
 
+LINE_NAMES = {"motor": "Motor", "buildings": "Buildings", "contents": "Contents"}
+
+REJECTED = """
+| Engineered or tested predictor | Result (validation score) | Run |
+|---|---|---|
+| Peril-mechanics interactions (subsidence, escape of water, flood) | 0.1331, below the model then in use | ledger 2026-10-18 10:01 |
+| Written premium ÷ line-year mean (drift-free premium) | 0.1336, inside noise | 10-18 11:09 |
+| Lines a customer holds (cross-line) | 0.1330, no gain | 10-18 11:39 |
+| Exposure as a predictor (log exposure) | 0.1309, worse | run 40 |
+| Written premium ÷ sum insured | 0.1327, worse | run 42 |
+| Property interaction bundle (sum insured bands, construction × age, flood × rainfall, soil × dry summer, excess ÷ sum insured) | worse than dropping premium | features review, 19 Oct |
+| Weather split into address climate mean plus the year's anomaly | 0.1390, inside noise | 10-19 01:48 |
+| Duplicate ages and build year removed | 0.1392, inside noise | 10-19 01:27 |
+| Customer claim history split into same-line and other-line | crashed on 19 Oct; queued again | backlog 2.45 |
+"""
+
+
+def models_section(root: Path) -> str:
+    path = root / "data" / "cache" / "model_card.json"
+    if not path.exists():
+        path = root / "reports" / "features" / "model_card.json"
+    if not path.exists():
+        return md("_The model card is being computed (scripts/model_card.py)._")
+    card = json.loads(path.read_text())
+    out = [
+        md(f"""Each line has its own model. Predictors enter as recorded, except that categories with more than 15 levels (vehicle make and model, occupation, previous insurer) are replaced by a credibility-weighted average cost for the level, fitted out of fold. Numbers below come from the current model fitted on 2021-23 and scored on 2024 (fold B); pooled D² {card["pooled_d2"]:.4f}.
+
+**How to read the lift columns.** Each predictor is shuffled across the 2024 policies and the line's predictions are rebuilt through the same models. *D² lost* is how much of the line's predictive power disappears without that predictor's information; *share* is that loss as a percentage of the line's D². The line's total level is fixed, so this measures how well the predictor separates cheap from expensive risks. A negative value means shuffling did not hurt: the predictor adds nothing measurable. Predictors that carry the same information (customer age and policyholder age, for example) share credit, so each can look small while the pair matters.""")
+    ]
+    for line, info in card["lines"].items():
+        feats = info["features"]
+        motor = line == "motor"
+        head = "<tr><th>#</th><th>Predictor</th><th>D² lost</th><th>Share of line D²</th><th>Gini lost</th>"
+        head += "<th>BI frequency part</th><th>Other perils part</th>" if motor else ""
+        head += "</tr>"
+        rows = []
+        for i, f in enumerate(feats, 1):
+            name = html.escape(f["feature"]) + (
+                " <span class=note>(credibility-encoded)</span>" if f.get("encoded") else ""
+            )
+            r = (
+                f"<tr><td class=num>{i}</td><td>{name}</td><td class=num>{f['d2_drop']:+.4f}</td>"
+                f"<td class=num>{f['d2_drop'] / info['d2']:+.1%}</td><td class=num>{f['gini_drop']:+.4f}</td>"
+            )
+            if motor:
+                r += f"<td class=num>{f.get('d2_drop_bi', float('nan')):+.4f}</td><td class=num>{f.get('d2_drop_other', float('nan')):+.4f}</td>"
+            rows.append(r + "</tr>")
+        useful = sum(f["d2_drop"] > 0.0005 for f in feats)
+        out.append(
+            f"<h3>{LINE_NAMES[line]}: {html.escape(info['components'])}</h3>"
+            + md(
+                f"Within-line D² {info['d2']:.4f}, Gini {info['gini']:.3f}. {info['n_features']} predictors; {useful} each lose more than 0.0005 of D² when shuffled."
+            )
+            + f"<table>{head}{''.join(rows)}</table>"
+        )
+        if info.get("ebm_terms"):
+            terms = info["ebm_terms"][:20]
+            trs = "".join(
+                f"<tr><td>{html.escape(t['term'])}</td><td>{'interaction' if ' & ' in t['term'] else 'main effect'}</td><td class=num>{t['importance']:.2f}</td></tr>"
+                for t in terms
+            )
+            out.append(
+                md(
+                    f"**{LINE_NAMES[line]} EBM, top 20 terms** (the EBM is additive, so each term is a curve or a two-way table that can be read directly; importance is the average absolute change it makes to the predicted rate):"
+                )
+                + f"<table><tr><th>Term</th><th>Type</th><th>Importance</th></tr>{trs}</table>"
+            )
+    unused = card.get("unused", [])
+    trs = "".join(
+        f"<tr><td>{html.escape(u['column'])}</td><td>{html.escape(', '.join(u['lines']))}</td><td>{html.escape(u['reason'])}</td></tr>"
+        for u in unused
+        if not u["column"].startswith(("cost_", "n_", "ult_", "comp_"))
+    )
+    out.append(
+        "<h3>Available but not used</h3>"
+        + md(
+            "Every column in the data that does not reach a line's model, and why. Claim outcome columns for the row (counts, costs and developed costs by peril) are the target side and are always hidden; they are not listed."
+        )
+        + f"<table><tr><th>Column</th><th>Lines</th><th>Reason</th></tr>{trs}</table>"
+        + "<h3>Engineered predictors tested and not adopted</h3>"
+        + md(REJECTED)
+    )
+    return "".join(out)
+
+
 def section(sid: str, title: str, body: str) -> str:
     return f'<section id="{sid}"><h2>{html.escape(title)}</h2>{body}</section>'
 
@@ -703,7 +788,7 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
 - The model has improved from a validation score of **{base["score"]:.4f}** to **{best["score"]:.4f}** over {n_runs} supervised experiments. On the public leaderboard it moved from 0.1060 to {max(lb):.4f} (13th on 19 October; the leader is at about 0.130).
 - **Current model:** gradient-boosted trees (LightGBM) for every line, with an Explainable Boosting Machine (EBM, a glass-box additive model) averaged in on buildings and contents. Motor bodily injury is priced on claim counts with a separate severity level. The EBM blend was found and kept by the loop overnight on 18 October and passed the fresh-seed rerun; it scored 0.1233 on the public leaderboard on 19 October.
 - **The neural net (TabM) no longer adds anything:** with the EBM in place, blending TabM adds +0.0001 to +0.0015 depending on its seed, inside the noise floor. It is not used for Part 1.
-- **Owner decisions on 19 October** (each scored and logged in the assumptions log): email domain removed (it is noise, unrelated to any other customer field); written premium and licence points removed from buildings and contents (no rating rationale there, and no measurable cost); the one 11.9m motor bodily injury claim capped at 1m with the expected excess loaded from a fitted Pareto tail, instead of assuming a claim that size every four years; buildings escape-of-water trend to rise to 9% (approved; being scored).
+- **Owner decisions on 19 October** (each scored and logged in the assumptions log): email domain removed (it is noise, unrelated to any other customer field); licence points removed from buildings and contents (no rating rationale there); the one 11.9m motor bodily injury claim capped at 1m with the expected excess loaded from a fitted Pareto tail, instead of assuming a claim that size every four years; buildings escape-of-water trend raised to 9%; written premium removed from every line, because it is the incumbent's price, not a characteristic of the risk.
 - Local validation predicts the leaderboard well on the later validation year (fold B) and overstates gains on the earlier one (fold A). The score weights fold B twice for that reason. Why two out-of-time folds, and what they cannot test, is question Q19.
 - Data problems found and treated: exposure recorded in days on about 0.4% of rows, a field that leaks claim information in the training data only, light motor bodily injury case reserves, and the 11.9m claim. Orphan claims (loss before the policy's first row) are 0.23% of cost and immaterial.
 - An AI agent proposes one change at a time; a frozen harness scores it; a fixed rule keeps or reverts it, and a candidate keep must pass again on fresh seeds; nothing reaches the leaderboard without the actuary's sign-off. The loop stopped itself at 08:00 on 19 October when its ideas ran out; three independent reviews (claims, variables, the failed CANN model) added new ones (reports/reviews/).
@@ -904,6 +989,7 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
             ("data", "Data"),
             ("ultimate", "Ultimate cost"),
             ("progress", "Progress"),
+            ("models", "Models"),
             ("variables", "Variables"),
             ("tested", "Ideas tested"),
             ("next", "Next"),
@@ -924,6 +1010,7 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
 {section("data", "The data, sample and validation approach", data_body)}
 {section("ultimate", "Getting the target right: developing claims to ultimate", ult_body)}
 {section("progress", "Experiment progress", progress_body)}
+{section("models", "The models: predictors and the lift each adds", models_section(root))}
 {section("variables", "Rating variables: individual and combined predictive power", variables)}
 {section("tested", "Ideas tested so far", tested)}
 {section("next", "What comes next, and why", md(backlog))}

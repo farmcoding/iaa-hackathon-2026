@@ -1,0 +1,12 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index b5cd2ee..9c36e38 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -19,6 +19,7 @@ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+
++
+ NON_FEATURES = {
+     "row_id",
+     "policy_id",
