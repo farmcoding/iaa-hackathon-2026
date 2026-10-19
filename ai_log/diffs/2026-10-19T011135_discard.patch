@@ -1,0 +1,18 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..8771e3b 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -35,6 +35,13 @@ NON_FEATURES = {
+     "exposure",
+     # owner 2026-10-18: tested once restored (primary 0.1334 vs 0.1339), no gain
+     "lines_held",
++    # backlog 2.22: exact duplicates (Spearman 1.00/-1.00, docs/pipeline_review.md)
++    # that split importance across a family and feed the spurious motor interaction
++    # years_licensed x customer_age; keep the family representative instead.
++    "customer_age",  # duplicate of driver_age (motor)
++    "policyholder_age",  # duplicate of customer_age/driver_age (buildings, contents)
++    "year_built",  # duplicate of property_age, inverted
++    "renewal_count",  # duplicate of customer_tenure
+ }
+ # Owner decision 2026-10-18 (Karl): monotone constraints adopted for defensible,
+ # portable relativities even though the score effect is inside seed noise. Adding
