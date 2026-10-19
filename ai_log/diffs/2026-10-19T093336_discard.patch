@@ -1,0 +1,20 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index b5cd2ee..3b73a97 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -82,11 +82,13 @@ PARAMS = {
+ # backlog 2.15: EBM blended with LightGBM on buildings and contents. results.tsv
+ # b54959b/2abf7b5 ran 1884-1889s against the 1800s budget; halving outer_bags (2->1,
+ # EBM's internal bagging) only saved 5s, so the external SEEDS loop was the cost. EBM
+-# now fits once, on SEEDS[0], with outer_bags back to 2 for internal diversity.
++# now fits once, on SEEDS[0]. backlog 2.46: EBM parallelises over outer_bags only (one
++# core per bag), so with outer_bags=2 most of the machine sat idle; raised to 8 for more
++# internal bagging diversity at little extra wall time.
+ EBM_PARAMS = {
+     "objective": "tweedie_deviance:variance_power=1.5",
+     "interactions": 0,
+-    "outer_bags": 2,
++    "outer_bags": 8,
+ }
+ 
+ 
