@@ -35,6 +35,10 @@ NON_FEATURES = {
     "exposure",
     # owner 2026-10-18: tested once restored (primary 0.1334 vs 0.1339), no gain
     "lines_held",
+    # owner 2026-10-19 (Karl): not an admissible rating factor. Review found it independent
+    # of every other customer field (Cramer's V < 0.01) and its relativities flip rank
+    # between years: noise. reports/reviews/2026-10-19_features.md section 3
+    "email_domain",
 }
 # Owner decision 2026-10-18 (Karl): monotone constraints adopted for defensible,
 # portable relativities even though the score effect is inside seed noise. Adding
