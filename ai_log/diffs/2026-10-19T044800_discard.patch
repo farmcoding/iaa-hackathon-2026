@@ -1,0 +1,17 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..417e7a4 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -35,6 +35,12 @@ NON_FEATURES = {
+     "exposure",
+     # owner 2026-10-18: tested once restored (primary 0.1334 vs 0.1339), no gain
+     "lines_held",
++    # backlog 2.31: fairness-sensitive drop, measured across all three lines (ages
++    # stay). This run is a governance measurement, not expected to raise the score.
++    "email_domain",
++    "credit_band",
++    "occupation",
++    "marital_status",
+ }
+ # Owner decision 2026-10-18 (Karl): monotone constraints adopted for defensible,
+ # portable relativities even though the score effect is inside seed noise. Adding
