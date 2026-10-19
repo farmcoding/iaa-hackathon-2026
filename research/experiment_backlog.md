@@ -38,6 +38,17 @@ ledger timestamp) or from the saved patch where one exists.
 | 0.4 | Re-test 2.17 (property part): drop the customer and marketing fields on buildings and contents | 15:34 run: 0.13442, +0.0014 vs the seeded champion | Inside the floor; confirm or close | ledger 2026-10-18T15:34:58 | open |
 | 0.5 | Re-test the wider seed bag (8 seeds, feature and bagging fractions varied per seed), seeds derived from SEED_OFFSET | 11:27 run: 0.13409 on the unseeded encoder | Small, steadier gain | ledger 2026-10-18T11:27:18 | open |
 
+## Tier 0b: from the 2026-10-19 reviews (do these first, in order)
+
+Champion: LightGBM + EBM on property (0.13890). Reviews: reports/reviews/2026-10-19_*.md.
+
+| # | Idea | Why | Expected | Source | Status |
+|---|---|---|---|---|---|
+| 2.46 | EBM `outer_bags` 2 to 8 (internal bagging), same blend | EBM runs one core per outer bag, so the machine was half idle overnight; more bags should cost little wall time and steady the EBM member | Small gain, steadier | Overnight CPU check | open |
+| 2.45 | Split `hist_n_customer`/`hist_cost_customer` into same-line and cross-line components; test each | For buildings and contents, 64-67% of rows where customer history fires have a claim from another line behind it | Clarity; small gain either way | Features review 1.2 | open |
+| 2.47 | Property interactions to replace what premium carried: sum_insured bands, construction_type x property_age, flood_zone x rainfall_mm, soil_type x dry_summer_index, voluntary excess / sum_insured; add one family at a time on top of the champion | Karl 2026-10-19: premium reliance on buildings is problematic, prioritise alternatives. One bundled variant scored worse than dropping premium, so test families singly | Small gain at best | Features review 2.3 | open |
+| 2.7 | (above) GLM + GBM blend with sklearn GLMs | CANN-lite on sklearn now runs (0.13882); a GLM blend member is the remaining GLM idea | Small gain | CANN review | open |
+
 ## Tier 1: expected to move the score
 
 | # | Idea | Why | Expected | Source | Status |
@@ -54,10 +65,10 @@ ledger timestamp) or from the saved patch where one exists.
 | 2.1 | Out-of-fold credibility encoding for make_model, occupation, previous_insurer, region (`sklearn.preprocessing.TargetEncoder`, smooth="auto"), compared with native categorical handling | Thousands of levels; shrinkage toward the mean is credibility; unseen levels fall back to the mean (Part 2) | Small gain, better stability | R4; repos research (BSD-3) | kept: 0.1339 (fold B 0.1362); public 0.1191 |
 | 2.2 | Peril mechanics features: clay soil x trees_within_5m x dry_summer_index (subsidence); freezing_days x basement x property_age (escape of water); flood_zone x elevation x distance_to_river (flood) | UK peril mechanics; large-leaf GBMs miss sparse three-way interactions | Buildings and contents D² up | J5 | tried: below best |
 | 2.3 | Isotonic auto-calibration on an inner time split, then re-anchor | Each price band pays its own way | Small gain, calibration evidence | R5 (Wüthrich & Ziegel) | tried: 0.1347 vs 0.1339, inside noise |
-| 2.4 | CANN-lite: glum Tweedie GLM (main effects, offset log exposure) linear predictor as LightGBM init_score; predict exp(raw + eta) because predict() does not add init_score back | Explainable GLM base plus GBM residual; also the Part 2 transfer mechanism | Neutral to small gain | R3 (Wüthrich & Merz) | **blocked**: smoke-crashed three times (last 2026-10-18 15:35, no error text captured); owner to run its smoke test by hand before the loop retries |
+| 2.4 | CANN-lite: glum Tweedie GLM (main effects, offset log exposure) linear predictor as LightGBM init_score; predict exp(raw + eta) because predict() does not add init_score back | Explainable GLM base plus GBM residual; also the Part 2 transfer mechanism | Neutral to small gain | R3 (Wüthrich & Merz) | tested 2026-10-19 (owner, independent review): crashes were glum's OpenMP runtime clashing with LightGBM's (segfault). Rebuilt on sklearn GLMs: 0.13882 (A 0.1380 / B 0.1392) vs champion 0.13890, inside noise. Code: reports/reviews/2026-10-19_cann.md |
 | 2.5 | Wider seed bag (8-10 seeds, varied fractions, fewer rounds per seed) | Nagging predictors; seed sd 0.0026 | Small gain | R6 | tried: 0.1341, inside noise |
 | 2.6 | Per-line hyperparameters (leaves, min_data, power) instead of one set | Lines differ in size and tail | Small gain | Loop batch 1 | tried (min_data scaled by line size): below best |
-| 2.7 | GLM + GBM blend, weights fitted on an inner time split | Diversity | Small gain | K11 | open |
+| 2.7 | GLM + GBM blend, weights fitted on an inner time split; use sklearn GLMs (never glum, see program.md) | Diversity | Small gain | K11 | open |
 | 2.8 | Null-importance feature selection: drop features that do no better than a shuffled target | Noisy categoricals overfit | Stability | Repos research §3 | open |
 | 2.9 | Premium on-levelling: written_premium divided by line-year mean | written_premium drifts train to test | Stability | Data scan | tried: below best |
 | 2.10 | Customer-level cross-line features: total sum insured, lines held x credit band | Cross-line risk signal | Small gain | Data model | tried (lines held): below best |
@@ -122,6 +133,19 @@ From the review of the pipeline against the best-practice pricing document (full
 | 3.33 | Re-prioritise the level-only submission (3.8): re-levelling fold B to actual totals adds 0.0003; use the slot for a no-premium or confirmation submission unless the 3.27 backtest shows a large level error | Low diagnostic value per slot | One submission saved | This review | open |
 | 3.34 | History features as of the row start: counts only, or cost capped at the line's 95th percentile | `hist_cost_*` uses incurred valued at 31 Dec 2024 for every training row | Train and test history comparable | This review | open (Part 2) |
 | 3.35 | Charter and feature registry (role, family, availability, competition and real-world admissibility, fairness flag) | Stages 0-1 have no artefact | Report material; Part 2 setup | Document stage 0 | open |
+
+## Tier 3d: OWNER track from the 2026-10-19 reviews
+
+| # | Idea | Why | Expected | Source | Status |
+|---|---|---|---|---|---|
+| 3.36 | Policy-grouped K-fold (GroupKFold on policy_id, 5 folds, years pooled, on-levelled targets) as a relativity-stability diagnostic for the champion and finalists | Out-of-time folds score few rows and are noisy; grouped folds score every row once without renewal leakage | Diagnostic only, never the keep gate (mixes years; says nothing about level or trend) | Q19 | open |
+| 3.37 | Motor BI large loss: cap at 1m and load expected excess from a Pareto tail instead of the one realised 11.9m claim (AY2023, open) | In the level the claim implies an 11.9m loss every four years (7% of BI). Tested 2026-10-19 in the model's level step: cap, no load 0.13884; cap + 3.1% Pareto load 0.13890 (A 0.13705 / B 0.13983); champion 0.13890. Fold B motor A/E 0.988 / 1.010 / 1.023 (champion / Pareto / no load) | Score-neutral; a judgement on expected large-loss cost | Claims review Q2 | tested, awaiting Karl's decision (Q20) |
+| 3.38 | Standing as-if-valuation backtest of development (project each year from its first diagonal, compare a year later) | 5 of 7 peril groups within 3%; BI plain chain ladder misses by 36.5%, freq_sev runs ~8% high as-if | Trust evidence for the report | Claims review Q3 | open |
+| 3.39 | Peril-specific trend for buildings escape of water | Water severity has run 8-12% a year since 2021; the pooled 6.5% understates it every year | Small level gain on buildings | Claims review Q3 | approved by Karl 2026-10-19, to implement |
+| 3.40 | Build delay CDFs and the BI severity base from the matched-claim population target.py uses (drops 410 orphan claims, 0.23% of cost) | Consistency; effect immaterial today (max 0.002 on any completion fraction) | None this week | Claims review Q1 | open (Part 2) |
+| 3.45 | Decide: customer claim history pooled across lines, or same-line only | Fairness and explainability of a cross-line factor (see 2.45) | Policy decision | Features review 1.2 | open |
+| 3.46 | Admissibility set (owner run 2026-10-19): drop premium on property, address hazard and weather on motor, licence_points on property | Karl: email and premium reliance problematic; none of these has a rating rationale on that line | Inside noise | Features review | tested, see results.tsv / Q21 |
+| 3.47 | Run the Cramer's V proxy test for every customer-level field inside the fairness script (3.29) | Email domain shown independent of all customer fields; other fields not yet checked | Report material | Features review 3.4 | open |
 
 ## Tier 4: GPU track (OWNER; ask before each run with run-time and quota estimate)
 

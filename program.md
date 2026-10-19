@@ -49,7 +49,7 @@ iteration is logged as a violation.
 ## Rules
 
 - Time budget: the harness marks a run `over_budget` above 1800 seconds (the current
-  model takes about 230). Seed-bag
+  model takes about 1,000 s, mostly the EBM fit). Seed-bag
   (`SEEDS`) every model; single-seed noise is about 0.0026, bigger than most gains.
 - Keep rule (applied by the harness): the primary score, a weighted mean of fold D²
   with fold B (score 2024) counted twice because it tracks the public leaderboard, must
@@ -78,9 +78,18 @@ iteration is logged as a violation.
   levels, thresholds or category lists from this market.
 - Prediction must be finite and non-negative for every valid row.
 - Use only open-source libraries already installed: lightgbm, catboost, xgboost,
-  interpret (EBM: `from interpret.glassbox import ExplainableBoostingRegressor`), glum,
+  interpret (EBM: `from interpret.glassbox import ExplainableBoostingRegressor`),
   scikit-learn, numpy, pandas. All were licence-checked and approved. Do not install
   packages or use the network.
+- Never import glum (or tabmat) in `experiment.py`: it loads its own OpenMP runtime next
+  to LightGBM's, and the process segfaults (exit 139) or hangs with no Python error.
+  For GLMs use scikit-learn (`TweedieRegressor`, `PoissonRegressor`, solver
+  `newton-cholesky`). Root cause found 2026-10-19, reports/reviews/2026-10-19_cann.md.
+- When re-applying a saved diff from `ai_log/diffs/`, carry over its imports too. The
+  driver lint-checks for undefined names before the smoke test and gives you one fix
+  attempt.
+- EBM parallelises over `outer_bags` only (one core per bag); with `outer_bags=2` most
+  of the machine sits idle.
 - CatBoost: pass `allow_writing_files=False` (otherwise it writes `catboost_info/` into
   the repo and the driver stops), and convert categorical NaN to a string such as
   `"missing"`. The smoke test allows 300 s on 50k rows per line across both folds and

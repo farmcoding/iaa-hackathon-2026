@@ -27,6 +27,7 @@ import torch
 from iaa import harness, score, ultimate
 
 P = 1.5
+SEED = 0  # set by --seed; seed 0 keeps the original file names
 OUT = Path.home() / ".cache" / "iaa-gpu" / "out"
 NON_FEATURES = {
     "row_id",
@@ -87,7 +88,7 @@ def fit_line(tr: pd.DataFrame, va: pd.DataFrame, epochs: int, device: str, log: 
     ]
     cats = [c for c in feats if isinstance(tr[c].dtype, pd.CategoricalDtype)]
     nums = [c for c in feats if c not in cats]
-    rng = np.random.default_rng(0)
+    rng = np.random.default_rng(SEED)
     hold = rng.random(len(tr)) < 0.05
     fit, es = tr[~hold], tr[hold]
     xn_f, xc_f = prep(fit, fit, nums, cats)
@@ -101,7 +102,7 @@ def fit_line(tr: pd.DataFrame, va: pd.DataFrame, epochs: int, device: str, log: 
     yf, wf = (fit["y"] / fit["exposure"]).to_numpy(np.float32), fit["exposure"].to_numpy(np.float32)
     ye, we = (es["y"] / es["exposure"]).to_numpy(np.float32), es["exposure"].to_numpy(np.float32)
     base = float(np.log(np.average(yf, weights=wf)))
-    torch.manual_seed(0)
+    torch.manual_seed(SEED)
     model = tabm.TabM.make(n_num_features=xn_f.shape[1], cat_cardinalities=card, d_out=1).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=2e-3, weight_decay=3e-4)
     Xn, Xc, Y, W = t(xn_f), t(xc_f, torch.long), t(yf), t(wf)
@@ -151,7 +152,10 @@ def main() -> None:
     ap.add_argument("--sample", type=int, default=0)
     ap.add_argument("--epochs", type=int, default=15)
     ap.add_argument("--lgbm-preds", default="")
+    ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()
+    global SEED
+    SEED = a.seed
     device = "mps" if torch.backends.mps.is_available() else "cpu"
     cfg = ultimate.load_config()
     if a.fold == "final":
@@ -159,7 +163,7 @@ def main() -> None:
     else:
         f = cfg["harness"]["folds"][a.fold]
         train_years, valid_year = f["train"], f["valid"]
-    tag = f"{a.fold}_{harness._fingerprint()}{'_sample' if a.sample else ''}"
+    tag = f"{a.fold}_{harness._fingerprint()}{'_sample' if a.sample else ''}{f'_s{a.seed}' if a.seed else ''}"
     OUT.mkdir(parents=True, exist_ok=True)
     report, frames = {"device": device, "fold": a.fold, "sample": a.sample, "lines": {}}, []
     t_all = time.time()

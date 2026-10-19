@@ -21,6 +21,7 @@ from pathlib import Path
 import markdown
 import numpy as np
 import pandas as pd
+import yaml
 import plotly.graph_objects as go
 from plotly.offline import get_plotlyjs
 from plotly.subplots import make_subplots
@@ -84,6 +85,42 @@ def md(text: str) -> str:
     return markdown.markdown(text, extensions=["tables"])
 
 
+NOISE_FLOOR = 0.002
+
+
+def why(r: pd.Series, best: float, best_min: float, delta: float) -> str:
+    """Plain-English reason for the verdict, re-derived with today's keep rule."""
+    v = r["verdict"]
+    if v == "keep":
+        conf = pd.to_numeric(r.get("confirm_primary"), errors="coerce")
+        tail = f"; fresh-seed rerun {conf:.4f}" if pd.notna(conf) else ""
+        return (
+            f"Beat the best by {delta:+.4f} without hurting either year{tail}"
+            if pd.notna(delta)
+            else "First kept run"
+        )
+    if v == "keep_owner":
+        return "Owner decision"
+    if v == "unconfirmed":
+        conf = pd.to_numeric(r.get("confirm_primary"), errors="coerce")
+        return f"Passed once, but the fresh-seed rerun scored {conf:.4f}, not enough to pass again"
+    if v == "over_budget":
+        return f"Ran {r['seconds']:.0f} s against the 1,800 s limit"
+    if v == "crash":
+        return "Code failed before scoring (error at the start of the hypothesis text)"
+    if v in ("blend_pass", "blend_fail"):
+        return "Owner blend, scored outside the loop"
+    if v == "discard" and pd.notna(delta):
+        if delta <= 0:
+            return f"Scored below the best ({delta:+.4f})"
+        if delta <= NOISE_FLOOR:
+            return f"Gain {delta:+.4f} is inside the {NOISE_FLOOR} seed-noise floor"
+        if pd.notna(best_min) and r["min_fold"] < best_min - NOISE_FLOOR:
+            return f"Worse year fell to {r['min_fold']:.4f} (best run's worse year {best_min:.4f})"
+        return "Clears today's bar; it failed the bar in force then (the retired 0.1339 best, or the old equal-weight rule)"
+    return ""
+
+
 def load_ledger(root: Path) -> pd.DataFrame:
     rows = list(csv.DictReader((root / "results.tsv").open(), delimiter="\t"))
     df = pd.DataFrame(rows)
@@ -106,12 +143,22 @@ def load_ledger(root: Path) -> pd.DataFrame:
     df["n"] = range(1, len(df) + 1)
     # primary on the current definition (fold B weighted twice)
     df["score"] = (df["d2_A"] + 2 * df["d2_B"]) / 3
-    best, deltas = np.nan, []
+    # owner-retired keeps (config harness.superseded) never set the bar
+    cfg = yaml.safe_load((root / "configs" / "market_dev.yaml").read_text())
+    superseded = set(cfg["harness"].get("superseded") or [])
+    best, best_min, deltas, reasons = np.nan, np.nan, [], []
     for _, r in df.iterrows():
         deltas.append(r["score"] - best if np.isfinite(best) and pd.notna(r["score"]) else np.nan)
-        if r["verdict"] in ("keep", "keep_owner") and pd.notna(r["score"]):
-            best = r["score"] if not np.isfinite(best) else max(best, r["score"])
+        reasons.append(why(r, best, best_min, deltas[-1]))
+        if (
+            r["verdict"] in ("keep", "keep_owner")
+            and pd.notna(r["score"])
+            and r["timestamp"] not in superseded
+        ):
+            if not np.isfinite(best) or r["score"] > best:
+                best, best_min = r["score"], r["min_fold"]
     df["delta"] = deltas
+    df["why"] = reasons
     df["family"] = df["description"].fillna("").map(family)
     return df
 
@@ -762,11 +809,11 @@ Every policy-period row is used; nothing is sampled away. A policy can appear in
     rows_html = "".join(
         f"<tr><td class=num>{r.n}</td><td><span class=badge style='background:{VERDICT.get(r.verdict, (MUTED, r.verdict))[0]}'>{VERDICT.get(r.verdict, (MUTED, r.verdict))[1]}</span></td>"
         f"<td class=num>{'' if pd.isna(r.score) else f'{r.score:.4f}'}</td><td class=num>{'' if pd.isna(r.delta) else f'{r.delta:+.4f}'}</td>"
-        f"<td>{html.escape(r.family)}</td><td>{html.escape(str(r.description))}</td></tr>"
+        f"<td>{html.escape(r.family)}</td><td>{html.escape(r.why)}</td><td>{html.escape(str(r.description))}</td></tr>"
         for r in df.itertuples()
     )
     tested = (
-        "<table><tr><th>Run</th><th>Outcome</th><th>Score</th><th>Change vs best</th><th>Approach</th><th>Hypothesis (as written by the agent or owner)</th></tr>"
+        "<table><tr><th>Run</th><th>Outcome</th><th>Score</th><th>Change vs best</th><th>Approach</th><th>Why</th><th>Hypothesis (as written by the agent or owner)</th></tr>"
         + rows_html
         + "</table>"
     )

@@ -67,8 +67,26 @@ for i in $(seq 1 "$ITER"); do
     desc="agent made no change"
   else
     verdict="pending"
-    desc=$(echo "$out" | grep -m1 '^HYPOTHESIS:' | sed 's/^HYPOTHESIS: *//' | tr '\t' ' ' | cut -c1-240)
+    desc=$(echo "$out" | grep -m1 '^HYPOTHESIS:' | sed 's/^HYPOTHESIS: *//' | tr '\t' ' ' | cut -c1-2000)
     [[ -z "$desc" ]] && desc="(no HYPOTHESIS line)"
+  fi
+  # Undefined names (a re-applied diff missing its import) cost eight iterations on
+  # 19 Oct; catch them in a second and give the agent one fix attempt.
+  if [[ "$verdict" == "pending" ]]; then
+    lint=$(ruff check --select F821 --output-format concise "$EXP" 2>&1)
+    if (( $? != 0 )); then
+      claude -p "Your edit to $EXP fails a lint check for undefined names:
+$lint
+Fix only these (usually a missing import at the top of the file). Change nothing else." \
+        "${PROFILE_ARGS[@]}" --permission-mode acceptEdits --allowedTools "${ALLOWED[@]}" \
+        --max-turns 8 --output-format text >/dev/null 2>&1
+      lint=$(ruff check --select F821 --output-format concise "$EXP" 2>&1)
+      if (( $? != 0 )); then
+        verdict="crash"
+        desc="UNDEFINED NAME ($(echo "$lint" | grep -m1 F821 | sed 's/.*F821 //' | cut -c1-120)): $desc"
+        printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv
+      fi
+    fi
   fi
   smoke_rc=0
   if [[ "$verdict" == "pending" ]]; then
@@ -82,6 +100,11 @@ for i in $(seq 1 "$ITER"); do
       err="timed out after 300 s on 50k rows per line"
     else
       err=$(grep -v -E "^\s*$|Warning|warn" "$LOG_DIR/last_run.txt" | tail -1 | tr '\t' ' ' | cut -c1-200)
+      if (( smoke_rc == 139 )); then
+        err="segmentation fault (exit 139), no Python traceback: often two OpenMP runtimes loaded together, see program.md"
+      elif (( smoke_rc > 128 )); then
+        err="killed by signal $(( smoke_rc - 128 )) (exit $smoke_rc)${err:+: $err}"
+      fi
       [[ -z "$err" ]] && err="exit code $smoke_rc, no error text"
     fi
     verdict="crash"
