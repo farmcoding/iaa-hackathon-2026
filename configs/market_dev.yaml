@@ -58,7 +58,10 @@ harness:
   # kept runs retired from the comparison bar by owner decision (timestamps from
   # results.tsv). 2026-10-18 (Karl, Q16): the 09:52 keep (0.1339) was a favourable draw of
   # the then-unseeded encoder; the bar is the seeded re-baseline of the same model (0.1330)
-  superseded: ["2026-10-18T09:52:00"]
+  # 2026-10-19: the email-drop keep (0.13916) is retired too. The owner then removed premium
+  # and licence points from property on purpose (admissibility, not score), so the bar is
+  # the current model (0.13910), not an earlier one that still used those fields
+  superseded: ["2026-10-18T09:52:00", "2026-10-19T08:37:11"]
   # a candidate keep is re-run with seeds shifted by this offset and must pass the keep
   # rule again (Karl, 2026-10-18); the experiment reads IAA_SEED_OFFSET
   confirm_seed_offset: 100
