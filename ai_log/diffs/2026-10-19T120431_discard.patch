@@ -1,0 +1,101 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3df5eb0..25cbc23 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -16,6 +16,7 @@ import os
+ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
++from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
+@@ -62,6 +63,22 @@ SEEDS = tuple(SEED_OFFSET + s for s in (0, 1, 2))
+ # categorical splits; low-cardinality ones (e.g. the 12 regions) stay native. Detected
+ # by cardinality rather than named, since Part 2's market will have different columns.
+ HIGH_CARD_MIN = 15
++# backlog 2.17 (property half; results.tsv `ca33d9f`/`3d3673f`, +0.0035/+0.0036 D2 on
++# buildings/contents fold B alone, discarded only for missing the 0.002 primary margin).
++# Fold-B group-drop study found these customer/marketing-admin fields net negative on
++# the property lines; motor keeps them (dropping cost motor fold B 0.0038 per the study).
++PROPERTY_DROP = {
++    "occupation",
++    "marital_status",
++    "household_size",
++    "email_domain",
++    "marketing_consent",
++    "document_preference",
++    "previous_insurer",
++    "campaign_code",
++    "branch_id",
++    "marketing_segment",
++}
+ PARAMS = {
+     "objective": "tweedie",
+     "tweedie_variance_power": 1.1,
+@@ -88,6 +105,21 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# backlog 2.13: CatBoost as a third property blend member. Single-seed (results.tsv
++# `b46f2be`, +0.00137 vs champion) stacked with the 2.17 property drop above
++# (`89324f8`, +0.00183) missed the 0.002 keep margin by only 0.00017 each time — the
++# single draw is also the noisiest, least-bagged member in a run that must still pass
++# the seed-shifted confirmation. The one prior seed-bagged retry (`eaddec8`, scored
++# lower) changed the loss power to 1.1 at the same time, so it never isolated whether
++# bagging alone helps; this keeps power at 1.5 and bags only the seed.
++CATBOOST_PARAMS = {
++    "loss_function": "Tweedie:variance_power=1.5",
++    "iterations": 300,
++    "depth": 6,
++    "learning_rate": 0.08,
++    "allow_writing_files": False,
++    "verbose": False,
++}
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -179,6 +211,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
+         cols = _feature_cols(tr)
++        if line != "motor":
++            cols = [c for c in cols if c not in PROPERTY_DROP]
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
+ 
+@@ -202,6 +236,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+ 
++        def cb_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            # seed-bagged like every other model here (backlog 2.13 note above), unlike
++            # the single-seed draw both near-miss discards relied on.
++            cat_cols = [c for c in tr_x.columns if isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
++            cb_tr_x, cb_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
++            out = np.zeros(len(va))
++            for seed in SEEDS:
++                model = CatBoostRegressor(**CATBOOST_PARAMS, random_seed=seed)
++                model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
++                out += model.predict(cb_va_x) / len(SEEDS)
++            return out
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -222,8 +268,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            rate_target = tr["y"] / tr["exposure"]
++            lgbm_rate = bag(rate_target, tr["exposure"])
++            rate = (
++                lgbm_rate
++                + ebm_rate(rate_target, tr["exposure"])
++                + cb_rate(rate_target, tr["exposure"])
++            ) / 3
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
