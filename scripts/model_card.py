@@ -119,7 +119,7 @@ def _rebuild(line: str, seg: list[tuple], w: np.ndarray, perm: dict | None = Non
             X = X.copy()
             for c in perm["cols"]:
                 if c in X.columns:
-                    X[c] = X[c].to_numpy()[perm["idx"]]
+                    X[c] = X[c].iloc[perm["idx"]].set_axis(X.index)
         return (
             lgb.LGBMRegressor.predict(model, X)
             if kind == "lgbm"
