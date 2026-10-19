@@ -1,0 +1,33 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3df5eb0..c04f226 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -116,6 +116,17 @@ LINE_DROP = {
+ }
+ 
+ 
++# backlog 2.47, tested singly per the review's note that a bundled variant scored below
++# the no-premium baseline (reports/reviews/2026-10-19_features.md 2.3). flood_zone x
++# rainfall_mm was untested; the excess/sum_insured family (results.tsv d1095f5) and the
++# three-way clay/trees/dry_summer family (backlog 2.2) are both discarded already.
++PROPERTY_LINES = ("buildings", "contents")
++
++
++def _flood_rainfall(df: pd.DataFrame) -> pd.Series:
++    return df["flood_zone"] * df["rainfall_mm"]
++
++
+ def _feature_cols(df: pd.DataFrame) -> list[str]:
+     drop = {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
+     drop |= LINE_DROP.get(str(df["line"].iloc[0]), set())
+@@ -178,6 +189,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         tr = train[train["line"] == line]
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
++        if line in PROPERTY_LINES:
++            tr, va = tr.copy(), va.copy()
++            tr["flood_zone_rainfall"] = _flood_rainfall(tr)
++            va["flood_zone_rainfall"] = _flood_rainfall(va)
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
