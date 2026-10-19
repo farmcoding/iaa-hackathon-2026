@@ -1,0 +1,92 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..c3640c4 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -16,6 +16,7 @@ import os
+ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
++from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
+@@ -58,6 +59,21 @@ SEEDS = tuple(SEED_OFFSET + s for s in (0, 1, 2))
+ # categorical splits; low-cardinality ones (e.g. the 12 regions) stay native. Detected
+ # by cardinality rather than named, since Part 2's market will have different columns.
+ HIGH_CARD_MIN = 15
++# Tier 0.4 (backlog 2.17, property half; results.tsv `ca33d9f`, +0.00089 vs champion,
++# both folds up, discarded only for missing the 0.002 margin alone). Fold-B group-drop
++# study found buildings and contents D2 up without the customer/marketing admin fields.
++PROPERTY_DROP = {
++    "occupation",
++    "marital_status",
++    "household_size",
++    "email_domain",
++    "marketing_consent",
++    "document_preference",
++    "previous_insurer",
++    "campaign_code",
++    "branch_id",
++    "marketing_segment",
++}
+ PARAMS = {
+     "objective": "tweedie",
+     "tweedie_variance_power": 1.1,
+@@ -84,6 +100,18 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# backlog 2.13 (results.tsv `b46f2be`, +0.00137 vs champion, both folds up, discarded
++# only for missing the 0.002 margin alone). Single-seed, like EBM, to stay in budget;
++# results.tsv `eaddec8` seed-bagged this over SEEDS at power 1.1 and scored lower
++# (0.14008 vs 0.14027), so keep the validated single-seed/power-1.5 form as-is.
++CATBOOST_PARAMS = {
++    "loss_function": "Tweedie:variance_power=1.5",
++    "iterations": 300,
++    "depth": 6,
++    "learning_rate": 0.08,
++    "allow_writing_files": False,
++    "verbose": False,
++}
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -138,6 +166,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
+         cols = _feature_cols(tr)
++        if line != "motor":
++            cols = [c for c in cols if c not in PROPERTY_DROP]
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
+ 
+@@ -161,6 +191,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+ 
++        def cb_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            cat_cols = [c for c in tr_x.columns if isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
++            cb_tr_x, cb_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
++            model = CatBoostRegressor(**CATBOOST_PARAMS, random_seed=SEEDS[0])
++            model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
++            return model.predict(cb_va_x)
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -181,8 +218,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            rate_target = tr["y"] / tr["exposure"]
++            lgbm_rate = bag(rate_target, tr["exposure"])
++            rate = (
++                lgbm_rate
++                + ebm_rate(rate_target, tr["exposure"])
++                + cb_rate(rate_target, tr["exposure"])
++            ) / 3
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
