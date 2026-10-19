@@ -1,0 +1,15 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index c40702b..36361cc 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -67,6 +67,10 @@ PARAMS = {
+     "bagging_fraction": 0.8,
+     "bagging_freq": 1,
+     "lambda_l2": 1.0,
++    # backlog 2.30: shrink each leaf's output toward its parent in proportion to the
++    # leaf's weight (a credibility weighting of leaf values) on top of min_data_in_leaf,
++    # aimed at the wide property relativities (buildings/contents decile A/E 0.88-1.18).
++    "path_smooth": 50.0,
+     "n_estimators": 1200,
+     "verbose": -1,
+     "seed": 0,
