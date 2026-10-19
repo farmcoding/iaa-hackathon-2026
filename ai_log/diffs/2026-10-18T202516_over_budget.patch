@@ -1,0 +1,77 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index c40702b..b4dda92 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -16,6 +16,7 @@ import os
+ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
++from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
+ NON_FEATURES = {
+@@ -74,6 +75,15 @@ PARAMS = {
+     "deterministic": True,
+     "force_row_wise": True,
+ }
++# backlog 2.15: EBM is a glass-box GAM, structurally further from LightGBM's trees
++# than XGBoost was (backlog 2.14), so blending it should diversify more than 2.14 did.
++# Main effects only (interactions=0) for speed and because that's the interpretable
++# point of EBM; outer_bags kept low since SEEDS already bags externally.
++EBM_PARAMS = {
++    "objective": "tweedie_deviance:variance_power=1.5",
++    "interactions": 0,
++    "outer_bags": 2,
++}
+ 
+ 
+ def _feature_cols(df: pd.DataFrame) -> list[str]:
+@@ -108,6 +118,19 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+     return rate * target_lc / np.average(rate, weights=va["exposure"])
+ 
+ 
++def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
++    # EBM's own missing-value handling is for continuous features; nominal (category
++    # dtype) columns here can carry a real NaN level, so coerce those to the string
++    # "missing" the same way CatBoost required, rather than assume EBM handles it.
++    x = x.copy()
++    for c in x.columns:
++        if isinstance(x[c].dtype, pd.CategoricalDtype):
++            na = x[c].isna()
++            x[c] = x[c].astype(str)
++            x.loc[na, c] = "missing"
++    return x
++
++
+ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+     pred = np.zeros(len(valid))
+     for line in ("motor", "buildings", "contents"):
+@@ -132,6 +155,17 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                 out += model.predict(va_x) / len(SEEDS)
+             return out
+ 
++        # backlog 2.15: EBM blended with LightGBM on buildings and contents only, the
++        # lines where model diversity has paid off before (TabM, XGBoost blends).
++        def bag_ebm(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            ebm_tr_x, ebm_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
++            out = np.zeros(len(va))
++            for seed in SEEDS:
++                model = ExplainableBoostingRegressor(**EBM_PARAMS, random_state=seed)
++                model.fit(ebm_tr_x, target, sample_weight=weight)
++                out += model.predict(ebm_va_x) / len(SEEDS)
++            return out
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -152,7 +186,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
++            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
++            ebm_rate = bag_ebm(tr["y"] / tr["exposure"], tr["exposure"])
++            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
