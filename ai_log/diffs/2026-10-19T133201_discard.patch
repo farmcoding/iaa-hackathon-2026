@@ -1,0 +1,76 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3df5eb0..811af4f 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -17,6 +17,7 @@ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
++from sklearn.linear_model import TweedieRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
+ NON_FEATURES = {
+@@ -103,6 +104,44 @@ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+     return x
+ 
+ 
++# backlog 2.7: a GLM blend member, distinct from backlog 2.4's CANN-lite (discarded,
++# reports/reviews/2026-10-19_cann.md), which used a GLM as LightGBM's init_score rather
++# than a separate blend member. The prior attempt (results.tsv `760ab72`) one-hot-encoded
++# tr_x and va_x with two independent `get_dummies` calls: a dummy column present in one
++# frame but not the other (e.g. a NaN indicator that fires in train but not in that
++# fold's smaller valid slice) left `design_tr` and `design_va` with different column
++# sets, so `predict()` silently read misaligned columns — contents_B's -180 D2 is that
++# bug, not evidence against the idea. Fixed by reindexing valid's dummies onto train's
++# column list.
++def _glm_design(
++    x: pd.DataFrame,
++    num_cols: list[str],
++    med: pd.Series,
++    mu: pd.Series,
++    sd: pd.Series,
++    columns: pd.Index | None = None,
++) -> tuple[np.ndarray, pd.Index]:
++    cat_cols = [c for c in x.columns if isinstance(x[c].dtype, pd.CategoricalDtype)]
++    d = pd.get_dummies(x, columns=cat_cols, dummy_na=True, drop_first=True)
++    d[num_cols] = (d[num_cols].fillna(med) - mu) / sd
++    if columns is not None:
++        d = d.reindex(columns=columns, fill_value=0)
++    return d.to_numpy(dtype=float), d.columns
++
++
++def _glm_rate(
++    tr_x: pd.DataFrame, va_x: pd.DataFrame, target: pd.Series, weight: pd.Series, power: float
++) -> np.ndarray:
++    num_cols = [c for c in tr_x.columns if not isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
++    med, mu = tr_x[num_cols].median(), tr_x[num_cols].mean()
++    sd = tr_x[num_cols].std().replace(0, 1)
++    design_tr, tr_cols = _glm_design(tr_x, num_cols, med, mu, sd)
++    design_va, _ = _glm_design(va_x, num_cols, med, mu, sd, columns=tr_cols)
++    model = TweedieRegressor(power=power, link="log", solver="newton-cholesky", max_iter=300)
++    model.fit(design_tr, target, sample_weight=weight)
++    return model.predict(design_va)
++
++
+ # owner 2026-10-19 (Karl): fields without a rating rationale on a line. written_premium is
+ # the incumbent's price, an output of someone else's tariff, so no line rates on it (motor
+ # renewal premium also carries experience re-rating on claims reported after renewal).
+@@ -222,8 +261,16 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            rate_target = tr["y"] / tr["exposure"]
++            lgbm_rate = bag(rate_target, tr["exposure"])
++            # backlog 2.7: a minority-weight GLM member for diversity (the CANN review
++            # found a GLM alone much weaker than the tree+EBM blend).
++            glm_rate = _glm_rate(
++                tr_x, va_x, rate_target, tr["exposure"], PARAMS["tweedie_variance_power"]
++            )
++            rate = (
++                0.425 * lgbm_rate + 0.425 * ebm_rate(rate_target, tr["exposure"]) + 0.15 * glm_rate
++            )
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
