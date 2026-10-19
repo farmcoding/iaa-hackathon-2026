@@ -141,6 +141,29 @@ def _credibility_encode(
     return tr_x, va_x
 
 
+# owner 2026-10-19 (Karl, Q20 / backlog 3.37): one open 11.9m bodily-injury claim (AY2023)
+# would otherwise load the BI level as if a claim that size came every four years. Rows are
+# capped at BI_CAP and the expected excess is loaded from a Pareto tail fitted to the
+# training rows above BI_TAIL (refitted per fold, so no look-ahead).
+BI_CAP, BI_TAIL = 1_000_000.0, 250_000.0
+
+
+def _bi_level(tr: pd.DataFrame) -> float:
+    ult, trend = tr["ult_bodily_injury"].fillna(0.0), tr["trend_factor"]
+    capped = (ult.clip(upper=BI_CAP) * trend).sum()
+    tail = ult[ult > BI_TAIL]
+    excess = (ult - BI_CAP).clip(lower=0.0)
+    if len(tail) >= 10:
+        alpha = len(tail) / np.log(tail / BI_TAIL).sum()
+        per_claim = (BI_TAIL / BI_CAP) ** alpha * BI_CAP / (alpha - 1) if alpha > 1.05 else np.nan
+        load = len(tail) * per_claim if np.isfinite(per_claim) else excess.sum()
+    else:
+        load = excess.sum()  # too few large rows to fit a tail: keep the realised excess
+    return (capped + load * np.average(trend, weights=ult.clip(upper=BI_CAP) + 1e-9)) / tr[
+        "exposure"
+    ].sum()
+
+
 def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
     # level anchoring: the model supplies relativities; the overall loss cost is the
     # on-levelled historical loss cost (trend assumption in the config)
@@ -187,7 +210,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
             bi_params["objective"] = "poisson"
             freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
-            bi_lc = (tr["ult_bodily_injury"] * tr["trend_factor"]).sum() / tr["exposure"].sum()
+            bi_lc = _bi_level(tr)
             bi_rate = _anchor(freq, bi_lc, va)
 
             other = tr["ult_other"] * tr["trend_factor"]

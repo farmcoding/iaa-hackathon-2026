@@ -691,29 +691,22 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
     lb = [float(m.group(1)) for ln in subs if (m := re.search(r"\| (0\.\d{4,5}) \|", ln))]
     n_runs = len(df) - 1
 
-    blends = df[df["verdict"] == "blend_pass"]
-    blend_tile = (
-        f'<div class="tile"><div class="v">{blends["score"].max():.4f}</div>'
-        '<div class="l">Best blend with the TabM neural net (validation)</div></div>'
-        if not blends.empty
-        else ""
-    )
     tiles = f"""<div class="tiles">
 <div class="tile"><div class="v">{best["score"]:.4f}</div><div class="l">Best validation score (run {best["n"]})</div></div>
 <div class="tile"><div class="v">{max(lb):.4f}</div><div class="l">Best public leaderboard score</div></div>
-{blend_tile}
 <div class="tile"><div class="v">{n_runs}</div><div class="l">Experiments after the baseline</div></div>
 <div class="tile"><div class="v">{(df["verdict"].isin(["keep", "keep_owner"])).sum() - 1}</div><div class="l">Kept improvements</div></div>
 <div class="tile"><div class="v">{len(subs)}</div><div class="l">Leaderboard submissions</div></div>
 </div>"""
 
     summary = tiles + md(f"""
-- The model has improved from a validation score of **{base["score"]:.4f}** to **{best["score"]:.4f}** over {n_runs} supervised experiments. On the public leaderboard it moved from 0.1060 to {max(lb):.4f}; the leader is at about 0.129.
-- Local validation predicts the leaderboard well on the later validation year (fold B) and overstates gains on the earlier one (fold A). The score now weights fold B twice for that reason.
-- Three data problems were found and fixed before modelling: exposure recorded in days on about 0.4% of rows, a field that leaks claim information in the training data only, and motor bodily injury case reserves that are too light. Each is logged with its treatment.
-- An AI agent proposes one change at a time; a frozen harness scores it; a fixed rule keeps or reverts it; nothing reaches the leaderboard without the actuary's sign-off.
-- A neural network for tables (TabM), trained on the Mac's GPU and averaged 50/50 with the best boosted-tree model, scores higher on both validation years than either model alone. The gain is largest on buildings and contents. The actuary approved it and it was submitted on 18 October: public leaderboard 0.1230, up from 0.1191, the largest single gain so far.
-- A study of every rating variable (see Variables) found that a few groups of fields cost accuracy on some lines, and that written premium, the strongest variable, drifts between training and 2025. Both are now in the experiment queue.
+- The model has improved from a validation score of **{base["score"]:.4f}** to **{best["score"]:.4f}** over {n_runs} supervised experiments. On the public leaderboard it moved from 0.1060 to {max(lb):.4f} (13th on 19 October; the leader is at about 0.130).
+- **Current model:** gradient-boosted trees (LightGBM) for every line, with an Explainable Boosting Machine (EBM, a glass-box additive model) averaged in on buildings and contents. Motor bodily injury is priced on claim counts with a separate severity level. The EBM blend was found and kept by the loop overnight on 18 October and passed the fresh-seed rerun; it scored 0.1233 on the public leaderboard on 19 October.
+- **The neural net (TabM) no longer adds anything:** with the EBM in place, blending TabM adds +0.0001 to +0.0015 depending on its seed, inside the noise floor. It is not used for Part 1.
+- **Owner decisions on 19 October** (each scored and logged in the assumptions log): email domain removed (it is noise, unrelated to any other customer field); written premium and licence points removed from buildings and contents (no rating rationale there, and no measurable cost); the one 11.9m motor bodily injury claim capped at 1m with the expected excess loaded from a fitted Pareto tail, instead of assuming a claim that size every four years; buildings escape-of-water trend to rise to 9% (approved; being scored).
+- Local validation predicts the leaderboard well on the later validation year (fold B) and overstates gains on the earlier one (fold A). The score weights fold B twice for that reason. Why two out-of-time folds, and what they cannot test, is question Q19.
+- Data problems found and treated: exposure recorded in days on about 0.4% of rows, a field that leaks claim information in the training data only, light motor bodily injury case reserves, and the 11.9m claim. Orphan claims (loss before the policy's first row) are 0.23% of cost and immaterial.
+- An AI agent proposes one change at a time; a frozen harness scores it; a fixed rule keeps or reverts it, and a candidate keep must pass again on fresh seeds; nothing reaches the leaderboard without the actuary's sign-off. The loop stopped itself at 08:00 on 19 October when its ideas ran out; three independent reviews (claims, variables, the failed CANN model) added new ones (reports/reviews/).
 """)
 
     evals = md("""
@@ -848,11 +841,11 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
 """)
 
     compute = md("""
-**Time budget per experiment:** 30 minutes (doubled today from 15). The original limit was about six times the baseline run time, so the loop finishes six to eight experiments an hour and a runaway run cannot use up the night. Current runs take 5 to 8 minutes plus a crash check on a small sample.
+**Time budget per experiment:** 30 minutes. It keeps the loop at two to five experiments an hour and stops a runaway run using up the night. With the EBM in the model a run takes 13 to 18 minutes, plus a 2-minute crash check, plus a fresh-seed rerun for any candidate keep. Slow models that add variety (TabM, possibly others) are fitted once outside the loop and blended afterwards instead of raising the limit.
 
-**GPU:** the Mac mini's own GPU (Apple Metal) is free and is tried first. Kaggle notebooks offer roughly 30 GPU-hours a week (secondary sources); Kaggle shows the remaining balance only in its notebook editor, not through its API, so balances are read there. Private notebooks on competition data are allowed. No GPU run starts without your approval, an estimate of run time, and the balance before and after.
+**CPU:** overnight the machine was 40 to 50% idle because the EBM uses one core per internal bag and was set to two bags. Raising it to eight is first in the queue.
 
-**What the GPU has done so far:** TabM ran on the Mac's GPU only (approved). Each validation year took 25 to 35 minutes and the 2025 fit about 40, far less than the first estimate of 3 hours, because training stops early after four or five passes through the data. No Kaggle GPU time has been used.
+**GPU:** TabM ran on the Mac's own GPU (Apple Metal). A like-for-like benchmark on a Kaggle Tesla T4 (synthetic data shaped like the motor features, about 2 GPU minutes) ran 5.9 seconds per epoch per 100,000 rows against 14.5 on the Mac when idle: about 2.5 times faster. A full TabM refit would take about 30 minutes on Kaggle against about 80 locally, but the dataset would first have to be rebuilt there. No other Kaggle GPU time has been used.
 """)
 
     questions = (root / "docs" / "questions.md").read_text().split("\n", 2)[2]
