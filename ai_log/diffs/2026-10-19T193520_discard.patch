@@ -1,0 +1,21 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index aabc8cd..26a3ad9 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -83,9 +83,15 @@ PARAMS = {
+ # b54959b/2abf7b5 ran 1884-1889s against the 1800s budget; halving outer_bags (2->1,
+ # EBM's internal bagging) only saved 5s, so the external SEEDS loop was the cost. EBM
+ # now fits once, on SEEDS[0], with outer_bags back to 2 for internal diversity.
++# backlog 2.71 (Tier 0d): pairwise interactions=15 instead of 0. The 2026-10-19
++# features review's light bake-off found flood_zone x elevation_m is the top pair by
++# three methods and the champion over-predicts moderate flood zone at high elevation
++# (A/E 0.44-0.52); interactions=15 let EBM fit a handful of such pairs instead of
++# only additive main effects. Runtime headroom is large since the field-drop/pruning
++# champion (f4aef71) fits in ~500-600s against the 1800s budget.
+ EBM_PARAMS = {
+     "objective": "tweedie_deviance:variance_power=1.5",
+-    "interactions": 0,
++    "interactions": 15,
+     "outer_bags": 2,
+ }
+ 
