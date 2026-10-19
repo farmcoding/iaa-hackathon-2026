@@ -1,0 +1,35 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index aabc8cd..47c5796 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -230,6 +230,19 @@ PRUNED = {
+ }
+ 
+ 
++# backlog 2.47, next family after excess_sum_insured_ratio (tried alone, discarded:
++# results.tsv `d1095f5`): flood_zone x rainfall_mm. Both are already numeric (flood_zone
++# carries a monotone constraint, so LightGBM sees it as an ordinal number, not a
++# category), so the interaction is a plain product needing no categorical encoding —
++# unlike the soil/construction families in the same backlog item, which would need a
++# hard-coded category mapping and are less portable to Part 2's market.
++PROPERTY_LINES = ("buildings", "contents")
++
++
++def _flood_rainfall(df: pd.DataFrame) -> pd.Series:
++    return df["flood_zone"] * df["rainfall_mm"]
++
++
+ def _feature_cols(df: pd.DataFrame) -> list[str]:
+     drop = {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
+     drop |= LINE_DROP.get(str(df["line"].iloc[0]), set())
+@@ -293,6 +306,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         tr = train[train["line"] == line]
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
++        if line in PROPERTY_LINES:
++            tr, va = tr.copy(), va.copy()
++            tr["flood_zone_x_rainfall"] = _flood_rainfall(tr)
++            va["flood_zone_x_rainfall"] = _flood_rainfall(va)
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
