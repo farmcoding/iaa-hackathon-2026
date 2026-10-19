@@ -22,14 +22,23 @@ or the scorer; those are actuarial assumptions owned by the human.
 
 ## One iteration
 
-1. Read `results.tsv` (all past runs and verdicts), `research/experiment_backlog.md`
+1. Read `data/cache/diagnostics.md` first. It shows where the model to beat misses:
+   actual/expected by predicted-risk decile and by segment, fold A and fold B side by
+   side. Misses flagged PERSISTENT (both years, same direction, >5%, >=2% of exposure)
+   are the best hypotheses you have; prefer a change that targets one of them over an
+   idea from a paper. Say which miss you target in the HYPOTHESIS line.
+   Then read `results.tsv` (all past runs and verdicts), `research/experiment_backlog.md`
    (ranked ideas with sources; items marked OWNER are human-only, skip them) and the
    current `src/iaa/experiment.py`.
 2. Pick ONE hypothesis. Tier 0 of the backlog (re-tests) comes first, in its order.
    Otherwise prefer the highest-ranked backlog idea not yet tried, or a
    follow-up that a past result clearly suggests. Do not repeat a discarded idea
    unless you change something material, and say what.
-3. Edit `src/iaa/experiment.py` to test it. Keep the change small enough that a
+3. Subtraction first: removing a predictor, a model member or a step that adds nothing
+   is as good an experiment as adding one, and the data has rewarded it (pruning on
+   19 Oct gained +0.0018). When re-testing a saved diff from `ai_log/diffs/`, copy it
+   exactly, imports included, rather than re-writing it from memory.
+   Edit `src/iaa/experiment.py` to test it. Keep the change small enough that a
    reviewer can read the diff in two minutes.
 4. Do not run anything. You have no shell; the driver runs the frozen harness on your
    change after you finish, appends the result to `results.tsv` and commits or

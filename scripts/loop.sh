@@ -45,6 +45,8 @@ for i in $(seq 1 "$ITER"); do
     echo "working tree not clean before iteration $i; stopping" | tee -a "$DAYLOG"; exit 1
   fi
   ts=$(date +%Y-%m-%dT%H:%M:%S)
+  # where the model to beat misses (data/cache/diagnostics.md, gitignored); step 1 of program.md
+  .venv/bin/python -I scripts/diagnostics.py >/dev/null 2>&1 || echo "diagnostics failed" > data/cache/diagnostics.md
   out=$(claude -p "$(cat program.md)" "${PROFILE_ARGS[@]}" \
           --permission-mode acceptEdits --allowedTools "${ALLOWED[@]}" \
           --max-turns 30 --output-format text 2>&1)

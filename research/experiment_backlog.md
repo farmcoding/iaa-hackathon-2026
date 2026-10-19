@@ -50,6 +50,19 @@ Owner decision 2026-10-19 (Karl): the primary margin is now 0.001 (measured seed
 | 0c.4 | Isotonic recalibration of each sub-rate on an inner time holdout (2.3) | 0.13451 on the older model (+0.0015) | ai_log/diffs/2026-10-18T195928_discard.patch | open |
 | 0c.5 | XGBoost blended with LightGBM (property, then all lines) (2.14) | 0.13491 on the older model (+0.0019) | ai_log/diffs/2026-10-18T163416_discard.patch | open |
 
+## Tier 0d: data-led, from the 19 Oct evening reviews (after Tier 0c)
+
+Read data/cache/diagnostics.md first; these target misses that persist in both folds.
+
+| # | Idea | Why | Expected | Source | Status |
+|---|---|---|---|---|---|
+| 2.62 | Motor: revisit LightGBM regularisation for both sub-models (num_leaves 31-63, min_data_in_leaf 200-500); the 15 leaves / 2,000 min-data were set while the pooled target still carried the 11.9m claim | Motor within-line D2 has been flat at 0.0847-0.0849 since 18 Oct; every keep since went to property | Motor gain | Meta-review 19 Oct | open |
+| 2.63 | Motor new business is under-predicted in both folds (A/E 1.10 / 1.14): give the motor models new_business back (pruned) or an interaction with ncb_years | Persistent miss, 9% of motor exposure | ~0.0005 | Diagnostics, meta-review | open |
+| 2.64 | Contents and buildings: restore a same-policy claim-history signal (hist_n_policy, pruned on contents; A/E 1.39 / 1.29 for one prior claim) as a count, or the recency/capped version of 2.61 | Persistent miss; contents has no claim history below prior_claims_5y | Contents gain | Diagnostics, variables review | open |
+| 2.65 | Short-period rows (exposure under 0.5) under-predicted on motor and contents: let the model see exposure band, or a period-length flag | Persistent miss | ~0.0005 | Meta-review | open |
+| 2.66 | Motor: EBM blended with LightGBM on the other-perils model (interactions=10), as on property | EBM gained +0.006 on property; motor never had it with interactions | Motor gain | Meta-review | open |
+| 2.60 | Buildings: construction_type x property_age, re-tested on 3 seeds | +0.0005 single seed | Small | Variables review | open |
+
 ## Tier 0b: from the 2026-10-19 reviews (do these first, in order)
 
 Champion: LightGBM + EBM on property (0.13890). Reviews: reports/reviews/2026-10-19_*.md.
