@@ -1,0 +1,65 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..df964fb 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -17,7 +17,6 @@ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
+-from sklearn.preprocessing import TargetEncoder
+ 
+ NON_FEATURES = {
+     "row_id",
+@@ -105,6 +104,23 @@ def _feature_cols(df: pd.DataFrame) -> list[str]:
+     return [c for c in cols if df[c].notna().any()]
+ 
+ 
++def _bs_table(level: np.ndarray, rate: np.ndarray, weight: np.ndarray) -> tuple[pd.Series, float]:
++    # Buhlmann-Straub credibility per level: Z = E / (E + k), k = within-level rate
++    # variance / between-level rate variance, so thinly-exposed levels shrink hard
++    # toward the mean instead of contributing their own noisy mean untouched.
++    df = pd.DataFrame({"lvl": level, "rate": rate, "w": weight})
++    global_mean = np.average(df["rate"], weights=df["w"])
++    grp = df.groupby("lvl", sort=False)
++    level_w = grp["w"].sum()
++    level_mean = df.assign(wr=df["w"] * df["rate"]).groupby("lvl", sort=False)["wr"].sum() / level_w
++    resid2 = df["w"] * (df["rate"] - level_mean.reindex(df["lvl"]).to_numpy()) ** 2
++    within_var = resid2.sum() / max(len(df) - len(level_w), 1)
++    between_var = max(np.average((level_mean - global_mean) ** 2, weights=level_w), 1e-6)
++    k = within_var / between_var
++    z = level_w / (level_w + k)
++    return z * level_mean + (1 - z) * global_mean, global_mean
++
++
+ def _credibility_encode(
+     tr: pd.DataFrame, va: pd.DataFrame, cols: list[str], target: pd.Series
+ ) -> tuple[pd.DataFrame, pd.DataFrame]:
+@@ -116,12 +132,22 @@ def _credibility_encode(
+     tr_x, va_x = tr[cols].copy(), va[cols].copy()
+     if not high_card:
+         return tr_x, va_x
+-    # fit_transform cross-fits internally so a row's own target doesn't leak into its
+-    # own encoding; transform() on valid reuses the mapping fit on all of tr. Seeded so
+-    # runs reproduce (unseeded folds moved the primary score by up to 0.0007).
+-    enc = TargetEncoder(target_type="continuous", smooth="auto", random_state=SEED_OFFSET)
+-    tr_x[high_card] = enc.fit_transform(tr[high_card], target)
+-    va_x[high_card] = enc.transform(va[high_card])
++    exposure = tr["exposure"].to_numpy()
++    rate = target.to_numpy()
++    # out-of-fold so a row's own target doesn't leak into its own encoding; valid reuses
++    # the table fit on all of tr. Seeded so runs reproduce.
++    kf = KFold(n_splits=5, shuffle=True, random_state=SEED_OFFSET)
++    idx = np.arange(len(tr))
++    for c in high_card:
++        col = tr[c].astype(str).to_numpy()
++        va_col = va[c].astype(str)
++        oof = np.empty(len(tr))
++        for fit_i, apply_i in kf.split(idx):
++            table, fold_mean = _bs_table(col[fit_i], rate[fit_i], exposure[fit_i])
++            oof[apply_i] = pd.Series(col[apply_i]).map(table).fillna(fold_mean).to_numpy()
++        tr_x[c] = oof
++        full_table, full_mean = _bs_table(col, rate, exposure)
++        va_x[c] = va_col.map(full_table).fillna(full_mean).to_numpy()
+     return tr_x, va_x
+ 
+ 
