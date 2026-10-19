@@ -1,0 +1,17 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..53b9c33 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -138,6 +138,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
+         cols = _feature_cols(tr)
++        if line == "motor":
++            # backlog 2.27: no-premium benchmark for motor. written_premium is the
++            # incumbent's own price and carries prior-year claims experience,
++            # including claims unreported at renewal; this measures how much of
++            # motor's D2 it actually buys, for both the BI and other sub-models.
++            cols = [c for c in cols if c != "written_premium"]
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
+ 
