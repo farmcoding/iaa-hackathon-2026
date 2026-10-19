@@ -1,0 +1,2307 @@
+{
+ "fold": "B",
+ "train": [
+  2021,
+  2022,
+  2023
+ ],
+ "valid": 2024,
+ "lines": {
+  "motor": {
+   "d2": 0.08459431979073628,
+   "gini": 0.3213102168550106,
+   "n_features": 72,
+   "features": [
+    {
+     "feature": "ncb_years",
+     "d2_drop": 0.017960474200191978,
+     "gini_drop": 0.0623686723767688,
+     "encoded": false,
+     "d2_drop_bi": 0.0046250864117241,
+     "d2_drop_other": 0.005290610329445666
+    },
+    {
+     "feature": "annual_mileage",
+     "d2_drop": 0.010250277760684101,
+     "gini_drop": 0.024293038263549338,
+     "encoded": false,
+     "d2_drop_bi": 0.002795459101680553,
+     "d2_drop_other": 0.003912145503070508
+    },
+    {
+     "feature": "driver_age",
+     "d2_drop": 0.004961288428022792,
+     "gini_drop": 0.009880083877715773,
+     "encoded": false,
+     "d2_drop_bi": 0.0009713787712354316,
+     "d2_drop_other": 0.001698240996143019
+    },
+    {
+     "feature": "region",
+     "d2_drop": 0.004734166108178894,
+     "gini_drop": 0.012428110475213194,
+     "encoded": false,
+     "d2_drop_bi": 0.001558866450610208,
+     "d2_drop_other": 0.001673632322571228
+    },
+    {
+     "feature": "years_licensed",
+     "d2_drop": 0.004359515308206552,
+     "gini_drop": 0.009951971675758342,
+     "encoded": false,
+     "d2_drop_bi": 0.0011969740176097643,
+     "d2_drop_other": 0.0020268655722703866
+    },
+    {
+     "feature": "prior_claims_5y",
+     "d2_drop": 0.004020740592283634,
+     "gini_drop": 0.010490895432688663,
+     "encoded": false,
+     "d2_drop_bi": 0.0009413942733283998,
+     "d2_drop_other": 0.0017728241811972856
+    },
+    {
+     "feature": "cover_type",
+     "d2_drop": 0.003975363833036316,
+     "gini_drop": 0.01399399385574518,
+     "encoded": false,
+     "d2_drop_bi": 4.473579586605769e-05,
+     "d2_drop_other": 0.0043804963264141294
+    },
+    {
+     "feature": "urban_density",
+     "d2_drop": 0.0029029912535467606,
+     "gini_drop": 0.005700760097524071,
+     "encoded": false,
+     "d2_drop_bi": 0.0007705622478736407,
+     "d2_drop_other": 0.0015677351326716105
+    },
+    {
+     "feature": "vehicle_age",
+     "d2_drop": 0.0025683774258556946,
+     "gini_drop": 0.010605236393349537,
+     "encoded": false,
+     "d2_drop_bi": -2.2742314610302294e-05,
+     "d2_drop_other": 0.002251511524549832
+    },
+    {
+     "feature": "vehicle_value_group",
+     "d2_drop": 0.001345384220564405,
+     "gini_drop": 0.003253188435026866,
+     "encoded": false,
+     "d2_drop_bi": -0.00010026029065790532,
+     "d2_drop_other": 0.001309228604125856
+    },
+    {
+     "feature": "telematics_score",
+     "d2_drop": 0.0011357577048105583,
+     "gini_drop": 0.004860964046512262,
+     "encoded": false,
+     "d2_drop_bi": 0.00010386389454641876,
+     "d2_drop_other": 0.00027154590863109895
+    },
+    {
+     "feature": "licence_points",
+     "d2_drop": 0.0010290481270736063,
+     "gini_drop": 0.0023577532106908716,
+     "encoded": false,
+     "d2_drop_bi": 0.000125450745487643,
+     "d2_drop_other": 0.0007039368476526864
+    },
+    {
+     "feature": "overnight_parking",
+     "d2_drop": 0.0007294581648029652,
+     "gini_drop": 0.0014299264109000065,
+     "encoded": false,
+     "d2_drop_bi": -8.906582008583186e-07,
+     "d2_drop_other": 0.0007773862862194836
+    },
+    {
+     "feature": "hist_cost_policy",
+     "d2_drop": 0.0007098139832510952,
+     "gini_drop": 0.0013251910591565164,
+     "encoded": false,
+     "d2_drop_bi": 0.00022815485989480244,
+     "d2_drop_other": 0.00026471099558689204
+    },
+    {
+     "feature": "credit_band",
+     "d2_drop": 0.0006209081541713735,
+     "gini_drop": 0.0020054169045465864,
+     "encoded": false,
+     "d2_drop_bi": 0.000332711350540138,
+     "d2_drop_other": 0.0001792952306697293
+    },
+    {
+     "feature": "marketing_segment",
+     "d2_drop": 0.0005579223510533415,
+     "gini_drop": 0.0011406025625882998,
+     "encoded": false,
+     "d2_drop_bi": 0.00010940542778570261,
+     "d2_drop_other": -4.772749808845678e-05
+    },
+    {
+     "feature": "voluntary_excess",
+     "d2_drop": 0.000552365048515524,
+     "gini_drop": 0.003235347693554491,
+     "encoded": false,
+     "d2_drop_bi": -0.00021861911637177656,
+     "d2_drop_other": 0.00021449767538306297
+    },
+    {
+     "feature": "payment_method",
+     "d2_drop": 0.0005293863530357878,
+     "gini_drop": 0.0010343053601019614,
+     "encoded": false,
+     "d2_drop_bi": 0.00015222110752999285,
+     "d2_drop_other": 9.003607865198937e-05
+    },
+    {
+     "feature": "vehicle_colour",
+     "d2_drop": 0.0004522285199214382,
+     "gini_drop": 0.0009188909998929518,
+     "encoded": false,
+     "d2_drop_bi": 0.0004751035556046501,
+     "d2_drop_other": -4.777849798787148e-05
+    },
+    {
+     "feature": "hist_n_policy",
+     "d2_drop": 0.0004145775828533482,
+     "gini_drop": 0.0007448548929804844,
+     "encoded": false,
+     "d2_drop_bi": 0.00011042948405204367,
+     "d2_drop_other": 0.00015137979947565938
+    },
+    {
+     "feature": "fuel_type",
+     "d2_drop": 0.0003919796148864618,
+     "gini_drop": 0.0013235737704859751,
+     "encoded": false,
+     "d2_drop_bi": -7.292000093772621e-05,
+     "d2_drop_other": 0.00048528509510215034
+    },
+    {
+     "feature": "freezing_days",
+     "d2_drop": 0.0003590521790051149,
+     "gini_drop": 0.0017535707538453016,
+     "encoded": false,
+     "d2_drop_bi": 5.6534486213233315e-05,
+     "d2_drop_other": 0.0002561727619452281
+    },
+    {
+     "feature": "missed_payments_12m",
+     "d2_drop": 0.00029560354882285367,
+     "gini_drop": 0.0017158422122848238,
+     "encoded": false,
+     "d2_drop_bi": -0.00022228014681158204,
+     "d2_drop_other": 0.00026642603236948226
+    },
+    {
+     "feature": "make_model",
+     "d2_drop": 0.0002713481414174934,
+     "gini_drop": 0.00035108851817966524,
+     "encoded": true,
+     "d2_drop_bi": 0.00022524960178305076,
+     "d2_drop_other": 4.499097224430759e-05
+    },
+    {
+     "feature": "wildfire_index",
+     "d2_drop": 0.0002269183914986872,
+     "gini_drop": 0.0005481130058829775,
+     "encoded": false,
+     "d2_drop_bi": 0.0001388239957216264,
+     "d2_drop_other": 8.757774451639833e-05
+    },
+    {
+     "feature": "start_month",
+     "d2_drop": 0.00020544128564847774,
+     "gini_drop": 0.001074100888738827,
+     "encoded": false,
+     "d2_drop_bi": 0.0005684285161851044,
+     "d2_drop_other": 5.425980622564275e-05
+    },
+    {
+     "feature": "dry_summer_index",
+     "d2_drop": 0.00018869023541290275,
+     "gini_drop": 0.0001881040071317619,
+     "encoded": false,
+     "d2_drop_bi": 0.0003194755900502999,
+     "d2_drop_other": -0.00017311809045628124
+    },
+    {
+     "feature": "mean_temperature_c",
+     "d2_drop": 0.00017742631272610332,
+     "gini_drop": 0.0008182052556491293,
+     "encoded": false,
+     "d2_drop_bi": 4.245646091582955e-05,
+     "d2_drop_other": 0.00013651478439680176
+    },
+    {
+     "feature": "named_young_driver",
+     "d2_drop": 0.00017317426513874246,
+     "gini_drop": 0.0006675506155287003,
+     "encoded": false,
+     "d2_drop_bi": 7.79447453062021e-05,
+     "d2_drop_other": 3.46075053579975e-05
+    },
+    {
+     "feature": "distance_to_river_km",
+     "d2_drop": 0.00016145213148310855,
+     "gini_drop": 0.00013826172733311104,
+     "encoded": false,
+     "d2_drop_bi": 0.00023579328899137053,
+     "d2_drop_other": -7.154316592872245e-05
+    },
+    {
+     "feature": "seats",
+     "d2_drop": 0.0001275722874894969,
+     "gini_drop": 0.000298670763473452,
+     "encoded": false,
+     "d2_drop_bi": -4.083537881172106e-05,
+     "d2_drop_other": 0.00017143240075800925
+    },
+    {
+     "feature": "engine_size_cc",
+     "d2_drop": 0.00011705387701055336,
+     "gini_drop": 0.0005168835552117335,
+     "encoded": false,
+     "d2_drop_bi": 0.00012125187673017734,
+     "d2_drop_other": 2.644492558601108e-05
+    },
+    {
+     "feature": "body_type",
+     "d2_drop": 0.00010349095442996337,
+     "gini_drop": -5.694405579059758e-05,
+     "encoded": false,
+     "d2_drop_bi": 3.2750103368450745e-05,
+     "d2_drop_other": 7.60174757841181e-05
+    },
+    {
+     "feature": "marketing_consent",
+     "d2_drop": 0.00010320481864312114,
+     "gini_drop": 0.00045308137401078863,
+     "encoded": false,
+     "d2_drop_bi": 2.278118743714863e-05,
+     "d2_drop_other": 7.947416005049668e-05
+    },
+    {
+     "feature": "property_type",
+     "d2_drop": 9.152841236781395e-05,
+     "gini_drop": 3.335305639418085e-05,
+     "encoded": false,
+     "d2_drop_bi": 9.315015414967931e-05,
+     "d2_drop_other": -2.1278546384895236e-06
+    },
+    {
+     "feature": "hist_n_customer",
+     "d2_drop": 8.394458020377638e-05,
+     "gini_drop": 0.0003820112207377768,
+     "encoded": false,
+     "d2_drop_bi": 6.338748750656098e-05,
+     "d2_drop_other": 1.4725284939176575e-05
+    },
+    {
+     "feature": "new_business",
+     "d2_drop": 7.669269476173746e-05,
+     "gini_drop": 7.567658170082314e-05,
+     "encoded": false,
+     "d2_drop_bi": 2.2135145584245564e-06,
+     "d2_drop_other": 7.561961227753322e-05
+    },
+    {
+     "feature": "bedrooms",
+     "d2_drop": 7.373203623928237e-05,
+     "gini_drop": 0.0002585725909087788,
+     "encoded": false,
+     "d2_drop_bi": 3.2444906265749474e-05,
+     "d2_drop_other": 4.0844524073713195e-05
+    },
+    {
+     "feature": "roof_type",
+     "d2_drop": 7.03565063330247e-05,
+     "gini_drop": 0.00021837785897027562,
+     "encoded": false,
+     "d2_drop_bi": 6.341301920309572e-05,
+     "d2_drop_other": 7.661543459658304e-06
+    },
+    {
+     "feature": "customer_age",
+     "d2_drop": 7.013674924327695e-05,
+     "gini_drop": -0.0003005276176291094,
+     "encoded": false,
+     "d2_drop_bi": 0.00011520336119308361,
+     "d2_drop_other": -0.00014469340964551325
+    },
+    {
+     "feature": "marital_status",
+     "d2_drop": 3.749528377472444e-05,
+     "gini_drop": 3.018970858170711e-05,
+     "encoded": false,
+     "d2_drop_bi": 1.84880067836124e-05,
+     "d2_drop_other": 1.5565274490203507e-05
+    },
+    {
+     "feature": "solar_panels",
+     "d2_drop": 3.27575082553766e-05,
+     "gini_drop": -4.565139767687132e-05,
+     "encoded": false,
+     "d2_drop_bi": 3.070321144349464e-05,
+     "d2_drop_other": 2.3485767443043315e-06
+    },
+    {
+     "feature": "year_built",
+     "d2_drop": 1.2731565067314321e-05,
+     "gini_drop": 1.5530327185819814e-05,
+     "encoded": false,
+     "d2_drop_bi": 6.079446887785611e-05,
+     "d2_drop_other": -4.4204864725228e-05
+    },
+    {
+     "feature": "rainfall_mm",
+     "d2_drop": 1.7554317888190951e-06,
+     "gini_drop": 0.00011923199505181614,
+     "encoded": false,
+     "d2_drop_bi": -2.0668102136967015e-05,
+     "d2_drop_other": 1.9354914956970504e-05
+    },
+    {
+     "feature": "listed_building",
+     "d2_drop": 1.407305786016444e-06,
+     "gini_drop": 1.1011922664283524e-05,
+     "encoded": false,
+     "d2_drop_bi": -5.931790256763492e-07,
+     "d2_drop_other": 1.9897543106495164e-06
+    },
+    {
+     "feature": "compulsory_excess",
+     "d2_drop": 0.0,
+     "gini_drop": 0.0,
+     "encoded": false,
+     "d2_drop_bi": 0.0,
+     "d2_drop_other": 0.0
+    },
+    {
+     "feature": "trees_within_5m",
+     "d2_drop": -6.32846172532453e-06,
+     "gini_drop": -6.720678314309225e-06,
+     "encoded": false,
+     "d2_drop_bi": 7.221347158026248e-07,
+     "d2_drop_other": -7.022913779186624e-06
+    },
+    {
+     "feature": "basement",
+     "d2_drop": -7.671038740220126e-06,
+     "gini_drop": -2.9344363008942942e-05,
+     "encoded": false,
+     "d2_drop_bi": -1.3671597044462303e-06,
+     "d2_drop_other": -6.913210161108019e-06
+    },
+    {
+     "feature": "hail_days",
+     "d2_drop": -8.332182941384048e-06,
+     "gini_drop": 0.00045848418652227885,
+     "encoded": false,
+     "d2_drop_bi": -0.00010918737982879012,
+     "d2_drop_other": 6.858871414894274e-05
+    },
+    {
+     "feature": "telematics_opt_in",
+     "d2_drop": -9.362303669102623e-06,
+     "gini_drop": -5.342630738924825e-06,
+     "encoded": false,
+     "d2_drop_bi": -1.1476918215014287e-05,
+     "d2_drop_other": 1.9950687877301476e-06
+    },
+    {
+     "feature": "flood_zone",
+     "d2_drop": -1.085267393030609e-05,
+     "gini_drop": -0.0002559710711401708,
+     "encoded": false,
+     "d2_drop_bi": 1.3586489565731164e-05,
+     "d2_drop_other": -2.633663706907985e-05
+    },
+    {
+     "feature": "hist_cost_customer",
+     "d2_drop": -1.8998932498126564e-05,
+     "gini_drop": 0.0006331185319281563,
+     "encoded": false,
+     "d2_drop_bi": 8.66413287056167e-05,
+     "d2_drop_other": -4.2302942199867744e-05
+    },
+    {
+     "feature": "years_at_address",
+     "d2_drop": -2.997177976671317e-05,
+     "gini_drop": -0.0006287368696149542,
+     "encoded": false,
+     "d2_drop_bi": -0.00011179290194629488,
+     "d2_drop_other": 8.960496094068127e-05
+    },
+    {
+     "feature": "wind_exposure_index",
+     "d2_drop": -3.3506961700568993e-05,
+     "gini_drop": -0.0009198931809015765,
+     "encoded": false,
+     "d2_drop_bi": -6.264602913186312e-05,
+     "d2_drop_other": 1.751061915866714e-05
+    },
+    {
+     "feature": "channel",
+     "d2_drop": -3.428265944938058e-05,
+     "gini_drop": 0.0014998083240916893,
+     "encoded": false,
+     "d2_drop_bi": -0.0003119354074972991,
+     "d2_drop_other": -0.00029887360832692167
+    },
+    {
+     "feature": "household_size",
+     "d2_drop": -3.760274063613345e-05,
+     "gini_drop": 0.0001864665369135654,
+     "encoded": false,
+     "d2_drop_bi": -7.957875137998283e-05,
+     "d2_drop_other": 4.6137944643587225e-05
+    },
+    {
+     "feature": "document_preference",
+     "d2_drop": -4.441922854481195e-05,
+     "gini_drop": -0.0001081578029494823,
+     "encoded": false,
+     "d2_drop_bi": -5.301969293602937e-07,
+     "d2_drop_other": -4.4939479097894086e-05
+    },
+    {
+     "feature": "soil_type",
+     "d2_drop": -4.761567171929215e-05,
+     "gini_drop": -0.00029714327868313184,
+     "encoded": false,
+     "d2_drop_bi": 2.734636771994925e-05,
+     "d2_drop_other": -7.721865504706216e-05
+    },
+    {
+     "feature": "elevation_m",
+     "d2_drop": -5.585936095897637e-05,
+     "gini_drop": -0.00027252574100811167,
+     "encoded": false,
+     "d2_drop_bi": 0.0001173541751288143,
+     "d2_drop_other": -0.0001703443458189735
+    },
+    {
+     "feature": "energy_rating",
+     "d2_drop": -6.753877175147416e-05,
+     "gini_drop": -0.0001759385771108457,
+     "encoded": false,
+     "d2_drop_bi": -1.8469737922077734e-05,
+     "d2_drop_other": -4.4409436358860965e-05
+    },
+    {
+     "feature": "transmission",
+     "d2_drop": -6.787301354815867e-05,
+     "gini_drop": -0.0003397750722650139,
+     "encoded": false,
+     "d2_drop_bi": 4.702570867931577e-06,
+     "d2_drop_other": -7.215474769040053e-05
+    },
+    {
+     "feature": "customer_tenure",
+     "d2_drop": -7.200427692244382e-05,
+     "gini_drop": -0.0004662589338106926,
+     "encoded": false,
+     "d2_drop_bi": 5.039295394426713e-05,
+     "d2_drop_other": -0.0001242236338061531
+    },
+    {
+     "feature": "discount_applied",
+     "d2_drop": -7.273316084277504e-05,
+     "gini_drop": -6.173787189123203e-05,
+     "encoded": false,
+     "d2_drop_bi": -3.161710085741731e-05,
+     "d2_drop_other": -4.3910575145411634e-05
+    },
+    {
+     "feature": "occupation",
+     "d2_drop": -7.335599769131562e-05,
+     "gini_drop": 0.0007255039253439843,
+     "encoded": true,
+     "d2_drop_bi": -0.0002454158185691835,
+     "d2_drop_other": 0.00010864859687853556
+    },
+    {
+     "feature": "previous_insurer",
+     "d2_drop": -8.87054490946726e-05,
+     "gini_drop": 0.00020016644863818378,
+     "encoded": true,
+     "d2_drop_bi": -5.8331795124377805e-05,
+     "d2_drop_other": -3.8352224449256234e-05
+    },
+    {
+     "feature": "property_age",
+     "d2_drop": -0.00011859495112354068,
+     "gini_drop": -9.816610540769322e-05,
+     "encoded": false,
+     "d2_drop_bi": 4.4470471384228105e-06,
+     "d2_drop_other": -0.00012891032877704323
+    },
+    {
+     "feature": "vehicle_use",
+     "d2_drop": -0.00011882041594568626,
+     "gini_drop": 0.00017805497136780257,
+     "encoded": false,
+     "d2_drop_bi": -8.672758529015834e-05,
+     "d2_drop_other": -0.0004514407417105515
+    },
+    {
+     "feature": "renewal_count",
+     "d2_drop": -0.00015739669715453264,
+     "gini_drop": -0.000518629895349898,
+     "encoded": false,
+     "d2_drop_bi": -8.589928777202882e-05,
+     "d2_drop_other": -6.961961756712931e-05
+    },
+    {
+     "feature": "driver_assist",
+     "d2_drop": -0.00015966420364033063,
+     "gini_drop": -0.000201755771085943,
+     "encoded": false,
+     "d2_drop_bi": -7.32776762083498e-05,
+     "d2_drop_other": -4.790847692159872e-05
+    },
+    {
+     "feature": "days_quote_to_inception",
+     "d2_drop": -0.00018516939089563422,
+     "gini_drop": -0.0003364333629478633,
+     "encoded": false,
+     "d2_drop_bi": -0.0002495634211706621,
+     "d2_drop_other": 4.086180015461238e-06
+    },
+    {
+     "feature": "branch_id",
+     "d2_drop": -0.00020482167015989372,
+     "gini_drop": -9.774293480147023e-06,
+     "encoded": false,
+     "d2_drop_bi": -0.0003469030924557748,
+     "d2_drop_other": 0.00015028014105089582
+    },
+    {
+     "feature": "campaign_code",
+     "d2_drop": -0.0003801363339470676,
+     "gini_drop": -0.0010580646094441315,
+     "encoded": false,
+     "d2_drop_bi": -0.00020381810526948207,
+     "d2_drop_other": -0.0001275824303687001
+    }
+   ],
+   "components": "BI claim frequency: LightGBM Poisson (3 seeds); other perils: LightGBM Tweedie (3 seeds)"
+  },
+  "buildings": {
+   "d2": 0.11066794541142544,
+   "gini": 0.3705629689606864,
+   "n_features": 59,
+   "features": [
+    {
+     "feature": "flood_zone",
+     "d2_drop": 0.03256736860957887,
+     "gini_drop": 0.08096163484498942,
+     "encoded": false
+    },
+    {
+     "feature": "sum_insured",
+     "d2_drop": 0.012468060240490852,
+     "gini_drop": 0.03202739474881555,
+     "encoded": false
+    },
+    {
+     "feature": "elevation_m",
+     "d2_drop": 0.012023982855571491,
+     "gini_drop": 0.033373864920556384,
+     "encoded": false
+    },
+    {
+     "feature": "prior_claims_5y",
+     "d2_drop": 0.005199971127693104,
+     "gini_drop": 0.014533811341829628,
+     "encoded": false
+    },
+    {
+     "feature": "energy_rating",
+     "d2_drop": 0.0029778741700912104,
+     "gini_drop": 0.01010000670036093,
+     "encoded": false
+    },
+    {
+     "feature": "distance_to_river_km",
+     "d2_drop": 0.002557714276617218,
+     "gini_drop": 0.005081393895971176,
+     "encoded": false
+    },
+    {
+     "feature": "soil_type",
+     "d2_drop": 0.0017757963106611596,
+     "gini_drop": 0.005873767166455268,
+     "encoded": false
+    },
+    {
+     "feature": "property_age",
+     "d2_drop": 0.0016702173077506322,
+     "gini_drop": 0.006551929506713683,
+     "encoded": false
+    },
+    {
+     "feature": "bedrooms",
+     "d2_drop": 0.00147323656112619,
+     "gini_drop": 0.004454770726346147,
+     "encoded": false
+    },
+    {
+     "feature": "construction_type",
+     "d2_drop": 0.001470234934999315,
+     "gini_drop": 0.0029070705666041086,
+     "encoded": false
+    },
+    {
+     "feature": "wildfire_index",
+     "d2_drop": 0.0013709654869384913,
+     "gini_drop": 0.00450180709038106,
+     "encoded": false
+    },
+    {
+     "feature": "missed_payments_12m",
+     "d2_drop": 0.0012991362498651071,
+     "gini_drop": 0.003983215648506344,
+     "encoded": false
+    },
+    {
+     "feature": "voluntary_excess",
+     "d2_drop": 0.001254745956112635,
+     "gini_drop": 0.003817966631768255,
+     "encoded": false
+    },
+    {
+     "feature": "occupancy",
+     "d2_drop": 0.0011611262340985862,
+     "gini_drop": 0.0012334061884176073,
+     "encoded": false
+    },
+    {
+     "feature": "payment_method",
+     "d2_drop": 0.001138578887648567,
+     "gini_drop": 0.0023566778625861984,
+     "encoded": false
+    },
+    {
+     "feature": "year_built",
+     "d2_drop": 0.0011262175359390003,
+     "gini_drop": 0.004705419195373706,
+     "encoded": false
+    },
+    {
+     "feature": "accidental_damage_cover",
+     "d2_drop": 0.0010210592718205014,
+     "gini_drop": 0.00266521909457329,
+     "encoded": false
+    },
+    {
+     "feature": "years_at_address",
+     "d2_drop": 0.0009785882249365718,
+     "gini_drop": 0.001968984716493982,
+     "encoded": false
+    },
+    {
+     "feature": "credit_band",
+     "d2_drop": 0.0009043502870935693,
+     "gini_drop": 0.004024474937821765,
+     "encoded": false
+    },
+    {
+     "feature": "occupation",
+     "d2_drop": 0.0008795677928603585,
+     "gini_drop": 0.0016462588112677867,
+     "encoded": true
+    },
+    {
+     "feature": "dry_summer_index",
+     "d2_drop": 0.0007293275954572964,
+     "gini_drop": 0.0017099947213479183,
+     "encoded": false
+    },
+    {
+     "feature": "start_month",
+     "d2_drop": 0.0006613180184217304,
+     "gini_drop": 0.000654226693528881,
+     "encoded": false
+    },
+    {
+     "feature": "wind_exposure_index",
+     "d2_drop": 0.0006271047584969214,
+     "gini_drop": 0.002474958150542994,
+     "encoded": false
+    },
+    {
+     "feature": "listed_building",
+     "d2_drop": 0.0006073719198236294,
+     "gini_drop": 0.0017939332960437149,
+     "encoded": false
+    },
+    {
+     "feature": "days_quote_to_inception",
+     "d2_drop": 0.0005816853643778597,
+     "gini_drop": -0.00026993861845869827,
+     "encoded": false
+    },
+    {
+     "feature": "rainfall_mm",
+     "d2_drop": 0.00042589544034243865,
+     "gini_drop": 0.001019327068478737,
+     "encoded": false
+    },
+    {
+     "feature": "mean_temperature_c",
+     "d2_drop": 0.000359180063348008,
+     "gini_drop": 0.0010046496699042118,
+     "encoded": false
+    },
+    {
+     "feature": "campaign_code",
+     "d2_drop": 0.00035369649144056936,
+     "gini_drop": -0.00040563359433187784,
+     "encoded": false
+    },
+    {
+     "feature": "hist_n_policy",
+     "d2_drop": 0.00026409378650593673,
+     "gini_drop": 0.0015234486775108635,
+     "encoded": false
+    },
+    {
+     "feature": "basement",
+     "d2_drop": 0.00026297472166159075,
+     "gini_drop": 0.0008962993176209189,
+     "encoded": false
+    },
+    {
+     "feature": "channel",
+     "d2_drop": 0.00020340015866915362,
+     "gini_drop": -0.000640239566709,
+     "encoded": false
+    },
+    {
+     "feature": "hist_n_customer",
+     "d2_drop": 0.0001836876156690037,
+     "gini_drop": 0.00040899584693931956,
+     "encoded": false
+    },
+    {
+     "feature": "renewal_count",
+     "d2_drop": 0.00010716856097670036,
+     "gini_drop": 0.0004113749116364529,
+     "encoded": false
+    },
+    {
+     "feature": "document_preference",
+     "d2_drop": 6.864704599995886e-05,
+     "gini_drop": 4.787507873149632e-05,
+     "encoded": false
+    },
+    {
+     "feature": "roof_type",
+     "d2_drop": 6.058375305584285e-05,
+     "gini_drop": 0.00025892038455777033,
+     "encoded": false
+    },
+    {
+     "feature": "solar_panels",
+     "d2_drop": 3.556880904309612e-05,
+     "gini_drop": 1.6438853678302223e-05,
+     "encoded": false
+    },
+    {
+     "feature": "household_size",
+     "d2_drop": 3.117914966588309e-05,
+     "gini_drop": 0.00013135517193951785,
+     "encoded": false
+    },
+    {
+     "feature": "marketing_segment",
+     "d2_drop": 2.808398976261728e-05,
+     "gini_drop": -0.00051545949656151,
+     "encoded": false
+    },
+    {
+     "feature": "trees_within_5m",
+     "d2_drop": 6.130980106267003e-06,
+     "gini_drop": -0.0001786166570405534,
+     "encoded": false
+    },
+    {
+     "feature": "new_business",
+     "d2_drop": 1.8182483009221428e-06,
+     "gini_drop": -0.000468076057038358,
+     "encoded": false
+    },
+    {
+     "feature": "compulsory_excess",
+     "d2_drop": 0.0,
+     "gini_drop": 0.0,
+     "encoded": false
+    },
+    {
+     "feature": "branch_id",
+     "d2_drop": -2.6034457988766135e-05,
+     "gini_drop": 0.0001585916948849686,
+     "encoded": false
+    },
+    {
+     "feature": "hist_cost_customer",
+     "d2_drop": -4.275511266282894e-05,
+     "gini_drop": -7.135937424451733e-05,
+     "encoded": false
+    },
+    {
+     "feature": "region",
+     "d2_drop": -5.3119243136667826e-05,
+     "gini_drop": -0.0002980415195825703,
+     "encoded": false
+    },
+    {
+     "feature": "hail_days",
+     "d2_drop": -8.362015237173281e-05,
+     "gini_drop": 0.0004571350772695215,
+     "encoded": false
+    },
+    {
+     "feature": "discount_applied",
+     "d2_drop": -0.00010577667849931416,
+     "gini_drop": -0.0004105035664345724,
+     "encoded": false
+    },
+    {
+     "feature": "marketing_consent",
+     "d2_drop": -0.00011722896716492848,
+     "gini_drop": -0.00045964993333180715,
+     "encoded": false
+    },
+    {
+     "feature": "policyholder_age",
+     "d2_drop": -0.0001328914232213707,
+     "gini_drop": -0.0004157242054060317,
+     "encoded": false
+    },
+    {
+     "feature": "mortgage",
+     "d2_drop": -0.00015547977960916892,
+     "gini_drop": -0.0006721301148208125,
+     "encoded": false
+    },
+    {
+     "feature": "customer_tenure",
+     "d2_drop": -0.0001644177235585742,
+     "gini_drop": -0.00023303305702537802,
+     "encoded": false
+    },
+    {
+     "feature": "customer_age",
+     "d2_drop": -0.00019456811407558838,
+     "gini_drop": 0.0002046840092695401,
+     "encoded": false
+    },
+    {
+     "feature": "smoke_alarms",
+     "d2_drop": -0.0001947648184246198,
+     "gini_drop": -0.0005977108233026218,
+     "encoded": false
+    },
+    {
+     "feature": "marital_status",
+     "d2_drop": -0.00020391044426926186,
+     "gini_drop": -0.0007899159530138089,
+     "encoded": false
+    },
+    {
+     "feature": "urban_density",
+     "d2_drop": -0.00037762337922453426,
+     "gini_drop": -0.0013034710214411271,
+     "encoded": false
+    },
+    {
+     "feature": "hist_cost_policy",
+     "d2_drop": -0.00042109012213009667,
+     "gini_drop": -0.00030547641495626277,
+     "encoded": false
+    },
+    {
+     "feature": "property_type",
+     "d2_drop": -0.0004976648148686813,
+     "gini_drop": -0.0005674437608754745,
+     "encoded": false
+    },
+    {
+     "feature": "freezing_days",
+     "d2_drop": -0.0006028868270536725,
+     "gini_drop": -0.00040703838159605876,
+     "encoded": false
+    },
+    {
+     "feature": "previous_insurer",
+     "d2_drop": -0.0006183607060897822,
+     "gini_drop": -0.0023894482188069333,
+     "encoded": true
+    },
+    {
+     "feature": "days_unoccupied",
+     "d2_drop": -0.0007821947274885277,
+     "gini_drop": -0.003346145505205511,
+     "encoded": false
+    }
+   ],
+   "ebm_terms": [
+    {
+     "term": "flood_zone",
+     "importance": 0.17490961352039983
+    },
+    {
+     "term": "sum_insured",
+     "importance": 0.15533472057109157
+    },
+    {
+     "term": "bedrooms",
+     "importance": 0.09016707445807434
+    },
+    {
+     "term": "prior_claims_5y",
+     "importance": 0.08460106349028051
+    },
+    {
+     "term": "elevation_m",
+     "importance": 0.07060908771258197
+    },
+    {
+     "term": "construction_type",
+     "importance": 0.06641340541389087
+    },
+    {
+     "term": "energy_rating",
+     "importance": 0.06421353549341681
+    },
+    {
+     "term": "distance_to_river_km",
+     "importance": 0.05731997956789916
+    },
+    {
+     "term": "occupancy",
+     "importance": 0.0551071266001914
+    },
+    {
+     "term": "payment_method",
+     "importance": 0.053485419506591705
+    },
+    {
+     "term": "property_age",
+     "importance": 0.053011851838103655
+    },
+    {
+     "term": "soil_type",
+     "importance": 0.05068545731307956
+    },
+    {
+     "term": "year_built",
+     "importance": 0.05014275804379906
+    },
+    {
+     "term": "accidental_damage_cover",
+     "importance": 0.049373611201314095
+    },
+    {
+     "term": "discount_applied",
+     "importance": 0.04825771813364417
+    },
+    {
+     "term": "channel",
+     "importance": 0.038879684615815896
+    },
+    {
+     "term": "basement",
+     "importance": 0.038873694630619834
+    },
+    {
+     "term": "wildfire_index",
+     "importance": 0.03744095440599689
+    },
+    {
+     "term": "region",
+     "importance": 0.03628401724682769
+    },
+    {
+     "term": "voluntary_excess",
+     "importance": 0.035948429256986505
+    },
+    {
+     "term": "marital_status",
+     "importance": 0.033294733524951825
+    },
+    {
+     "term": "missed_payments_12m",
+     "importance": 0.032929683572618586
+    },
+    {
+     "term": "dry_summer_index",
+     "importance": 0.02951881815351196
+    },
+    {
+     "term": "urban_density",
+     "importance": 0.028667137442712057
+    },
+    {
+     "term": "household_size",
+     "importance": 0.02837193861823811
+    },
+    {
+     "term": "days_quote_to_inception",
+     "importance": 0.027022602988223954
+    },
+    {
+     "term": "wind_exposure_index",
+     "importance": 0.026877176424360154
+    },
+    {
+     "term": "credit_band",
+     "importance": 0.025373629528439825
+    },
+    {
+     "term": "rainfall_mm",
+     "importance": 0.022756895368601524
+    },
+    {
+     "term": "freezing_days",
+     "importance": 0.021460971585043783
+    },
+    {
+     "term": "marketing_segment",
+     "importance": 0.02130783890458337
+    },
+    {
+     "term": "branch_id",
+     "importance": 0.01956203837632168
+    },
+    {
+     "term": "occupation",
+     "importance": 0.01852608053490454
+    },
+    {
+     "term": "new_business",
+     "importance": 0.017674575168828952
+    },
+    {
+     "term": "renewal_count",
+     "importance": 0.016853320655984418
+    },
+    {
+     "term": "previous_insurer",
+     "importance": 0.016504588315361106
+    },
+    {
+     "term": "mortgage",
+     "importance": 0.015432259719607842
+    },
+    {
+     "term": "customer_tenure",
+     "importance": 0.01441918206536045
+    },
+    {
+     "term": "years_at_address",
+     "importance": 0.013833527304092574
+    },
+    {
+     "term": "smoke_alarms",
+     "importance": 0.013467001352742768
+    },
+    {
+     "term": "property_type",
+     "importance": 0.013393470627724715
+    },
+    {
+     "term": "hist_n_policy",
+     "importance": 0.013334358026898013
+    },
+    {
+     "term": "listed_building",
+     "importance": 0.013090459186250243
+    },
+    {
+     "term": "trees_within_5m",
+     "importance": 0.012130536380064543
+    },
+    {
+     "term": "mean_temperature_c",
+     "importance": 0.011028826729691382
+    },
+    {
+     "term": "policyholder_age",
+     "importance": 0.01045486972111785
+    },
+    {
+     "term": "hist_cost_policy",
+     "importance": 0.009292606558602355
+    },
+    {
+     "term": "hist_n_customer",
+     "importance": 0.009152225428971946
+    },
+    {
+     "term": "customer_age",
+     "importance": 0.009087218359578314
+    },
+    {
+     "term": "start_month",
+     "importance": 0.00874789494876138
+    },
+    {
+     "term": "document_preference",
+     "importance": 0.00780819124985117
+    },
+    {
+     "term": "days_unoccupied",
+     "importance": 0.007289609744124173
+    },
+    {
+     "term": "hail_days",
+     "importance": 0.007179613795145682
+    },
+    {
+     "term": "roof_type",
+     "importance": 0.006530856242118403
+    },
+    {
+     "term": "campaign_code",
+     "importance": 0.003969316204957884
+    },
+    {
+     "term": "solar_panels",
+     "importance": 0.0027648242527426887
+    },
+    {
+     "term": "hist_cost_customer",
+     "importance": 0.0018544952728684492
+    },
+    {
+     "term": "marketing_consent",
+     "importance": 0.000895431956589884
+    },
+    {
+     "term": "compulsory_excess",
+     "importance": 0.0
+    }
+   ],
+   "components": "LightGBM Tweedie (3 seeds) averaged 50/50 with an EBM"
+  },
+  "contents": {
+   "d2": 0.09093464511112415,
+   "gini": 0.3555307096114436,
+   "n_features": 60,
+   "features": [
+    {
+     "feature": "sum_insured",
+     "d2_drop": 0.036420451304967405,
+     "gini_drop": 0.10768098076557664,
+     "encoded": false
+    },
+    {
+     "feature": "flood_zone",
+     "d2_drop": 0.023299158890756178,
+     "gini_drop": 0.06697680415466734,
+     "encoded": false
+    },
+    {
+     "feature": "elevation_m",
+     "d2_drop": 0.006744310419063426,
+     "gini_drop": 0.01689232165468635,
+     "encoded": false
+    },
+    {
+     "feature": "voluntary_excess",
+     "d2_drop": 0.006386072202331672,
+     "gini_drop": 0.01899077684478645,
+     "encoded": false
+    },
+    {
+     "feature": "prior_claims_5y",
+     "d2_drop": 0.0041690323024007325,
+     "gini_drop": 0.011973960245341142,
+     "encoded": false
+    },
+    {
+     "feature": "urban_density",
+     "d2_drop": 0.0037000693941806606,
+     "gini_drop": 0.012018834610047269,
+     "encoded": false
+    },
+    {
+     "feature": "region",
+     "d2_drop": 0.003054760234519338,
+     "gini_drop": 0.006827669386645807,
+     "encoded": false
+    },
+    {
+     "feature": "accidental_damage_cover",
+     "d2_drop": 0.0029407690512514018,
+     "gini_drop": 0.006202437535774541,
+     "encoded": false
+    },
+    {
+     "feature": "property_type",
+     "d2_drop": 0.0016344257953023744,
+     "gini_drop": 0.004386131944208338,
+     "encoded": false
+    },
+    {
+     "feature": "missed_payments_12m",
+     "d2_drop": 0.0012525362877727764,
+     "gini_drop": 0.002998114338208957,
+     "encoded": false
+    },
+    {
+     "feature": "high_value_items",
+     "d2_drop": 0.0010562579448610832,
+     "gini_drop": 0.003745806989682521,
+     "encoded": false
+    },
+    {
+     "feature": "marketing_segment",
+     "d2_drop": 0.001041591283605925,
+     "gini_drop": 0.003318944766665055,
+     "encoded": false
+    },
+    {
+     "feature": "wildfire_index",
+     "d2_drop": 0.0008622446675066175,
+     "gini_drop": 0.0029552723739271203,
+     "encoded": false
+    },
+    {
+     "feature": "payment_method",
+     "d2_drop": 0.0008004028178515421,
+     "gini_drop": 0.0024748499493641996,
+     "encoded": false
+    },
+    {
+     "feature": "energy_rating",
+     "d2_drop": 0.0007819936760091739,
+     "gini_drop": 0.0016825119872858618,
+     "encoded": false
+    },
+    {
+     "feature": "customer_age",
+     "d2_drop": 0.0007673968340339288,
+     "gini_drop": 0.0034908830171450633,
+     "encoded": false
+    },
+    {
+     "feature": "security_level",
+     "d2_drop": 0.0007277422384384113,
+     "gini_drop": 0.0016263910312488417,
+     "encoded": false
+    },
+    {
+     "feature": "discount_applied",
+     "d2_drop": 0.0005504840362208219,
+     "gini_drop": 0.0013161670268762027,
+     "encoded": false
+    },
+    {
+     "feature": "tenure",
+     "d2_drop": 0.0005443170931367369,
+     "gini_drop": 0.0015006516325669628,
+     "encoded": false
+    },
+    {
+     "feature": "rainfall_mm",
+     "d2_drop": 0.0005182770002680748,
+     "gini_drop": 0.0013100482830619153,
+     "encoded": false
+    },
+    {
+     "feature": "bedrooms",
+     "d2_drop": 0.0004883844519851799,
+     "gini_drop": 0.0009731626338524979,
+     "encoded": false
+    },
+    {
+     "feature": "policyholder_age",
+     "d2_drop": 0.0004715257141436613,
+     "gini_drop": 0.0016392169669188217,
+     "encoded": false
+    },
+    {
+     "feature": "works_from_home",
+     "d2_drop": 0.0003981824236771736,
+     "gini_drop": 0.00029292569917160893,
+     "encoded": false
+    },
+    {
+     "feature": "credit_band",
+     "d2_drop": 0.0003761099852009897,
+     "gini_drop": 0.0014751846209409836,
+     "encoded": false
+    },
+    {
+     "feature": "freezing_days",
+     "d2_drop": 0.00021954003253621401,
+     "gini_drop": 0.0006303288590779887,
+     "encoded": false
+    },
+    {
+     "feature": "year_built",
+     "d2_drop": 0.00016686383713293562,
+     "gini_drop": 0.00016769102194713614,
+     "encoded": false
+    },
+    {
+     "feature": "trees_within_5m",
+     "d2_drop": 0.00015690620468378214,
+     "gini_drop": 0.0001441027113489035,
+     "encoded": false
+    },
+    {
+     "feature": "lodgers",
+     "d2_drop": 0.00012517586084381804,
+     "gini_drop": 0.0002519077576194073,
+     "encoded": false
+    },
+    {
+     "feature": "bicycle_cover",
+     "d2_drop": 0.00010967141802475933,
+     "gini_drop": 0.00029280300009770777,
+     "encoded": false
+    },
+    {
+     "feature": "solar_panels",
+     "d2_drop": 0.00010272205008121649,
+     "gini_drop": 6.834949977652105e-05,
+     "encoded": false
+    },
+    {
+     "feature": "branch_id",
+     "d2_drop": 8.052348586495839e-05,
+     "gini_drop": -0.00019036613547995795,
+     "encoded": false
+    },
+    {
+     "feature": "years_at_address",
+     "d2_drop": 6.57073546480591e-05,
+     "gini_drop": 0.0014308044391980745,
+     "encoded": false
+    },
+    {
+     "feature": "occupation",
+     "d2_drop": 4.851478033285339e-05,
+     "gini_drop": 0.0007192711565422449,
+     "encoded": true
+    },
+    {
+     "feature": "days_quote_to_inception",
+     "d2_drop": 4.111760325842262e-05,
+     "gini_drop": 0.0014860782781074278,
+     "encoded": false
+    },
+    {
+     "feature": "listed_building",
+     "d2_drop": 3.334319946013409e-05,
+     "gini_drop": 0.0001130372870450369,
+     "encoded": false
+    },
+    {
+     "feature": "document_preference",
+     "d2_drop": 3.011789270301879e-05,
+     "gini_drop": 0.0005774023164635267,
+     "encoded": false
+    },
+    {
+     "feature": "marital_status",
+     "d2_drop": 2.9966622625554606e-05,
+     "gini_drop": -0.00047041159176031133,
+     "encoded": false
+    },
+    {
+     "feature": "household_size",
+     "d2_drop": 2.9100444144281035e-05,
+     "gini_drop": 0.0006073750176617265,
+     "encoded": false
+    },
+    {
+     "feature": "roof_type",
+     "d2_drop": 2.5009932321573558e-05,
+     "gini_drop": -0.00014651863124293119,
+     "encoded": false
+    },
+    {
+     "feature": "hist_cost_customer",
+     "d2_drop": 2.064878248930757e-05,
+     "gini_drop": 8.687487718750386e-05,
+     "encoded": false
+    },
+    {
+     "feature": "hist_n_customer",
+     "d2_drop": 1.7046519998453746e-05,
+     "gini_drop": -7.253352929559309e-05,
+     "encoded": false
+    },
+    {
+     "feature": "marketing_consent",
+     "d2_drop": 3.622074228881722e-06,
+     "gini_drop": 0.00010351391472496196,
+     "encoded": false
+    },
+    {
+     "feature": "hist_n_policy",
+     "d2_drop": 1.217350727777955e-06,
+     "gini_drop": 7.310812532412836e-05,
+     "encoded": false
+    },
+    {
+     "feature": "compulsory_excess",
+     "d2_drop": 0.0,
+     "gini_drop": 0.0,
+     "encoded": false
+    },
+    {
+     "feature": "basement",
+     "d2_drop": -1.2512532820974087e-06,
+     "gini_drop": 5.107850740582176e-05,
+     "encoded": false
+    },
+    {
+     "feature": "customer_tenure",
+     "d2_drop": -3.5355211561727273e-06,
+     "gini_drop": 0.00011698782230873395,
+     "encoded": false
+    },
+    {
+     "feature": "new_business",
+     "d2_drop": -2.443521604367227e-05,
+     "gini_drop": -0.00015918651493074254,
+     "encoded": false
+    },
+    {
+     "feature": "hist_cost_policy",
+     "d2_drop": -4.1761983667343294e-05,
+     "gini_drop": -0.00042135262626485925,
+     "encoded": false
+    },
+    {
+     "feature": "hail_days",
+     "d2_drop": -0.00011487079148375656,
+     "gini_drop": -6.0009978857689106e-05,
+     "encoded": false
+    },
+    {
+     "feature": "distance_to_river_km",
+     "d2_drop": -0.00015073578912028207,
+     "gini_drop": 9.112387662302268e-05,
+     "encoded": false
+    },
+    {
+     "feature": "soil_type",
+     "d2_drop": -0.00015676436618794476,
+     "gini_drop": -0.000457555985020508,
+     "encoded": false
+    },
+    {
+     "feature": "campaign_code",
+     "d2_drop": -0.00015785681067448376,
+     "gini_drop": 0.0007415767894211056,
+     "encoded": false
+    },
+    {
+     "feature": "channel",
+     "d2_drop": -0.00016538800407039922,
+     "gini_drop": -0.0014310537639893317,
+     "encoded": false
+    },
+    {
+     "feature": "property_age",
+     "d2_drop": -0.0002726225742736288,
+     "gini_drop": -0.0012879221135734253,
+     "encoded": false
+    },
+    {
+     "feature": "start_month",
+     "d2_drop": -0.0002944964876648859,
+     "gini_drop": 0.00036755630109130966,
+     "encoded": false
+    },
+    {
+     "feature": "renewal_count",
+     "d2_drop": -0.0003046277000618991,
+     "gini_drop": 7.103685741916e-05,
+     "encoded": false
+    },
+    {
+     "feature": "wind_exposure_index",
+     "d2_drop": -0.0003597931920958919,
+     "gini_drop": -0.0006290681138920728,
+     "encoded": false
+    },
+    {
+     "feature": "mean_temperature_c",
+     "d2_drop": -0.00037003620417641603,
+     "gini_drop": -0.0002921953255039522,
+     "encoded": false
+    },
+    {
+     "feature": "dry_summer_index",
+     "d2_drop": -0.000649596205851477,
+     "gini_drop": -0.0008897501661117024,
+     "encoded": false
+    },
+    {
+     "feature": "previous_insurer",
+     "d2_drop": -0.0008492416752056142,
+     "gini_drop": -0.0017409376141855892,
+     "encoded": true
+    }
+   ],
+   "ebm_terms": [
+    {
+     "term": "sum_insured",
+     "importance": 0.31555781970538693
+    },
+    {
+     "term": "flood_zone",
+     "importance": 0.16886862787057005
+    },
+    {
+     "term": "accidental_damage_cover",
+     "importance": 0.1095225354067067
+    },
+    {
+     "term": "prior_claims_5y",
+     "importance": 0.10667532904067628
+    },
+    {
+     "term": "voluntary_excess",
+     "importance": 0.10061632682042765
+    },
+    {
+     "term": "urban_density",
+     "importance": 0.09181349190486784
+    },
+    {
+     "term": "elevation_m",
+     "importance": 0.09147642281885755
+    },
+    {
+     "term": "high_value_items",
+     "importance": 0.0677284728981639
+    },
+    {
+     "term": "payment_method",
+     "importance": 0.06534113978640259
+    },
+    {
+     "term": "security_level",
+     "importance": 0.06398071384227424
+    },
+    {
+     "term": "region",
+     "importance": 0.06347238437420649
+    },
+    {
+     "term": "channel",
+     "importance": 0.05766794554619894
+    },
+    {
+     "term": "property_type",
+     "importance": 0.05130687303727102
+    },
+    {
+     "term": "discount_applied",
+     "importance": 0.04491369547592163
+    },
+    {
+     "term": "days_quote_to_inception",
+     "importance": 0.04333563695126592
+    },
+    {
+     "term": "wind_exposure_index",
+     "importance": 0.04298942169204712
+    },
+    {
+     "term": "marketing_segment",
+     "importance": 0.040366414801480094
+    },
+    {
+     "term": "freezing_days",
+     "importance": 0.037582316953353054
+    },
+    {
+     "term": "policyholder_age",
+     "importance": 0.036100014602505816
+    },
+    {
+     "term": "customer_age",
+     "importance": 0.03590821549853017
+    },
+    {
+     "term": "bedrooms",
+     "importance": 0.03568456044569424
+    },
+    {
+     "term": "wildfire_index",
+     "importance": 0.03437241958060855
+    },
+    {
+     "term": "dry_summer_index",
+     "importance": 0.033694028455418
+    },
+    {
+     "term": "rainfall_mm",
+     "importance": 0.03329598974105851
+    },
+    {
+     "term": "tenure",
+     "importance": 0.03252748372211333
+    },
+    {
+     "term": "missed_payments_12m",
+     "importance": 0.03034235689606032
+    },
+    {
+     "term": "works_from_home",
+     "importance": 0.028397962328936665
+    },
+    {
+     "term": "energy_rating",
+     "importance": 0.027893146633861145
+    },
+    {
+     "term": "mean_temperature_c",
+     "importance": 0.027866523053882507
+    },
+    {
+     "term": "occupation",
+     "importance": 0.027700646349281564
+    },
+    {
+     "term": "distance_to_river_km",
+     "importance": 0.026828973538032326
+    },
+    {
+     "term": "credit_band",
+     "importance": 0.025015680693181757
+    },
+    {
+     "term": "document_preference",
+     "importance": 0.024644294354250612
+    },
+    {
+     "term": "property_age",
+     "importance": 0.02175724218074532
+    },
+    {
+     "term": "years_at_address",
+     "importance": 0.02020517663647212
+    },
+    {
+     "term": "year_built",
+     "importance": 0.01746977889120168
+    },
+    {
+     "term": "campaign_code",
+     "importance": 0.017373195306281293
+    },
+    {
+     "term": "soil_type",
+     "importance": 0.015362725868166793
+    },
+    {
+     "term": "hail_days",
+     "importance": 0.014990782296748986
+    },
+    {
+     "term": "marital_status",
+     "importance": 0.014007195277566917
+    },
+    {
+     "term": "branch_id",
+     "importance": 0.01393534311866295
+    },
+    {
+     "term": "previous_insurer",
+     "importance": 0.013192521853020184
+    },
+    {
+     "term": "household_size",
+     "importance": 0.012912352505213897
+    },
+    {
+     "term": "roof_type",
+     "importance": 0.011536886741339219
+    },
+    {
+     "term": "trees_within_5m",
+     "importance": 0.011513544034373538
+    },
+    {
+     "term": "solar_panels",
+     "importance": 0.011046658396718126
+    },
+    {
+     "term": "customer_tenure",
+     "importance": 0.010790659359943727
+    },
+    {
+     "term": "renewal_count",
+     "importance": 0.01048186462577674
+    },
+    {
+     "term": "start_month",
+     "importance": 0.010021666584672673
+    },
+    {
+     "term": "hist_n_policy",
+     "importance": 0.008800237798033222
+    },
+    {
+     "term": "lodgers",
+     "importance": 0.008054654690503179
+    },
+    {
+     "term": "hist_n_customer",
+     "importance": 0.008030987143706113
+    },
+    {
+     "term": "basement",
+     "importance": 0.007832576315716893
+    },
+    {
+     "term": "new_business",
+     "importance": 0.005805455770373552
+    },
+    {
+     "term": "bicycle_cover",
+     "importance": 0.0048671621758318425
+    },
+    {
+     "term": "hist_cost_policy",
+     "importance": 0.0024048717139931552
+    },
+    {
+     "term": "listed_building",
+     "importance": 0.0023771024690478885
+    },
+    {
+     "term": "hist_cost_customer",
+     "importance": 0.002219386745003625
+    },
+    {
+     "term": "marketing_consent",
+     "importance": 0.001592105949668755
+    },
+    {
+     "term": "compulsory_excess",
+     "importance": 0.0
+    }
+   ],
+   "components": "LightGBM Tweedie (3 seeds) averaged 50/50 with an EBM"
+  }
+ },
+ "pooled_d2": 0.13980859846077842,
+ "unused": [
+  {
+   "column": "row_id",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Identifier"
+  },
+  {
+   "column": "policy_id",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Identifier"
+  },
+  {
+   "column": "customer_id",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Identifier"
+  },
+  {
+   "column": "address_id",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Identifier"
+  },
+  {
+   "column": "period_start",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Date; enters through start month and ages"
+  },
+  {
+   "column": "period_end",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Date; exposure carries the period length"
+  },
+  {
+   "column": "exposure",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Weight and level base, not a predictor (as a feature, run 40: -0.003)"
+  },
+  {
+   "column": "written_premium",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Owner decision 19 Oct: the incumbent's price, not a risk characteristic"
+  },
+  {
+   "column": "year",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Calendar year: trees cannot extrapolate it; trend is set by on-levelling"
+  },
+  {
+   "column": "line",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Structural; each line has its own model"
+  },
+  {
+   "column": "licence_points",
+   "lines": [
+    "buildings",
+    "contents"
+   ],
+   "reason": "Owner decision 19 Oct: a driving record, no rating rationale for property"
+  },
+  {
+   "column": "email_domain",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Owner decision 19 Oct: inadmissible and pure noise (no relation to any other field)"
+  },
+  {
+   "column": "lines_held",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Tested (lines a customer holds): no gain, 0.1334 vs 0.1339"
+  },
+  {
+   "column": "n_accidental_damage",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_bodily_injury",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_escape_of_water",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_fire",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_flood",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_glass_hail",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_own_damage",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_storm",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_subsidence",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_theft",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_third_party_prop",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_accidental_damage",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_bodily_injury",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_escape_of_water",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_fire",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_flood",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_glass_hail",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_own_damage",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_storm",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_subsidence",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_theft",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_third_party_prop",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "n_total",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "cost_total",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "ult_bodily_injury",
+   "lines": [
+    "motor"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "comp_bodily_injury",
+   "lines": [
+    "motor"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "ult_other",
+   "lines": [
+    "motor"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "comp_other",
+   "lines": [
+    "motor"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "ult_weather",
+   "lines": [
+    "buildings"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "comp_weather",
+   "lines": [
+    "buildings"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "ult_water",
+   "lines": [
+    "buildings"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "comp_water",
+   "lines": [
+    "buildings"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "ult_fire",
+   "lines": [
+    "buildings"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "comp_fire",
+   "lines": [
+    "buildings"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "ult_ad",
+   "lines": [
+    "buildings"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "comp_ad",
+   "lines": [
+    "buildings"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "ult_all",
+   "lines": [
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "comp_all",
+   "lines": [
+    "contents"
+   ],
+   "reason": "Claims outcome for the row (target side), hidden from the model"
+  },
+  {
+   "column": "y_ult",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Target"
+  },
+  {
+   "column": "split",
+   "lines": [
+    "motor",
+    "buildings",
+    "contents"
+   ],
+   "reason": "Structural"
+  },
+  {
+   "column": "renewal_decision",
+   "lines": [
+    "removed before modelling"
+   ],
+   "reason": "Leak: recorded after the period; training data only"
+  },
+  {
+   "column": "customer_service_contacts",
+   "lines": [
+    "removed before modelling"
+   ],
+   "reason": "Leak: includes claim-related contacts in training data"
+  },
+  {
+   "column": "customer_since_year",
+   "lines": [
+    "removed before modelling"
+   ],
+   "reason": "Drifts between training and 2025 by construction; tenure replaces it"
+  },
+  {
+   "column": "exposure_raw",
+   "lines": [
+    "removed before modelling"
+   ],
+   "reason": "Data-quality working column (exposure in days fixed)"
+  },
+  {
+   "column": "dq_exposure_fixed",
+   "lines": [
+    "removed before modelling"
+   ],
+   "reason": "Data-quality flag"
+  },
+  {
+   "column": "date_of_birth",
+   "lines": [
+    "removed before modelling"
+   ],
+   "reason": "Replaced by customer age at period start"
+  },
+  {
+   "column": "surname",
+   "lines": [
+    "removed before modelling"
+   ],
+   "reason": "Personal identifier; never used"
+  }
+ ],
+ "seconds": 3882,
+ "dataset": "2e6c0e5ff80c"
+}

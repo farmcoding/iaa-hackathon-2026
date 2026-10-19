@@ -730,15 +730,20 @@ def models_section(root: Path) -> str:
         if info.get("ebm_terms"):
             terms = info["ebm_terms"][:20]
             trs = "".join(
-                f"<tr><td>{html.escape(t['term'])}</td><td>{'interaction' if ' & ' in t['term'] else 'main effect'}</td><td class=num>{t['importance']:.2f}</td></tr>"
+                f"<tr><td>{html.escape(t['term'])}</td><td>{'interaction' if ' & ' in t['term'] else 'main effect'}</td><td class=num>{t['importance']:.3f}</td></tr>"
                 for t in terms
             )
             out.append(
                 md(
-                    f"**{LINE_NAMES[line]} EBM, top 20 terms** (the EBM is additive, so each term is a curve or a two-way table that can be read directly; importance is the average absolute change it makes to the predicted rate):"
+                    f"**{LINE_NAMES[line]} EBM, top 20 terms** (the EBM is additive, so each term is a curve that can be read directly; importance is the average absolute change it makes to the predicted rate; pairwise interactions are switched off for run time, so all terms are main effects):"
                 )
                 + f"<table><tr><th>Term</th><th>Type</th><th>Importance</th></tr>{trs}</table>"
             )
+    out.append(
+        md(
+            """**Points for the actuary.** (1) Each line has a long tail of predictors that add nothing measurable on 2024 (negative or near-zero values above); they are candidates for pruning, which would make the tariff shorter without costing accuracy. (2) Several insurer-side fields still reach the models: campaign code, marketing segment, branch, sales channel and days from quote to inception. They describe how the policy was sold, not the risk. Their measured contribution is at most 0.001 on any line. Like written premium, they are an admissibility decision for the owner. (3) Credit band, occupation, marital status and customer age are in the models with small contributions (at most 0.001); they are flagged for the fairness review."""
+        )
+    )
     unused = card.get("unused", [])
     trs = "".join(
         f"<tr><td>{html.escape(u['column'])}</td><td>{html.escape(', '.join(u['lines']))}</td><td>{html.escape(u['reason'])}</td></tr>"
