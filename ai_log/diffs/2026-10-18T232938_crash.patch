@@ -1,0 +1,53 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..5e9e216 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -84,6 +84,20 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# backlog 2.13: CatBoost's native Tweedie as a third blend member on buildings/contents.
++# Both prior attempts (results.tsv 2e29d24, 10170fd) crashed on raw NaN in a categorical
++# column; _ebm_safe already solves exactly that for EBM, so it's reused here instead of
++# a second NaN-handling helper. The third attempt (results.tsv 6929cdc) crashed on a
++# missing `from catboost import CatBoostRegressor` import, fixed above.
++CATBOOST_PARAMS = {
++    "loss_function": "Tweedie:variance_power=1.1",
++    "iterations": 1200,
++    "learning_rate": 0.03,
++    "depth": 6,
++    "l2_leaf_reg": 3.0,
++    "allow_writing_files": False,
++    "verbose": False,
++}
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -161,6 +175,15 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+ 
++        def cat_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            cat_tr_x, cat_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
++            cat_idx = [
++                i for i, c in enumerate(cols) if isinstance(tr_x[c].dtype, pd.CategoricalDtype)
++            ]
++            model = CatBoostRegressor(**CATBOOST_PARAMS, cat_features=cat_idx, random_seed=SEEDS[0])
++            model.fit(cat_tr_x, target, sample_weight=weight)
++            return model.predict(cat_va_x)
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -181,8 +204,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            target, weight = tr["y"] / tr["exposure"], tr["exposure"]
++            lgbm_rate = bag(target, weight)
++            rate = (lgbm_rate + ebm_rate(target, weight) + cat_rate(target, weight)) / 3
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
