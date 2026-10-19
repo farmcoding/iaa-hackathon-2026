@@ -1,0 +1,94 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..2669b9c 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -16,6 +16,7 @@ import os
+ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
++from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
+@@ -84,6 +85,17 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# backlog 2.13: CatBoost as a third blend member on buildings/contents, same tweedie
++# power as EBM for a like-for-like loss. Fits once on SEEDS[0] (not seed-bagged) to
++# stay inside the time budget, the same trade-off already made for EBM above.
++CATBOOST_PARAMS = {
++    "loss_function": "Tweedie:variance_power=1.5",
++    "iterations": 300,
++    "depth": 6,
++    "learning_rate": 0.08,
++    "allow_writing_files": False,
++    "verbose": False,
++}
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -144,10 +156,32 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
+         # than most real improvements, so every model is an average over SEEDS
+         def bag(target: pd.Series, weight: pd.Series, params: dict = PARAMS) -> np.ndarray:
++            # backlog 2.34: n_estimators was a fixed 1200 for every line and sub-model,
++            # never tuned. Pick rounds from an inner time split (last training year
++            # held out) with early stopping on SEEDS[0], then refit the full window
++            # with 1.1x that round count, the margin backlog 2.34 specifies.
++            last_year = tr["year"].max()
++            inner_mask = (tr["year"] < last_year).to_numpy()
++            n_estimators = params["n_estimators"]
++            if inner_mask.any() and (~inner_mask).any():
++                probe = lgb.LGBMRegressor(
++                    **{**params, "n_estimators": 3000, "seed": SEEDS[0]},
++                    monotone_constraints=mono,
++                    monotone_constraints_method="advanced",
++                )
++                probe.fit(
++                    tr_x[inner_mask],
++                    target[inner_mask],
++                    sample_weight=weight[inner_mask],
++                    eval_set=[(tr_x[~inner_mask], target[~inner_mask])],
++                    eval_sample_weight=[weight[~inner_mask]],
++                    callbacks=[lgb.early_stopping(50, verbose=False)],
++                )
++                n_estimators = max(100, int(probe.best_iteration_ * 1.1))
+             out = np.zeros(len(va))
+             for seed in SEEDS:
+                 model = lgb.LGBMRegressor(
+-                    **{**params, "seed": seed},
++                    **{**params, "n_estimators": n_estimators, "seed": seed},
+                     monotone_constraints=mono,
+                     monotone_constraints_method="advanced",
+                 )
+@@ -161,6 +195,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+ 
++        def cb_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            cat_cols = [c for c in tr_x.columns if isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
++            cb_tr_x, cb_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
++            model = CatBoostRegressor(**CATBOOST_PARAMS, random_seed=SEEDS[0])
++            model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
++            return model.predict(cb_va_x)
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -181,8 +222,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            rate_target = tr["y"] / tr["exposure"]
++            lgbm_rate = bag(rate_target, tr["exposure"])
++            rate = (
++                lgbm_rate
++                + ebm_rate(rate_target, tr["exposure"])
++                + cb_rate(rate_target, tr["exposure"])
++            ) / 3
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
