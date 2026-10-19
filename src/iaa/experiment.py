@@ -16,6 +16,7 @@ import os
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from interpret.glassbox import ExplainableBoostingRegressor
 from sklearn.preprocessing import TargetEncoder
 
 NON_FEATURES = {
@@ -74,6 +75,28 @@ PARAMS = {
     "deterministic": True,
     "force_row_wise": True,
 }
+# backlog 2.15: EBM blended with LightGBM on buildings and contents. results.tsv
+# b54959b/2abf7b5 ran 1884-1889s against the 1800s budget; halving outer_bags (2->1,
+# EBM's internal bagging) only saved 5s, so the external SEEDS loop was the cost. EBM
+# now fits once, on SEEDS[0], with outer_bags back to 2 for internal diversity.
+EBM_PARAMS = {
+    "objective": "tweedie_deviance:variance_power=1.5",
+    "interactions": 0,
+    "outer_bags": 2,
+}
+
+
+def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+    # EBM's own missing-value handling is for continuous features; nominal (category
+    # dtype) columns here can carry a real NaN level, so coerce those to the string
+    # "missing" the same way CatBoost required, rather than assume EBM handles it.
+    x = x.copy()
+    for c in x.columns:
+        if isinstance(x[c].dtype, pd.CategoricalDtype):
+            na = x[c].isna()
+            x[c] = x[c].astype(str)
+            x.loc[na, c] = "missing"
+    return x
 
 
 def _feature_cols(df: pd.DataFrame) -> list[str]:
@@ -132,6 +155,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
                 out += model.predict(va_x) / len(SEEDS)
             return out
 
+        def ebm_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
+            ebm_tr_x, ebm_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
+            model = ExplainableBoostingRegressor(**EBM_PARAMS, random_state=SEEDS[0])
+            model.fit(ebm_tr_x, target, sample_weight=weight)
+            return model.predict(ebm_va_x)
+
         if line == "motor":
             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
             # Tweedie on the combined target. BI claim frequency is far more
@@ -152,7 +181,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
 
             rate = bi_rate + other_rate
         else:
-            rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
         pred[mask] = rate * va["exposure"].to_numpy()
     return pred
