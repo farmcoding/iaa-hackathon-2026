@@ -103,8 +103,20 @@ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
     return x
 
 
+# owner 2026-10-19 (Karl): fields without a rating rationale on a line. written_premium is
+# the incumbent's price: on property the other fields explain 93-97% of it and dropping it
+# costs nothing measurable; licence_points is a driving record stored on the customer.
+# Motor keeps the address and weather fields: hail and flood drive its glass/hail and own
+# damage perils. reports/reviews/2026-10-19_features.md
+LINE_DROP = {
+    "buildings": {"written_premium", "licence_points"},
+    "contents": {"written_premium", "licence_points"},
+}
+
+
 def _feature_cols(df: pd.DataFrame) -> list[str]:
     drop = {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
+    drop |= LINE_DROP.get(str(df["line"].iloc[0]), set())
     cols = [c for c in df.columns if c not in NON_FEATURES and c not in drop]
     return [c for c in cols if df[c].notna().any()]
 
