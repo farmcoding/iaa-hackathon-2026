@@ -1,0 +1,78 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..51aa10d 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -84,6 +84,10 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# backlog 2.24: temper property relativities. Champion decile A/E on fold B ranges
++# 0.94-1.16 (buildings) and 0.88-1.18 (contents); isotonic recalibration (2.3) was
++# inside noise, but a single shrinkage exponent has far less variance to estimate.
++ALPHAS = (0.7, 0.8, 0.9, 1.0)
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -131,6 +135,53 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+     return rate * target_lc / np.average(rate, weights=va["exposure"])
+ 
+ 
++def _tweedie_dev(y: np.ndarray, mu: np.ndarray, w: np.ndarray, power: float = 1.5) -> float:
++    mu = np.maximum(mu, 1e-12)
++    dev = 2 * (
++        np.power(y, 2 - power) / ((1 - power) * (2 - power))
++        - y * np.power(mu, 1 - power) / (1 - power)
++        + np.power(mu, 2 - power) / (2 - power)
++    )
++    return float(np.average(dev, weights=w))
++
++
++def _pick_alpha(tr: pd.DataFrame, cols: list[str], mono: list[int]) -> float:
++    # inner time split: fit on all training years but the last, score the last, to
++    # choose how hard to temper the final rate toward the mean (rate ** alpha) without
++    # touching the frozen outer folds.
++    years = sorted(tr["year"].unique())
++    if len(years) < 2:
++        return 1.0
++    inner_tr = tr[tr["year"] < years[-1]]
++    inner_va = tr[tr["year"] == years[-1]]
++    if len(inner_tr) == 0 or len(inner_va) == 0:
++        return 1.0
++    itr_x, iva_x = _credibility_encode(
++        inner_tr, inner_va, cols, inner_tr["y"] / inner_tr["exposure"]
++    )
++    model = lgb.LGBMRegressor(
++        **{**PARAMS, "seed": SEEDS[0]},
++        monotone_constraints=mono,
++        monotone_constraints_method="advanced",
++    )
++    model.fit(itr_x, inner_tr["y"] / inner_tr["exposure"], sample_weight=inner_tr["exposure"])
++    inner_rate = model.predict(iva_x)
++
++    y_true = (inner_va["y"] / inner_va["exposure"]).to_numpy()
++    w = inner_va["exposure"].to_numpy()
++    null_mu = np.full_like(y_true, np.average(y_true, weights=w))
++    null_dev = _tweedie_dev(y_true, null_mu, w)
++
++    best_alpha, best_d2 = 1.0, -np.inf
++    for a in ALPHAS:
++        mu = inner_rate**a
++        mu = mu * np.average(y_true, weights=w) / np.average(mu, weights=w)
++        d2 = 1 - _tweedie_dev(y_true, mu, w) / null_dev
++        if d2 > best_d2:
++            best_d2, best_alpha = d2, a
++    return best_alpha
++
++
+ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+     pred = np.zeros(len(valid))
+     for line in ("motor", "buildings", "contents"):
+@@ -183,6 +234,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         else:
+             lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+             rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            alpha = _pick_alpha(tr, cols, mono)
++            rate = np.maximum(rate, 1e-12) ** alpha
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
