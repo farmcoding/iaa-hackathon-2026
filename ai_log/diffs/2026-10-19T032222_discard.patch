@@ -1,0 +1,69 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..d43849f 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -16,6 +16,7 @@ import os
+ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
++from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
+@@ -84,6 +85,23 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# Follow-up to backlog 2.13 (results.tsv `b46f2be`): an equal-weight LightGBM/EBM/
++# CatBoost blend already beat the champion on both folds (A 0.13872, B 0.14105 vs
++# champion 0.13696/0.13987) but fell 0.00137 short of the 0.002 primary margin.
++# `b46f2be` matched CatBoost's Tweedie power to EBM's (1.5, single-seed) "for a
++# like-for-like loss" — but the ledger's own evidence (`db986b2`, `e65d47a`) is that
++# training power 1.1 beats 1.5 for this book. Match CatBoost to the already-tuned
++# LightGBM member instead: power 1.1, seed-bagged over SEEDS (300 iters/depth 6 was
++# cheap enough that b46f2be's total runtime, 1015s, was already below the no-CB
++# champion's 1096s, so bagging 3 seeds instead of 1 has headroom).
++CATBOOST_PARAMS = {
++    "loss_function": "Tweedie:variance_power=1.1",
++    "iterations": 300,
++    "depth": 6,
++    "learning_rate": 0.08,
++    "allow_writing_files": False,
++    "verbose": False,
++}
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -161,6 +179,16 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+ 
++        def cb_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            cat_cols = [c for c in tr_x.columns if isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
++            cb_tr_x, cb_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
++            out = np.zeros(len(va))
++            for seed in SEEDS:
++                model = CatBoostRegressor(**CATBOOST_PARAMS, random_seed=seed)
++                model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
++                out += model.predict(cb_va_x) / len(SEEDS)
++            return out
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -181,8 +209,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            rate_target = tr["y"] / tr["exposure"]
++            lgbm_rate = bag(rate_target, tr["exposure"])
++            rate = (
++                lgbm_rate
++                + ebm_rate(rate_target, tr["exposure"])
++                + cb_rate(rate_target, tr["exposure"])
++            ) / 3
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
