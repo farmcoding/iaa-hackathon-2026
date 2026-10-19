@@ -1,0 +1,39 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..497eac3 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -17,6 +17,7 @@ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
++from sklearn.model_selection import GroupKFold
+ from sklearn.preprocessing import TargetEncoder
+ 
+ NON_FEATURES = {
+@@ -116,11 +117,21 @@ def _credibility_encode(
+     tr_x, va_x = tr[cols].copy(), va[cols].copy()
+     if not high_card:
+         return tr_x, va_x
+-    # fit_transform cross-fits internally so a row's own target doesn't leak into its
+-    # own encoding; transform() on valid reuses the mapping fit on all of tr. Seeded so
+-    # runs reproduce (unseeded folds moved the primary score by up to 0.0007).
+-    enc = TargetEncoder(target_type="continuous", smooth="auto", random_state=SEED_OFFSET)
+-    tr_x[high_card] = enc.fit_transform(tr[high_card], target)
++    # backlog 2.29: cross-fit by policy, not by row. Random folds let a training row's
++    # encoding see that same policy's other years (later renewals included), so the
++    # in-training encoding was more informative than the valid-time encoding a renewal
++    # actually gets at scoring time.
++    gkf = GroupKFold(n_splits=5, shuffle=True, random_state=SEED_OFFSET)
++    encoded = np.empty((len(tr), len(high_card)))
++    for train_idx, test_idx in gkf.split(tr[high_card], groups=tr["policy_id"]):
++        fold_enc = TargetEncoder(target_type="continuous", smooth="auto")
++        fold_enc.fit(tr[high_card].iloc[train_idx], target.iloc[train_idx])
++        encoded[test_idx] = fold_enc.transform(tr[high_card].iloc[test_idx])
++    tr_x[high_card] = encoded
++    # transform() on valid reuses the mapping fit on all of tr (no leakage: valid rows
++    # aren't in tr).
++    enc = TargetEncoder(target_type="continuous", smooth="auto")
++    enc.fit(tr[high_card], target)
+     va_x[high_card] = enc.transform(va[high_card])
+     return tr_x, va_x
+ 
