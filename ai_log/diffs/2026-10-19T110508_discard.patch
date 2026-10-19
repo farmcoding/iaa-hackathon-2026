@@ -1,0 +1,35 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3df5eb0..791baca 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -116,6 +116,19 @@ LINE_DROP = {
+ }
+ 
+ 
++# backlog 2.47, tested singly per the review's note that a bundled variant of these
++# interactions scored below the no-premium baseline (reports/reviews/2026-10-19_features.md
++# 2.3): total excess as a share of sum insured. A ratio of two continuous fields is the one
++# proposed family shallow trees cannot approximate from a few splits on each field alone,
++# unlike the categorical-crossed-with-continuous families in the same review.
++PROPERTY_LINES = ("buildings", "contents")
++
++
++def _excess_ratio(df: pd.DataFrame) -> pd.Series:
++    si = df["sum_insured"].replace(0, np.nan)
++    return (df["voluntary_excess"] + df["compulsory_excess"]) / si
++
++
+ def _feature_cols(df: pd.DataFrame) -> list[str]:
+     drop = {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
+     drop |= LINE_DROP.get(str(df["line"].iloc[0]), set())
+@@ -178,6 +191,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         tr = train[train["line"] == line]
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
++        if line in PROPERTY_LINES:
++            tr, va = tr.copy(), va.copy()
++            tr["excess_sum_insured_ratio"] = _excess_ratio(tr)
++            va["excess_sum_insured_ratio"] = _excess_ratio(va)
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
