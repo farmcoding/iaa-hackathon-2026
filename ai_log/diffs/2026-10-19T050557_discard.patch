@@ -1,0 +1,41 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..6dd104e 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -116,11 +116,31 @@ def _credibility_encode(
+     tr_x, va_x = tr[cols].copy(), va[cols].copy()
+     if not high_card:
+         return tr_x, va_x
+-    # fit_transform cross-fits internally so a row's own target doesn't leak into its
+-    # own encoding; transform() on valid reuses the mapping fit on all of tr. Seeded so
+-    # runs reproduce (unseeded folds moved the primary score by up to 0.0007).
+-    enc = TargetEncoder(target_type="continuous", smooth="auto", random_state=SEED_OFFSET)
+-    tr_x[high_card] = enc.fit_transform(tr[high_card], target)
++    # backlog 2.29: cross-fit by policy, not by row. TargetEncoder's own internal
++    # cross-fitting (the previous implementation) shuffles by row, so a policy's other
++    # training-year rows can land in the fold used to encode this row, making the
++    # in-training encoding more informative than the valid-time encoding a renewal
++    # actually gets at scoring time. The first attempt at this (results.tsv `5c8a3e3`)
++    # crashed: sklearn's GroupKFold constructor takes only n_splits, not shuffle or
++    # random_state. Assign policies to folds by hand instead.
++    rng = np.random.default_rng(SEED_OFFSET)
++    policies = tr["policy_id"].unique()
++    policy_fold = pd.Series(rng.integers(0, 5, size=len(policies)), index=policies)
++    row_fold = tr["policy_id"].map(policy_fold).to_numpy()
++    tr_high = tr[high_card]
++    target_arr = target.to_numpy()
++    encoded = np.empty((len(tr), len(high_card)))
++    for fold in range(5):
++        test_mask = row_fold == fold
++        train_mask = ~test_mask
++        fold_enc = TargetEncoder(target_type="continuous", smooth="auto")
++        fold_enc.fit(tr_high.iloc[train_mask], target_arr[train_mask])
++        encoded[test_mask] = fold_enc.transform(tr_high.iloc[test_mask])
++    tr_x[high_card] = encoded
++    # transform() on valid reuses the mapping fit on all of tr (no leakage: valid rows
++    # aren't in tr).
++    enc = TargetEncoder(target_type="continuous", smooth="auto")
++    enc.fit(tr_high, target_arr)
+     va_x[high_card] = enc.transform(va[high_card])
+     return tr_x, va_x
+ 
