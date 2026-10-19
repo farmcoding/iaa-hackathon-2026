@@ -1,0 +1,90 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index b5cd2ee..e45e3b0 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -12,6 +12,7 @@ Both frames hold all three lines; `line` says which.
+ from __future__ import annotations
+ 
+ import os
++from functools import lru_cache
+ 
+ import lightgbm as lgb
+ import numpy as np
+@@ -19,6 +20,9 @@ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
++from iaa import data
++from iaa.features import _window_counts
++
+ NON_FEATURES = {
+     "row_id",
+     "policy_id",
+@@ -141,6 +145,45 @@ def _credibility_encode(
+     return tr_x, va_x
+ 
+ 
++# backlog 2.45: hist_n_customer/hist_cost_customer (features.py) pool a customer's prior
++# claims across all three lines. Features review 1.2 found that for buildings and contents,
++# 64-67% of rows where that history fires are carrying a claim from the customer's OTHER
++# line, not the line being priced. Split the pooled figure into a same-line and a
++# cross-line component so each can earn its own relativity instead of one blended one.
++@lru_cache(maxsize=1)
++def _claims_by_line() -> dict[str, pd.DataFrame]:
++    c = data.claims()
++    c = c[c["status"] != "repudiated"]
++    pol = data.all_policies("train")[["policy_id", "customer_id", "line"]].drop_duplicates(
++        "policy_id"
++    )
++    c = c.merge(pol, on="policy_id", how="left").dropna(subset=["customer_id"])
++    return {ln: c[c["line"] == ln] for ln in ("motor", "buildings", "contents")}
++
++
++def _customer_history_split(rows: pd.DataFrame, line: str) -> pd.DataFrame:
++    same = _claims_by_line()[line]
++    n, s = _window_counts(
++        rows["customer_id"],
++        rows["period_start"],
++        same["customer_id"],
++        same["report_date"],
++        same["net"].to_numpy(),
++    )
++    # features.py blanks hist_n_customer/hist_cost_customer for rows without a full
++    # 365-day look-back (period_start before 2022-01-01); match that here so the two
++    # new components, and the cross-line remainder, carry the same "unknown" convention.
++    full = (rows["period_start"] >= pd.Timestamp("2022-01-01")).to_numpy()
++    n = np.where(full, n, np.nan)
++    s = np.where(full, s, np.nan)
++    out = pd.DataFrame(index=rows.index)
++    out["hist_n_customer_sameline"] = n
++    out["hist_cost_customer_sameline"] = s
++    out["hist_n_customer_crossline"] = rows["hist_n_customer"].to_numpy() - n
++    out["hist_cost_customer_crossline"] = rows["hist_cost_customer"].to_numpy() - s
++    return out
++
++
+ # owner 2026-10-19 (Karl, Q20 / backlog 3.37): one open 11.9m bodily-injury claim (AY2023)
+ # would otherwise load the BI level as if a claim that size came every four years. Rows are
+ # capped at BI_CAP and the expected excess is loaded from a Pareto tail fitted to the
+@@ -176,6 +219,21 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         tr = train[train["line"] == line]
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
++        if line in ("buildings", "contents"):
++            tr = pd.concat(
++                [
++                    tr.drop(columns=["hist_n_customer", "hist_cost_customer"]),
++                    _customer_history_split(tr, line),
++                ],
++                axis=1,
++            )
++            va = pd.concat(
++                [
++                    va.drop(columns=["hist_n_customer", "hist_cost_customer"]),
++                    _customer_history_split(va, line),
++                ],
++                axis=1,
++            )
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
