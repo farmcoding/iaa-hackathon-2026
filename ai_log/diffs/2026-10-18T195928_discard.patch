@@ -1,0 +1,29 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index c40702b..acfb93a 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -51,7 +51,10 @@ MONOTONE = {
+ # The harness re-runs a candidate keep with IAA_SEED_OFFSET set, to confirm the gain on
+ # fresh seeds. Every random choice in this file must derive from SEED_OFFSET or SEEDS.
+ SEED_OFFSET = int(os.environ.get("IAA_SEED_OFFSET", "0"))
+-SEEDS = tuple(SEED_OFFSET + s for s in (0, 1, 2))
++# Tier 0.5 re-test (backlog 2.5): widen the bag from 3 to 8 seeds, cycling feature/bagging
++# fraction per seed so the bag also samples fraction diversity, not just tree randomness.
++SEEDS = tuple(SEED_OFFSET + s for s in range(8))
++_FRACTIONS = (0.7, 0.8, 0.9)
+ # backlog 2.1: categoricals above this many levels (e.g. make_model, occupation,
+ # previous_insurer) get out-of-fold credibility encoding instead of LightGBM's native
+ # categorical splits; low-cardinality ones (e.g. the 12 regions) stay native. Detected
+@@ -122,9 +125,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         # than most real improvements, so every model is an average over SEEDS
+         def bag(target: pd.Series, weight: pd.Series, params: dict = PARAMS) -> np.ndarray:
+             out = np.zeros(len(va))
+-            for seed in SEEDS:
++            for i, seed in enumerate(SEEDS):
++                frac = _FRACTIONS[i % len(_FRACTIONS)]
+                 model = lgb.LGBMRegressor(
+-                    **{**params, "seed": seed},
++                    **{**params, "seed": seed, "feature_fraction": frac, "bagging_fraction": frac},
+                     monotone_constraints=mono,
+                     monotone_constraints_method="advanced",
+                 )
