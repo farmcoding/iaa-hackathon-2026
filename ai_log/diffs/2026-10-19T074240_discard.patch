@@ -1,0 +1,36 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..2a62fda 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -58,6 +58,22 @@ SEEDS = tuple(SEED_OFFSET + s for s in (0, 1, 2))
+ # categorical splits; low-cardinality ones (e.g. the 12 regions) stay native. Detected
+ # by cardinality rather than named, since Part 2's market will have different columns.
+ HIGH_CARD_MIN = 15
++# Backlog 2.17, motor half (the property half was tried in `3d3673f`/`ca33d9f`,
++# discarded): fold-B group-drop study found motor D2 up (+0.0058) without most of the
++# vehicle field group, keeping only vehicle_age, make_model (via the credibility
++# encoder) and cover_type — the three strongest members per reports/features/
++# feature_study.json's single-feature D2-alone scores.
++MOTOR_VEHICLE_DROP = {
++    "vehicle_value_group",
++    "engine_size_cc",
++    "body_type",
++    "transmission",
++    "seats",
++    "vehicle_colour",
++    "fuel_type",
++    "driver_assist",
++    "overnight_parking",
++}
+ PARAMS = {
+     "objective": "tweedie",
+     "tweedie_variance_power": 1.1,
+@@ -138,6 +154,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
+         cols = _feature_cols(tr)
++        if line == "motor":
++            cols = [c for c in cols if c not in MOTOR_VEHICLE_DROP]
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
+ 
