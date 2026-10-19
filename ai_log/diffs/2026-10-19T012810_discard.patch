@@ -1,0 +1,63 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..2ad80e2 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -58,6 +58,20 @@ SEEDS = tuple(SEED_OFFSET + s for s in (0, 1, 2))
+ # categorical splits; low-cardinality ones (e.g. the 12 regions) stay native. Detected
+ # by cardinality rather than named, since Part 2's market will have different columns.
+ HIGH_CARD_MIN = 15
++# backlog 2.23: these seven fields are mostly an address fingerprint (66-96% of their
++# variance is between addresses, docs/pipeline_review.md "weather as address
++# fingerprint"), so a single raw value mixes a stable climate level with a small
++# year-specific anomaly. Anchoring then hides the anomaly, even though 2025's supplied
++# weather should be able to move weather-peril risk.
++WEATHER_COLS = (
++    "hail_days",
++    "wind_exposure_index",
++    "freezing_days",
++    "dry_summer_index",
++    "wildfire_index",
++    "rainfall_mm",
++    "mean_temperature_c",
++)
+ PARAMS = {
+     "objective": "tweedie",
+     "tweedie_variance_power": 1.1,
+@@ -99,6 +113,29 @@ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+     return x
+ 
+ 
++def _weather_anomaly(tr: pd.DataFrame, va: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
++    # split each weather field into the address's own climate mean (features only, no
++    # target, so no leak) plus the row's deviation from it; the mean is computed over
++    # train and valid together since valid's own weather is legitimately known.
++    cols = [c for c in WEATHER_COLS if c in tr.columns]
++    if not cols:
++        return tr, va
++    tr, va = tr.copy(), va.copy()
++    addr_mean = (
++        pd.concat([tr[["address_id", *cols]], va[["address_id", *cols]]])
++        .groupby("address_id")[cols]
++        .mean()
++    )
++    for c in cols:
++        tr_mean = tr["address_id"].map(addr_mean[c])
++        va_mean = va["address_id"].map(addr_mean[c])
++        tr[f"{c}_addr_mean"] = tr_mean
++        va[f"{c}_addr_mean"] = va_mean
++        tr[c] = tr[c] - tr_mean
++        va[c] = va[c] - va_mean
++    return tr, va
++
++
+ def _feature_cols(df: pd.DataFrame) -> list[str]:
+     drop = {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
+     cols = [c for c in df.columns if c not in NON_FEATURES and c not in drop]
+@@ -137,6 +174,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         tr = train[train["line"] == line]
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
++        tr, va = _weather_anomaly(tr, va)
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
