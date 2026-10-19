@@ -1,0 +1,102 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3df5eb0..4792efa 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -12,6 +12,7 @@ Both frames hold all three lines; `line` says which.
+ from __future__ import annotations
+ 
+ import os
++from functools import lru_cache
+ 
+ import lightgbm as lgb
+ import numpy as np
+@@ -19,6 +20,9 @@ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
++from iaa import data
++from iaa.features import _window_counts
++
+ NON_FEATURES = {
+     "row_id",
+     "policy_id",
+@@ -143,6 +147,39 @@ def _credibility_encode(
+     return tr_x, va_x
+ 
+ 
++# backlog 2.45: hist_n_customer/hist_cost_customer (features.py) pool a customer's prior
++# claims across all three lines. Features review 1.2 found that for buildings and contents,
++# 64-67% of rows where that history fires are carrying a claim from the customer's OTHER
++# line, not the line being priced. Split the pooled figure into a same-line component (new
++# model input) and a cross-line remainder (pooled minus same-line), so each can earn its own
++# relativity instead of one blended one. First attempt (results.tsv `cf6ca18`) crashed:
++# `data.claims()` already carries a native `line` column, and merging policy->line onto it
++# by `policy_id` alone collided into `line_x`/`line_y`. Fixed by filtering on claims' own
++# `line` before merging in just `customer_id`, so no column name collides.
++@lru_cache(maxsize=3)
++def _same_line_claims(line: str) -> pd.DataFrame:
++    c = data.claims()
++    c = c[(c["status"] != "repudiated") & (c["line"] == line)]
++    pol = data.all_policies("train")[["policy_id", "customer_id"]].drop_duplicates("policy_id")
++    return c.merge(pol, on="policy_id", how="left").dropna(subset=["customer_id"])
++
++
++def _same_line_history(rows: pd.DataFrame, line: str) -> tuple[np.ndarray, np.ndarray]:
++    same = _same_line_claims(line)
++    n, s = _window_counts(
++        rows["customer_id"],
++        rows["period_start"],
++        same["customer_id"],
++        same["report_date"],
++        same["net"].to_numpy(),
++    )
++    # features.py blanks hist_n_customer/hist_cost_customer for rows without a full
++    # 365-day look-back (period_start before 2022-01-01); match that here so the new
++    # same-line component, and the cross-line remainder, carry the same "unknown" convention.
++    full = (rows["period_start"] >= pd.Timestamp("2022-01-01")).to_numpy()
++    return np.where(full, n, np.nan), np.where(full, s, np.nan)
++
++
+ # owner 2026-10-19 (Karl, Q20 / backlog 3.37): one open 11.9m bodily-injury claim (AY2023)
+ # would otherwise load the BI level as if a claim that size came every four years. Rows are
+ # capped at BI_CAP and the expected excess is loaded from a Pareto tail fitted to the
+@@ -172,6 +209,9 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+     return rate * target_lc / np.average(rate, weights=va["exposure"])
+ 
+ 
++HIST_COLS = ("hist_n_customer", "hist_cost_customer")
++
++
+ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+     pred = np.zeros(len(valid))
+     for line in ("motor", "buildings", "contents"):
+@@ -179,6 +219,29 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
+         cols = _feature_cols(tr)
++
++        if line != "motor" and all(h in cols for h in HIST_COLS):
++            n_same_tr, s_same_tr = _same_line_history(tr, line)
++            n_same_va, s_same_va = _same_line_history(va, line)
++            tr = tr.assign(
++                hist_n_customer_sameline=n_same_tr,
++                hist_cost_customer_sameline=s_same_tr,
++                hist_n_customer_crossline=tr["hist_n_customer"].to_numpy() - n_same_tr,
++                hist_cost_customer_crossline=tr["hist_cost_customer"].to_numpy() - s_same_tr,
++            )
++            va = va.assign(
++                hist_n_customer_sameline=n_same_va,
++                hist_cost_customer_sameline=s_same_va,
++                hist_n_customer_crossline=va["hist_n_customer"].to_numpy() - n_same_va,
++                hist_cost_customer_crossline=va["hist_cost_customer"].to_numpy() - s_same_va,
++            )
++            cols = [c for c in cols if c not in HIST_COLS] + [
++                "hist_n_customer_sameline",
++                "hist_cost_customer_sameline",
++                "hist_n_customer_crossline",
++                "hist_cost_customer_crossline",
++            ]
++
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
+ 
