@@ -97,3 +97,25 @@ def test_experiment_seeds_follow_the_confirmation_offset(monkeypatch):
     finally:
         monkeypatch.delenv("IAA_SEED_OFFSET")
         importlib.reload(experiment)
+
+
+def test_peril_trend_retrends_only_its_group():
+    df = pd.DataFrame(
+        {
+            "split": ["train"] * 3,
+            "line": ["buildings", "buildings", "motor"],
+            "year": [2022, 2022, 2022],
+            "y_ult": [100.0, 50.0, 80.0],
+            "ult_water": [40.0, None, None],
+        }
+    )
+    cfg = {
+        "predict_year": 2025,
+        "trend": {"buildings": 0.05, "motor": 0.03},
+        "peril_trend": {"buildings": {"water": 0.10}},
+    }
+    tr, _ = harness.split(df, [2022], 2024, cfg)
+    f = 1.05**2
+    assert tr["y"].iloc[0] == pytest.approx(60 * f + 40 * 1.10**2)
+    assert tr["y"].iloc[1] == pytest.approx(50 * f)
+    assert tr["y"].iloc[2] == pytest.approx(80 * 1.03**2)

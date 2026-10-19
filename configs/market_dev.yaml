@@ -33,6 +33,14 @@ trend:
   buildings: 0.065
   contents: 0.050
 
+# per peril-group overrides inside a line (ult_<group> columns), owner 2026-10-19 (Karl,
+# backlog 3.39): buildings escape of water trends faster than the pooled rate. Water loss
+# cost per exposure 90.3 / 91.4 / 100.0 / 116.2 (2021-24): log-linear 8.8% (21-24), 5.2%
+# (21-23); severity alone 8-12% a year since 2021 (reports/reviews/2026-10-19_claims.md).
+# Other buildings perils keep the pooled 6.5%.
+peril_trend:
+  buildings: {water: 0.09}
+
 harness:
   folds:
     A: {train: [2021, 2022], valid: 2023}

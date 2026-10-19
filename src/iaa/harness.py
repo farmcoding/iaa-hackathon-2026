@@ -95,8 +95,17 @@ def on_level(df: pd.DataFrame, to_year: int, cfg: dict) -> np.ndarray:
 
 def split(df: pd.DataFrame, train_years, valid_year, cfg) -> tuple[pd.DataFrame, pd.DataFrame]:
     tr = df[(df["split"] == "train") & df["year"].isin(train_years)].copy()
-    tr["y"] = tr["y_ult"] * on_level(tr, valid_year, cfg)
     tr["trend_factor"] = on_level(tr, valid_year, cfg)
+    tr["y"] = tr["y_ult"] * tr["trend_factor"]
+    # peril-group trend overrides (config peril_trend): re-trend that group's developed
+    # cost at its own rate; y_ult is the sum of the line's ult_<group> columns
+    for line, groups in (cfg.get("peril_trend") or {}).items():
+        on_line = (tr["line"] == line).to_numpy()
+        gap = tr["year"].to_numpy()
+        for group, rate in groups.items():
+            own = np.power(1 + rate, valid_year - gap)
+            extra = tr[f"ult_{group}"].fillna(0).to_numpy() * (own - tr["trend_factor"].to_numpy())
+            tr["y"] = tr["y"] + np.where(on_line, extra, 0.0)
     if valid_year == cfg["predict_year"]:
         va = df[df["split"] == "test"].copy()
     else:
