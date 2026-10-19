@@ -1,0 +1,27 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..c0999dd 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -174,10 +174,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             bi_lc = (tr["ult_bodily_injury"] * tr["trend_factor"]).sum() / tr["exposure"].sum()
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
+-            other = tr["ult_other"] * tr["trend_factor"]
+-            other_rate = bag(other / tr["exposure"], tr["exposure"])
+-            other_lc = other.sum() / tr["exposure"].sum()
+-            other_rate = _anchor(other_rate, other_lc, va)
++            # backlog 2.33: the "other" group pools own damage, third-party property,
++            # theft and glass/hail, which have different drivers (parking, region,
++            # mileage, driver). Model each peril separately instead of one pooled
++            # Tweedie. Per-peril developed cost isn't computed by the frozen
++            # development step, so approximate it with the group's completion factor
++            # (comp_other), the same approximation the pooled ult_other already makes.
++            other_rate = np.zeros(len(va))
++            for peril in ("own_damage", "third_party_prop", "theft", "glass_hail"):
++                peril_cost = tr[f"cost_{peril}"] / tr["comp_other"] * tr["trend_factor"]
++                peril_rate = bag(peril_cost / tr["exposure"], tr["exposure"])
++                peril_lc = peril_cost.sum() / tr["exposure"].sum()
++                other_rate += _anchor(peril_rate, peril_lc, va)
+ 
+             rate = bi_rate + other_rate
+         else:
