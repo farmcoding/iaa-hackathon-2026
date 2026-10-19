@@ -1,0 +1,45 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3df5eb0..9f88507 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -123,6 +123,26 @@ def _feature_cols(df: pd.DataFrame) -> list[str]:
+     return [c for c in cols if df[c].notna().any()]
+ 
+ 
++def _null_importance_cols(
++    tr_x: pd.DataFrame, cols: list[str], target: pd.Series, weight: pd.Series, seed: int
++) -> list[str]:
++    # backlog 2.8: a feature whose real split-gain importance is no better than the
++    # same feature's importance against a shuffled target is noise. Cheap probe models
++    # (300 rounds, not the full 1200) just rank features; MONOTONE columns are owner
++    # decisions and are always kept regardless of this check.
++    probe = {**PARAMS, "n_estimators": 300, "seed": seed}
++    real = lgb.LGBMRegressor(**probe).fit(tr_x, target, sample_weight=weight)
++    rng = np.random.default_rng(seed)
++    shuffled = pd.Series(rng.permutation(target.to_numpy()), index=target.index)
++    null = lgb.LGBMRegressor(**probe).fit(tr_x, shuffled, sample_weight=weight)
++    keep = [
++        c
++        for c, r, n in zip(cols, real.feature_importances_, null.feature_importances_)
++        if c in MONOTONE or r > n
++    ]
++    return keep or cols
++
++
+ def _credibility_encode(
+     tr: pd.DataFrame, va: pd.DataFrame, cols: list[str], target: pd.Series
+ ) -> tuple[pd.DataFrame, pd.DataFrame]:
+@@ -179,8 +199,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         mask = (valid["line"] == line).to_numpy()
+         va = valid[mask]
+         cols = _feature_cols(tr)
+-        mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
++        cols = _null_importance_cols(
++            tr_x, cols, tr["y"] / tr["exposure"], tr["exposure"], SEED_OFFSET
++        )
++        tr_x, va_x = tr_x[cols], va_x[cols]
++        mono = [MONOTONE.get(c, 0) for c in cols]
+ 
+         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
+         # than most real improvements, so every model is an average over SEEDS
