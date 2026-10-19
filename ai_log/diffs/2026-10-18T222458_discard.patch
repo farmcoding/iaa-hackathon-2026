@@ -1,0 +1,22 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 29dbfb2..35e0b0f 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -181,8 +181,15 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             rate = bi_rate + other_rate
+         else:
+-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++            # backlog 2.32: cap the fitting target's rate at the line's 99.9th
++            # percentile so single large property losses (buildings fire 631k,
++            # flood 352k) don't dominate tree/EBM splits. _anchor still rescales to
++            # the true uncapped loss cost below, so the excess is reloaded into the
++            # overall level rather than lost.
++            rate_target = tr["y"] / tr["exposure"]
++            capped_target = rate_target.clip(upper=rate_target.quantile(0.999))
++            lgbm_rate = bag(capped_target, tr["exposure"])
++            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(capped_target, tr["exposure"])
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
