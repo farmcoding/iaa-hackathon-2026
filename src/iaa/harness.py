@@ -181,8 +181,9 @@ def verdict(res: dict, cfg: dict) -> str:
     best = best_kept(cfg)
     if best is None:
         return "keep"
+    fold_floor = cfg["harness"].get("fold_floor", floor)
     better = res["primary"] > best["_primary"] + floor
-    stable = res["min_fold"] >= float(best["min_fold"]) - floor
+    stable = res["min_fold"] >= float(best["min_fold"]) - fold_floor
     return "keep" if better and stable else "discard"
 
 
@@ -230,8 +231,7 @@ def validate(
 
 def _confirm(res: dict, saved: list, module: str, df: pd.DataFrame, cfg: dict, offset: int) -> None:
     """A candidate keep must pass the keep rule a second time on fresh seeds (owner
-    decision 2026-10-18): at a 0.002 floor about one change in six with no real effect
-    clears the rule once by chance."""
+    decision 2026-10-18): it protects against a lucky draw on either side."""
     os.environ["IAA_SEED_OFFSET"] = str(offset)
     try:
         exp = importlib.reload(importlib.import_module(module))

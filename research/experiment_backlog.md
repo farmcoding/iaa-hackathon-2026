@@ -38,6 +38,18 @@ ledger timestamp) or from the saved patch where one exists.
 | 0.4 | Re-test 2.17 (property part): drop the customer and marketing fields on buildings and contents | 15:34 run: 0.13442, +0.0014 vs the seeded champion | Inside the floor; confirm or close | ledger 2026-10-18T15:34:58 | open |
 | 0.5 | Re-test the wider seed bag (8 seeds, feature and bagging fractions varied per seed), seeds derived from SEED_OFFSET | 11:27 run: 0.13409 on the unseeded encoder | Small, steadier gain | ledger 2026-10-18T11:27:18 | open |
 
+## Tier 0c: near misses re-tested under the 0.001 floor (do these first, in order)
+
+Owner decision 2026-10-19 (Karl): the primary margin is now 0.001 (measured seed sd 0.0002). These discards gained between +0.001 and +0.002 against the bar of their day. Re-apply each saved diff on top of the current model (no premium anywhere; carry over its imports), so the harness scores it and runs the fresh-seed confirmation. Ideas built on an older model may not transfer; one attempt each.
+
+| # | Idea | Earlier result | Diff | Status |
+|---|---|---|---|---|
+| 0c.1 | Property: replace pooled customer claim history with same-line-only counts and cost | 0.14022 vs 0.13867 (+0.0016), min fold 0.13858; the run's hypothesis line was lost | ai_log/diffs/2026-10-19T123541_discard.patch | open |
+| 0c.2 | CatBoost Tweedie as a third equal-weight property blend member (2.13) | 0.14027 vs 0.13890 (+0.0014) | ai_log/diffs/2026-10-18T235427_discard.patch | open |
+| 0c.3 | Rounds by early stopping on an inner time split instead of a fixed 1,200 (2.34) | 0.14008 (+0.0012), twice | ai_log/diffs/2026-10-19T041121_discard.patch | open |
+| 0c.4 | Isotonic recalibration of each sub-rate on an inner time holdout (2.3) | 0.13451 on the older model (+0.0015) | ai_log/diffs/2026-10-18T195928_discard.patch | open |
+| 0c.5 | XGBoost blended with LightGBM (property, then all lines) (2.14) | 0.13491 on the older model (+0.0019) | ai_log/diffs/2026-10-18T163416_discard.patch | open |
+
 ## Tier 0b: from the 2026-10-19 reviews (do these first, in order)
 
 Champion: LightGBM + EBM on property (0.13890). Reviews: reports/reviews/2026-10-19_*.md.

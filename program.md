@@ -53,8 +53,9 @@ iteration is logged as a violation.
   (`SEEDS`) every model; single-seed noise is about 0.0026, bigger than most gains.
 - Keep rule (applied by the harness): the primary score, a weighted mean of fold D²
   with fold B (score 2024) counted twice because it tracks the public leaderboard, must
-  beat the best kept run by more than 0.002, and the worse fold must not fall by more
-  than 0.002. Gains that only show in fold A have not reached the leaderboard.
+  beat the best kept run by more than 0.001 (about five times the measured seed noise,
+  0.0002), and the worse fold must not fall by more than 0.002. An owner keep re-bases
+  the bar: the best run since the latest owner keep is the one to beat. Gains that only show in fold A have not reached the leaderboard.
   A run that passes is re-run with every seed shifted (`IAA_SEED_OFFSET`) and must pass
   again; otherwise it is logged `unconfirmed`. So every random choice you add (model
   seeds, sampling, CV splits, encoders) must derive from `SEED_OFFSET` or `SEEDS` in

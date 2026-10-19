@@ -85,7 +85,8 @@ def md(text: str) -> str:
     return markdown.markdown(text, extensions=["tables"])
 
 
-NOISE_FLOOR = 0.002
+NOISE_FLOOR = 0.001  # primary margin (config harness.noise_floor, 19 Oct)
+FOLD_FLOOR = 0.002
 
 
 def why(r: pd.Series, best: float, best_min: float, delta: float) -> str:
@@ -115,7 +116,7 @@ def why(r: pd.Series, best: float, best_min: float, delta: float) -> str:
             return f"Scored below the best ({delta:+.4f})"
         if delta <= NOISE_FLOOR:
             return f"Gain {delta:+.4f} is inside the {NOISE_FLOOR} seed-noise floor"
-        if pd.notna(best_min) and r["min_fold"] < best_min - NOISE_FLOOR:
+        if pd.notna(best_min) and r["min_fold"] < best_min - FOLD_FLOOR:
             return f"Worse year fell to {r['min_fold']:.4f} (best run's worse year {best_min:.4f})"
         return "Clears today's bar; it failed the bar in force then (the retired 0.1339 best, or the old equal-weight rule)"
     return ""
@@ -150,13 +151,11 @@ def load_ledger(root: Path) -> pd.DataFrame:
     for _, r in df.iterrows():
         deltas.append(r["score"] - best if np.isfinite(best) and pd.notna(r["score"]) else np.nan)
         reasons.append(why(r, best, best_min, deltas[-1]))
-        if (
-            r["verdict"] in ("keep", "keep_owner")
-            and pd.notna(r["score"])
-            and r["timestamp"] not in superseded
-        ):
-            if not np.isfinite(best) or r["score"] > best:
-                best, best_min = r["score"], r["min_fold"]
+        live = pd.notna(r["score"]) and r["timestamp"] not in superseded
+        if live and r["verdict"] == "keep_owner":
+            best, best_min = r["score"], r["min_fold"]  # an owner keep re-bases the bar
+        elif live and r["verdict"] == "keep" and (not np.isfinite(best) or r["score"] > best):
+            best, best_min = r["score"], r["min_fold"]
     df["delta"] = deltas
     df["why"] = reasons
     df["family"] = df["description"].fillna("").map(family)
@@ -805,7 +804,7 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
 | **Tweedie D² (power 1.5)** | Share of the deviance of a flat "everyone pays the average" model that our model removes. 0 means no better than the average; higher is better. Tweedie deviance suits insurance costs: many zeros and a long right tail. | The leaderboard metric. Computed locally exactly as Kaggle does (confirmed by a calibration submission). |
 | **Score (weighted)** | Fold A and fold B D², with fold B counted twice. | The number the loop optimises. Fold B is weighted up because it tracks the leaderboard. |
 | **Worse fold** | The lower of the two fold scores. | A gate: a change that improves the average but hurts either year by more than seed noise is rejected. |
-| **Noise floor (0.002)** | How much the score moves from random seeds alone (standard deviation 0.0026 for one seed). | A change must beat the best model by more than this to be kept. |
+| **Noise floor (0.001)** | How much the score moves from random seeds alone: standard deviation 0.0002 for the seed-bagged model (measured 19 October over five full seed shifts; 0.002 until then). | A change must beat the best model by more than this to be kept. |
 | **Within-line D²** | Accuracy of the ranking inside motor, buildings and contents separately. | Shows where improvement is coming from; pooled D² also rewards getting line levels right. |
 | **Actual ÷ expected by line** | Whether each line's total is priced at the right level. | Should sit between 0.97 and 1.03. |
 | **Lift and Gini** | How well the model separates cheap risks from expensive ones; the lift chart shows actual cost by predicted-risk decile. | A steeper lift curve means better risk selection. |
@@ -867,7 +866,7 @@ Every policy-period row is used; nothing is sampled away. A policy can appear in
         img(assets / "loop.png", "Supervised experiment loop")
         + chart(fig_progress(df))
         + md(
-            '<p class="note">The line is the best kept model. A discarded run can sit slightly above it: its gain was inside the 0.002 noise floor or it hurt one validation year, so the rule did not count it. Purple marks owner decisions.</p>'
+            '<p class="note">The line is the best kept model. A discarded run can sit slightly above it: its gain was inside the noise floor (0.002 until 19 October, 0.001 since) noise floor or it hurt one validation year, so the rule did not count it. Purple marks owner decisions.</p>'
         )
         + '<div class="grid2">'
         + chart(fig_folds(df))
