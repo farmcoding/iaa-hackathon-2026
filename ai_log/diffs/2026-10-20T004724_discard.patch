@@ -1,0 +1,58 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..49eb350 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -118,6 +118,28 @@ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+     return x
+ 
+ 
++# backlog 2.61: raw hist_cost_customer/hist_cost_policy are pruned on buildings and
++# contents. model_card.json (the pre-pruning model, pooled over all three lines) shows
++# hist_cost_policy's own shuffle d2_drop at -0.00042 on buildings -- shuffling it helps,
++# i.e. a few large historical claims are adding noise relative to the credibility they
++# carry -- while buildings keeps the count companions (hist_n_customer, hist_n_policy)
++# as live features. Capping before use, restored only on buildings and contents (never
++# on motor, which already has its own large-loss treatment via BI_CAP/_bi_level).
++HIST_COST_CAP_Q = 0.9
++
++
++def _capped_history(
++    tr: pd.DataFrame, va: pd.DataFrame, cols: tuple[str, ...]
++) -> tuple[pd.DataFrame, pd.DataFrame]:
++    tr, va = tr.copy(), va.copy()
++    for col in cols:
++        pos = tr[col][tr[col] > 0]
++        cap = pos.quantile(HIST_COST_CAP_Q) if len(pos) >= 20 else np.inf
++        tr[f"{col}_capped"] = tr[col].clip(upper=cap)
++        va[f"{col}_capped"] = va[col].clip(upper=cap)
++    return tr, va
++
++
+ # owner 2026-10-19 (Karl): fields without a rating rationale on a line. written_premium is
+ # the incumbent's price, an output of someone else's tariff, so no line rates on it (motor
+ # renewal premium also carries experience re-rating on claims reported after renewal).
+@@ -224,7 +246,12 @@ PRUNED = {
+         "hist_cost_customer",
+         "hist_cost_policy",
+         "hist_n_customer",
+-        "hist_n_policy",
++        # hist_n_policy restored (backlog 2.61, 2026-10-20): paired here with a capped
++        # hist_cost_policy companion instead of alone -- contents' only prior restore
++        # (backlog 2.64, raw count alone) gained +0.00007, inside noise, despite
++        # diagnostics.md flagging hist_n_policy=1.0 as its #1 persistent miss (3% of
++        # exposure, A/E up to 1.56 in fold A). The capped severity may carry the
++        # gradation the bare count can't.
+         "household_size",
+         "listed_building",
+         "marital_status",
+@@ -338,6 +365,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if frozen is not None and line in FROZEN_LINES:
+             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+             continue
++        if line == "buildings":
++            tr, va = _capped_history(tr, va, ("hist_cost_customer", "hist_cost_policy"))
++        elif line == "contents":
++            tr, va = _capped_history(tr, va, ("hist_cost_policy",))
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
