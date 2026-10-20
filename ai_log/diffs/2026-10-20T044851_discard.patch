@@ -1,0 +1,38 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..a3c935a 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,14 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# bug found 2026-10-20 (loop iterations 1-4): this was inverted to ("motor",) by champion
++# commit 639914c (Tier 0c.3, a property-only experiment that froze motor to isolate its own
++# effect), which silently froze MOTOR instead of property and made every motor-targeted edit
++# since a no-op (results.tsv rows a2f0d7f, 00ba862, 3fb947c, 2486d5b, 3f38e76 are byte-
++# identical to champion on every column). Fixed back to the documented direction. A discard
++# reverts this file to the buggy champion state, so this must be re-applied every iteration
++# until an owner keep adopts the fix.
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -338,6 +345,17 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if frozen is not None and line in FROZEN_LINES:
+             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+             continue
++        if line == "motor":
++            # backlog 2.65: short-period rows (exposure under 0.5) are persistently
++            # under-predicted on motor. A discrete exposure band lets trees split
++            # cleanly on the partial-year/full-year boundary instead of needing to
++            # learn an exact threshold on the continuous exposure value (2.21, raw
++            # log(exposure) as a continuous feature, was discarded).
++            tr, va = tr.copy(), va.copy()
++            bins = [-0.01, 0.25, 0.5, 0.75, 1.0, np.inf]
++            labels = ["0-25", "25-50", "50-75", "75-100", "100+"]
++            tr["exposure_band"] = pd.cut(tr["exposure"], bins=bins, labels=labels)
++            va["exposure_band"] = pd.cut(va["exposure"], bins=bins, labels=labels)
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
