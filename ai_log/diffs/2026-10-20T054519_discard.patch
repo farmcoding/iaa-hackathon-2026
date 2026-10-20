@@ -1,0 +1,39 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..09e7910 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,12 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# bug (found 2026-10-20, ai_log/diffs/2026-10-20T040132_discard.patch): this had been left
++# as ("motor",), the inverse of the comment above -- it froze motor itself, so every
++# motor-only edit since champion fa7c164 hit the `continue` below before its code ran and
++# scored byte-identical to the champion. A discard reverts the file to this buggy state,
++# so it must be re-fixed in every motor-focused diff until a motor keep re-commits it.
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -410,9 +415,19 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
++            # backlog 2.62, isolated: num_leaves 15 / min_data_in_leaf 2000 were tuned
++            # (K9, 18 Oct) for a pooled cost target that still carried the 11.9m BI
++            # claim in every split. "other" no longer carries that claim (BI split off
++            # above), so its leaf budget may be starved; the BI *count* model never had
++            # the giant-claim problem to begin with, so loosen "other" only, leaving BI
++            # at the validated settings. The bundled loosen-both variant (num_leaves 31
++            # / min_data 500 on both) scored +0.00035, both folds up, just inside the
++            # 0.0005 bar (results.tsv `300b323`); isolating removes the BI half as a
++            # possible drag on that result.
++            other_params = {**PARAMS, "num_leaves": 31, "min_data_in_leaf": 500}
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
++            other_rate = 0.5 * bag(other_target, tr["exposure"], other_params) + 0.5 * ebm_rate(
+                 other_target, tr["exposure"], mono
+             )
+             other_lc = other.sum() / tr["exposure"].sum()
