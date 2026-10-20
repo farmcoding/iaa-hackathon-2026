@@ -997,7 +997,11 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
     eda = json.loads((assets / "eda.json").read_text())
     preds = root / "data" / "cache" / "preds"
     kept = df[df["verdict"].isin(["keep", "keep_owner"])]
-    best = kept.loc[kept["score"].idxmax()] if not kept.empty else None
+    # the current champion: best kept run since the latest owner keep (owner keeps re-base
+    # the bar, as in harness.best_kept), not the highest score ever kept
+    owner = kept.index[kept["verdict"] == "keep_owner"]
+    current = kept.loc[owner[-1] :] if len(owner) else kept
+    best = current.loc[current["score"].idxmax()] if not current.empty else None
     base = df.iloc[0]
     subs = [
         ln
@@ -1008,7 +1012,7 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
     n_runs = len(df) - 1
 
     tiles = f"""<div class="tiles">
-<div class="tile"><div class="v">{best["score"]:.4f}</div><div class="l">Best validation score (run {best["n"]})</div></div>
+<div class="tile"><div class="v">{best["score"]:.4f}</div><div class="l">Current champion, validation score (run {best["n"]})</div></div>
 <div class="tile"><div class="v">{max(lb):.4f}</div><div class="l">Best public leaderboard score</div></div>
 <div class="tile"><div class="v">{n_runs}</div><div class="l">Experiments after the baseline</div></div>
 <div class="tile"><div class="v">{(df["verdict"].isin(["keep", "keep_owner"])).sum() - 1}</div><div class="l">Kept improvements</div></div>
@@ -1016,7 +1020,7 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
 </div>"""
 
     summary = tiles + md(f"""
-- The model has improved from a validation score of **{base["score"]:.4f}** to **{best["score"]:.4f}** over {n_runs} supervised experiments. On the public leaderboard it moved from 0.1060 to {max(lb):.4f} (13th on 20 October; the leader is at about 0.130).
+- The model has improved from a validation score of **{base["score"]:.4f}** to **{best["score"]:.4f}** (current champion) over {n_runs} supervised experiments. On the public leaderboard it moved from 0.1060 to {max(lb):.4f} (13th on 20 October; the leader is at about 0.130).
 - **Current model:** motor bodily injury is priced on claim counts (LightGBM Poisson) with a separate severity level; other motor perils blend LightGBM with an Explainable Boosting Machine (EBM, a glass-box additive model). Buildings and contents average three learners: LightGBM, an EBM and CatBoost, with the number of boosting rounds set by early stopping on an inner time split. Each line's level is anchored to its trended history.
 - **Owner decisions** (each scored and logged in the assumptions log): email domain, written premium on every line, licence points on property and five sales fields removed (channel kept); the 11.9m motor bodily injury claim capped at 1m with the excess loaded from a fitted Pareto tail; bodily injury developed by frequency x severity without the "larger of two estimates" floor (20 October, +0.0002); buildings trended by peril (weather and escape of water 9%, fire and accidental damage 4%; 20 October, +0.0002).
 - **Afternoon owner decisions (20 October):** no customer-level claim history on any line; buildings construction type relabelled consistently across years (one category was coded T in 2021-22 and W from 2023); motor credit band constrained to rise from band A to E and river distance removed from motor, for defensible relativities at a fold B cost of 0.00007. Champion 0.14252. A GLM baseline scores 0.1268. See Owner runs.
