@@ -38,8 +38,12 @@ trend:
 # cost per exposure 90.3 / 91.4 / 100.0 / 116.2 (2021-24): log-linear 8.8% (21-24), 5.2%
 # (21-23); severity alone 8-12% a year since 2021 (reports/reviews/2026-10-19_claims.md).
 # Other buildings perils keep the pooled 6.5%.
+# 2026-10-20 (Karl, backlog 3.48): every buildings peril group gets its own trend. Log-linear
+# fits to developed loss cost per exposure, 2021-24 / 2021-23: weather 9.2% / 9.0% (steady in
+# both windows, so 2024 is not a one-off spike), water 8.8% / 5.2%, fire 4.6% / 1.7%,
+# accidental damage 4.7% / 1.7%. Selected: weather and water 9%, fire and AD 4% (small books)
 peril_trend:
-  buildings: {water: 0.09}
+  buildings: {weather: 0.09, water: 0.09, fire: 0.04, ad: 0.04}
 
 harness:
   folds:
