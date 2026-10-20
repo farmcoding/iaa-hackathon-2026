@@ -1,0 +1,53 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..e83fcf6 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -279,6 +279,14 @@ def _credibility_encode(
+ # training rows above BI_TAIL (refitted per fold, so no look-ahead).
+ BI_CAP, BI_TAIL = 1_000_000.0, 250_000.0
+ 
++# backlog 2.33: motor's "other" peril group (config motor.other) pools own damage,
++# third-party property, theft and glass/hail into one Tweedie, but these have different
++# drivers (collision vs parking-related theft vs weather-driven glass/hail). comp_other
++# (the group's completion factor) is shared across its perils, so cost_<peril>/comp_other
++# is each peril's own developed ultimate on the same basis as ult_other (= cost_other /
++# comp_other), summing back to it exactly.
++OTHER_PERILS = ("own_damage", "third_party_prop", "theft", "glass_hail")
++
+ 
+ def _bi_level(tr: pd.DataFrame) -> float:
+     ult, trend = tr["ult_bodily_injury"].fillna(0.0), tr["trend_factor"]
+@@ -307,7 +315,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -412,11 +420,20 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+-                other_target, tr["exposure"], mono
+-            )
+             other_lc = other.sum() / tr["exposure"].sum()
+-            other_rate = _anchor(other_rate, other_lc, va)
++
++            # backlog 2.33: the LightGBM half of the blend is split by peril instead of
++            # fit on the pooled "other" target; the EBM half stays pooled (unchanged from
++            # champion) so a discard here isolates the split's own effect.
++            other_lgb = np.zeros(len(va))
++            for peril in OTHER_PERILS:
++                peril_ult = tr[f"cost_{peril}"].fillna(0.0) / tr["comp_other"] * tr["trend_factor"]
++                peril_target = peril_ult / tr["exposure"]
++                peril_lc = peril_ult.sum() / tr["exposure"].sum()
++                other_lgb += _anchor(bag(peril_target, tr["exposure"]), peril_lc, va)
++
++            other_ebm = _anchor(ebm_rate(other_target, tr["exposure"], mono), other_lc, va)
++            other_rate = 0.5 * other_lgb + 0.5 * other_ebm
+ 
+             rate = bi_rate + other_rate
+         else:
