@@ -1,0 +1,32 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..ae25e0c 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -162,7 +162,6 @@ PRUNED = {
+         "marital_status",
+         "marketing_consent",
+         "marketing_segment",
+-        "new_business",
+         "occupation",
+         "previous_insurer",
+         "property_age",
+@@ -338,6 +337,19 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if frozen is not None and line in FROZEN_LINES:
+             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+             continue
++        if line == "motor":
++            # backlog 2.63's second branch: new_business restored alone (results.tsv
++            # `4d6fc82`, discarded) lets the trees find a new_business x ncb_years split
++            # themselves, but num_leaves=15 / min_data_in_leaf=2000 is shallow enough
++            # that a 9%-exposure segment may not survive the split search. Pre-compute
++            # the interaction instead: NCB years earned, zeroed for renewals (where it
++            # should carry no extra signal) and for missing NCB (new customers with no
++            # verified claims-free history, which the -1 monotone constraint on the raw
++            # ncb_years column would otherwise treat as a full discount via NaN handling).
++            is_new = (tr["new_business"].astype(str) == "True").astype(float)
++            tr = tr.assign(nb_x_ncb=is_new * tr["ncb_years"].fillna(0.0))
++            is_new_va = (va["new_business"].astype(str) == "True").astype(float)
++            va = va.assign(nb_x_ncb=is_new_va * va["ncb_years"].fillna(0.0))
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
