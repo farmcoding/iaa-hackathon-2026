@@ -1,0 +1,30 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 1e88eef..f5bcef7 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ()
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -340,7 +340,15 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             continue
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+-        tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
++        # the BI level comes from a separate Pareto-capped/-loaded calculation
++        # (_bi_level, BI_CAP) so the single 11.9m AY2023 claim doesn't set the level,
++        # but the credibility encoder's target was still the uncapped `y`: that one
++        # row's huge rate inflates TargetEncoder's global y_variance (smooth="auto"),
++        # which drives every *other* make_model level toward raw means (near-zero
++        # shrinkage) instead of credibility-weighted ones. Cap the encoder's target
++        # the same way the level is capped; no effect on buildings/contents, whose
++        # max row cost (~631k) is already under BI_CAP.
++        tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"].clip(upper=BI_CAP) / tr["exposure"])
+ 
+         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
+         # than most real improvements, so every model is an average over SEEDS
