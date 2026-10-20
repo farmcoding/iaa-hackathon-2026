@@ -883,31 +883,16 @@ The one change it proposed, dropping the duplicate age column on contents, was t
 
 
 def replay_section(root: Path) -> str:
-    path = root / "reports" / "reviews" / "2026-10-20_reserving_replay.md"
+    path = root / "reports" / "reviews" / "2026-10-20_replay_explained.html"
     if not path.exists():
         return md("The reserving replay has not run yet.")
-    text = path.read_text()
-    lim = text.split("## 1. Limitation", 1)[1].split("## 2.", 1)[0].split("\n", 1)[1]
-    res = text.split("## 4. Results by method", 1)[1].split("## 5.", 1)[0]
-    rec = text.split("## 9. Recommendation", 1)[1].split("## Files", 1)[0]
-    sim = text.split(
-        "**How does each method handle the motor-BI case-reserve understatement?**", 1
-    )[1]
-    sim = sim.split("This is the clearest finding", 1)[0]
-    return md(
-        """Before choosing a target for a second modelling track, each candidate way of developing claims to ultimate was replayed as if the valuation had been made at each quarter-end from December 2022 to December 2023. Development patterns were refitted on the claims known at that date, and each method's prediction of the claims reported later was compared with what actually arrived by 31 December 2024. Candidates: the current method (chain ladder; bodily injury as frequency x trended severity), Bornhuetter-Ferguson and Cape Cod (backlog 3.3), bodily injury severity trend re-selected on capped severity (3.5), and blends of methods (3.11). The same code was then run on three simulated books with known true ultimates (3.12). The selection rule pre-declared in docs/SIGNOFF.md uses this replay to choose the track.
-
-### Limitation"""
-        + lim
-        + "\n### Results on the real data"
-        + res
-        + "\n### Bodily injury against a known truth (simulated books)\n"
-        + sim
-        + '<p class="note">The simulated books generate bodily injury severity with the same 3.5% trend the current method assumes, so part of the current method\'s +1.8% agreement is built in. The low bias of the other three methods is the robust finding.</p>'
-        + "\n### Recommendation"
-        + rec
-        + "\nFull reports: reports/reviews/2026-10-20_reserving_replay.md and 2026-10-20_simulated_book.md."
+    body = path.read_text().split("<body>", 1)[1].split("</body>", 1)[0]
+    body = re.sub(r"<h1>.*?</h1>\s*<p class=\"sub\">.*?</p>", "", body, flags=re.S)
+    body = body.replace("<h2>", "<h3>").replace("</h2>", "</h3>")
+    intro = md(
+        """**Capped-target test (20 October, owner run).** Capping motor bodily injury at 1m per claim in the target, with the excess kept for the Pareto load, scored 0.14254 on fold B against the champion's 0.14262 on the same actuals (-0.00008, inside noise). The model's level and its count-based BI ranking already neutralised the claim, so the cap only raised the BI level by about 2% (motor fold B actual/expected 1.011 to 0.988). Not adopted; kept as a sensitivity on branch `exp/bi-cap-target`."""
     )
+    return intro + body
 
 
 def explain_section(root: Path, assets: Path) -> str:
@@ -1008,7 +993,7 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
 - **Current model:** motor bodily injury is priced on claim counts (LightGBM Poisson) with a separate severity level; other motor perils blend LightGBM with an Explainable Boosting Machine (EBM, a glass-box additive model). Buildings and contents average three learners: LightGBM, an EBM and CatBoost, with the number of boosting rounds set by early stopping on an inner time split. Each line's level is anchored to its trended history.
 - **Owner decisions** (each scored and logged in the assumptions log): email domain, written premium on every line, licence points on property and five sales fields removed (channel kept); the 11.9m motor bodily injury claim capped at 1m with the excess loaded from a fitted Pareto tail; bodily injury developed by frequency x severity without the "larger of two estimates" floor (20 October, +0.0002); buildings trended by peril (weather and escape of water 9%, fire and accidental damage 4%; 20 October, +0.0002).
 - **Fairness (20 October):** age, credit band and occupation (buildings) stay in; marital status and household size stay out. Dropping age alone would change nothing, because years licensed rebuilds it almost exactly; a discrimination-free price would cost about 10% of motor accuracy. See the Fairness section.
-- **The ideas list is exhausted on the current target.** Every motor item, including nine from an independent second-opinion review, was tried on 20 October and none cleared the bar. An as-if reserving replay and a simulated book (20 October) then tested whether a different development method would give a better target: none beat the current one, so the current target stands; see Target check.
+- **The ideas list is exhausted on the current target.** Every motor item, including nine from an independent second-opinion review, was tried on 20 October and none cleared the bar. An as-if reserving replay and a simulated book (20 October) then tested whether a different development method would give a better target: none beat the current one, and capping the one 11.9m bodily injury claim in the target scored the same (-0.00008), so the current target stands; see Target check.
 - Local validation predicts the leaderboard well on the later validation year (fold B) and overstates gains on the earlier one (fold A). The score weights fold B twice for that reason, and the final submission is the best fold B candidate (rule pre-declared in docs/SIGNOFF.md). Why two out-of-time folds, and what they cannot test, is question Q19.
 - Data problems found and treated: exposure recorded in days on about 0.4% of rows, a field that leaks claim information in the training data only, light motor bodily injury case reserves, and the 11.9m claim. Orphan claims (loss before the policy's first row) are 0.23% of cost and immaterial.
 - An AI agent proposes one change at a time; a frozen harness scores it; a fixed rule keeps or reverts it, and a candidate keep must pass again on fresh seeds; nothing reaches the leaderboard without the actuary's sign-off.
