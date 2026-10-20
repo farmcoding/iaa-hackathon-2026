@@ -1,0 +1,39 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..6950a47 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -406,7 +406,24 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             # keep the original Tweedie-on-cost treatment.
+             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+-            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
++            # backlog 2.25, re-tested on today's champion (BI Pareto cap + EBM other
++            # blend, neither present at the first try in results.tsv `3d8fef2`):
++            # recent cohorts report BI claims as less mature, and that immaturity gets
++            # wrongly credited to drifting rating features (vehicle_age, tenure)
++            # instead of reporting lag. m(year, start quarter) is that cell's observed
++            # BI frequency over the oldest training year's; cells under-reporting
++            # relative to that mature baseline are down-weighted in the Poisson fit.
++            # m also absorbs true frequency trend, harmless since the level is anchored.
++            quarter = (tr["start_month"] - 1) // 3 + 1
++            cell = tr["year"].astype(str) + "q" + quarter.astype(str)
++            cell_freq = (
++                tr.groupby(cell)["n_bodily_injury"].sum() / tr.groupby(cell)["exposure"].sum()
++            )
++            oldest = tr["year"] == tr["year"].min()
++            oldest_freq = tr.loc[oldest, "n_bodily_injury"].sum() / tr.loc[oldest, "exposure"].sum()
++            m = (cell_freq / oldest_freq).clip(0.2, 5.0)
++            maturity_weight = tr["exposure"] * cell.map(m)
++            freq = bag(tr["n_bodily_injury"], maturity_weight, bi_params)
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
