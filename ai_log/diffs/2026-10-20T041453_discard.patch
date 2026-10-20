@@ -1,0 +1,50 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..0dc7801 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,11 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# bug found 2026-10-20 (ai_log/diffs/2026-10-20T040132_discard.patch): this had been left
++# as ("motor",), the inverse of the comment above -- every motor edit since fa7c164 hit
++# the `continue` below before its code ran. Flipped to freeze property, which is what a
++# motor hypothesis actually needs.
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -398,13 +402,16 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             return model.predict(cb_va_x)
+ 
+         if line == "motor":
+-            # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+-            # Tweedie on the combined target. BI claim frequency is far more
+-            # predictable than its severity, so BI relativities come from a Poisson
+-            # count model; severity is a flat level shared by every policy, supplied
+-            # entirely by anchoring to the developed BI loss cost. Other motor perils
+-            # keep the original Tweedie-on-cost treatment.
+-            bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
++            # backlog 2.62: num_leaves 15 / min_data_in_leaf 2000 were set (K9, 18 Oct)
++            # while motor's pooled cost target still carried the 11.9m BI claim in every
++            # split, which forced heavy regularisation everywhere to contain it. BI now
++            # has its own capped Poisson model and the "other" cost target no longer
++            # carries that claim, so the same leaf budget may be starving the "other"
++            # model of the splits it needs -- motor fold-B D2 has been flat at 0.085
++            # since. Loosen leaves/min-data for both motor sub-models only; property's
++            # PARAMS (validated at 15/2000) is untouched.
++            motor_params = {**PARAMS, "num_leaves": 31, "min_data_in_leaf": 500}
++            bi_params = {k: v for k, v in motor_params.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+             freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
+             bi_lc = _bi_level(tr)
+@@ -412,7 +419,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
++            other_rate = 0.5 * bag(other_target, tr["exposure"], motor_params) + 0.5 * ebm_rate(
+                 other_target, tr["exposure"], mono
+             )
+             other_lc = other.sum() / tr["exposure"].sum()
