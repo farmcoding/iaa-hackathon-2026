@@ -1,0 +1,38 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..d3eee5b 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -470,6 +470,33 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+                 other_target, tr["exposure"], mono
+             )
++
++            # backlog 2.88 (Tier 0f): pooled other-perils frequency x severity
++            # challenger -- a Poisson count model (own_damage, third_party_prop,
++            # theft, glass_hail reported counts) times a Gamma severity model fit
++            # only on rows with a claim, blended 25% into the cost-Tweedie/EBM
++            # rate above instead of splitting "other" into four per-peril models.
++            n_other = tr[["n_own_damage", "n_third_party_prop", "n_theft", "n_glass_hail"]].sum(
++                axis=1
++            )
++            pois_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
++            pois_params["objective"] = "poisson"
++            freq_pred = bag(n_other, tr["exposure"], pois_params)
++
++            claim_mask = (n_other > 0).to_numpy()
++            sev_target = (other / n_other)[claim_mask].clip(lower=1.0)
++            sev_params = {**pois_params, "objective": "gamma"}
++            sev_pred = np.zeros(len(va))
++            for seed in SEEDS:
++                sev_model = lgb.LGBMRegressor(
++                    **{**sev_params, "seed": seed},
++                    monotone_constraints=mono,
++                    monotone_constraints_method="advanced",
++                )
++                sev_model.fit(tr_x[claim_mask], sev_target, sample_weight=n_other[claim_mask])
++                sev_pred += sev_model.predict(va_x) / len(SEEDS)
++            other_rate = 0.75 * other_rate + 0.25 * (freq_pred * sev_pred)
++
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
+ 
