@@ -1,0 +1,42 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 1e88eef..916493e 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,24 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ()
++# This run only touches buildings, so motor and contents are frozen to the champion's
++# saved predictions instead of being refit unchanged.
++FROZEN_LINES: tuple[str, ...] = ("motor", "contents")
++
++
++def _construction_age_band(tr: pd.DataFrame, va: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
++    # backlog 2.60 / 2.47: construction_type and property_age are both already
++    # features, but the heavy regularisation (15 leaves, min_data_in_leaf 2000) may
++    # never find their interaction. diagnostics.md flags construction_type BRICK
++    # (A/E 0.930/0.803) and W (1.197/1.066) as PERSISTENT buildings misses. Bin edges
++    # come from the training quantiles, not fixed years, per the portability rule.
++    edges = np.unique(tr["property_age"].quantile([0.25, 0.5, 0.75]).to_numpy())
++    bins = np.concatenate([[-np.inf], edges, [np.inf]])
++    band_tr = pd.cut(tr["property_age"], bins=bins).astype(str)
++    band_va = pd.cut(va["property_age"], bins=bins).astype(str)
++    combo_tr = (tr["construction_type"].astype(str) + "_" + band_tr).astype("category")
++    combo_va = (va["construction_type"].astype(str) + "_" + band_va).astype("category")
++    return combo_tr, combo_va
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -338,6 +355,11 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if frozen is not None and line in FROZEN_LINES:
+             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+             continue
++        if line == "buildings":
++            tr, va = tr.copy(), va.copy()
++            tr["construction_age_band"], va["construction_age_band"] = _construction_age_band(
++                tr, va
++            )
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
