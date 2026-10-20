@@ -1,0 +1,57 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..31e7548 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -16,6 +16,7 @@ import os
+ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
++import xgboost as xgb
+ from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+@@ -103,6 +104,20 @@ CATBOOST_PARAMS = {
+     "allow_writing_files": False,
+     "verbose": False,
+ }
++# Tier 0c.5 / backlog 2.14: XGBoost reg:tweedie as a fourth equal-weight property blend
++# member, re-tested under the current champion. EBM and CatBoost were each added to the
++# property blend the same way and each gained real ground (dba2f36, 230a34b kept); the
++# only prior XGBoost attempt that actually scored (results.tsv `868a2ac`) predates both
++# and was judged against a much lower champion.
++XGB_PARAMS = {
++    "objective": "reg:tweedie",
++    "tweedie_variance_power": 1.1,
++    "tree_method": "hist",
++    "enable_categorical": True,
++    "max_depth": 6,
++    "n_estimators": 400,
++    "learning_rate": 0.05,
++}
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -397,6 +412,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
+             return model.predict(cb_va_x)
+ 
++        def xgb_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            # XGBoost's categorical support (enable_categorical) handles pandas
++            # category dtype directly, including NaN as missing, so no _ebm_safe needed.
++            model = xgb.XGBRegressor(**XGB_PARAMS, random_state=SEEDS[0])
++            model.fit(tr_x, target, sample_weight=weight)
++            return model.predict(va_x)
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -425,7 +447,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                 bag(rate_target, tr["exposure"])
+                 + ebm_rate(rate_target, tr["exposure"])
+                 + cb_rate(rate_target, tr["exposure"])
+-            ) / 3
++                + xgb_rate(rate_target, tr["exposure"])
++            ) / 4
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
