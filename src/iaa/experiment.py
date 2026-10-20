@@ -190,6 +190,7 @@ PRUNED = {
         "years_at_address",
     ],
     "buildings": [
+        "hist_n_customer",  # owner 2026-10-20 (Karl, 3.45): no customer-level claim history
         "branch_id",
         "campaign_code",
         "compulsory_excess",
@@ -373,7 +374,7 @@ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
     return None if hit.isna().any() else hit
 
 
-def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+def _fit_predict_core(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
     pred = np.zeros(len(valid))
     frozen = _frozen_preds(valid)
     for line in ("motor", "buildings", "contents"):
@@ -484,3 +485,21 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
         pred[mask] = rate * va["exposure"].to_numpy()
     return pred
+
+
+# Owner data fix (Karl 2026-10-20): buildings construction_type is coded T/t in 2021-22 and
+# W/w from 2023 (the same 11.5% / 0.6% of exposure: one category recoded between extracts),
+# and carries case variants (BRICK/Brick/brick, stone/STONE, non_standard/NON_STANDARD).
+# Harmonised to one label per category so each relativity uses all years.
+def _fix_construction(df: pd.DataFrame) -> pd.Series:
+    s = df["construction_type"].astype("string").replace({"T": "W", "t": "w"})
+    return s.str.lower()
+
+
+def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+    if "construction_type" in train.columns:
+        a, b = _fix_construction(train), _fix_construction(valid)
+        cats = sorted(set(a.dropna()) | set(b.dropna()))
+        train = train.assign(construction_type=pd.Categorical(a, categories=cats))
+        valid = valid.assign(construction_type=pd.Categorical(b, categories=cats))
+    return _fit_predict_core(train, valid)
