@@ -1,0 +1,16 @@
+line,customer_field,model_feature,association,method,flag_above_0.5
+buildings,marketing_segment,credit_band,0.7071,cramers_v,True
+buildings,customer_age,occupation,0.6609,corr_ratio,True
+contents,customer_age,policyholder_age,0.9999,spearman,True
+contents,marketing_segment,policyholder_age,0.9676,corr_ratio,True
+contents,marketing_segment,customer_age,0.9675,corr_ratio,True
+contents,marketing_segment,credit_band,0.7071,cramers_v,True
+contents,occupation,policyholder_age,0.6603,corr_ratio,True
+contents,occupation,customer_age,0.6602,corr_ratio,True
+motor,customer_age,driver_age,0.9999,spearman,True
+motor,customer_age,years_licensed,0.992,spearman,True
+motor,marketing_segment,driver_age,0.9676,corr_ratio,True
+motor,marketing_segment,years_licensed,0.9626,corr_ratio,True
+motor,marketing_segment,credit_band,0.7071,cramers_v,True
+motor,occupation,driver_age,0.6605,corr_ratio,True
+motor,occupation,years_licensed,0.6557,corr_ratio,True

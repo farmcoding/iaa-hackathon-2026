@@ -1,0 +1,7 @@
+line,comparison,n_a,n_b,auc_mean,auc_sd,top_features
+motor,2025_test_vs_2024_noweather,80000,80000,0.5456,0.0011,"['make_model:1519.0', 'driver_age:232.0', 'vehicle_age:229.0', 'years_licensed:219.3', 'vehicle_colour:105.7', 'start_month:82.3', 'annual_mileage:62.7', 'new_business:52.3']"
+motor,2024_vs_2021-23_noweather,80000,80000,0.6283,0.0027,"['make_model:1432.7', 'driver_age:297.3', 'vehicle_age:266.3', 'years_licensed:209.3', 'new_business:153.0', 'vehicle_colour:66.3', 'start_month:54.7', 'annual_mileage:47.7']"
+buildings,2025_test_vs_2024_noweather,80000,80000,0.8855,0.0252,"['property_age:1236.7', 'year_built:1236.3', 'sum_insured:263.0', 'bedrooms:39.3', 'occupation:22.7', 'construction_type:1.3', 'energy_rating:0.7', 'voluntary_excess:0.0']"
+buildings,2024_vs_2021-23_noweather,80000,80000,0.9602,0.0054,"['property_age:1234.7', 'year_built:1179.7', 'construction_type:151.3', 'sum_insured:137.0', 'bedrooms:66.3', 'occupation:30.0', 'energy_rating:0.7', 'accidental_damage_cover:0.3']"
+contents,2025_test_vs_2024_noweather,80000,80000,0.5264,0.0024,"['sum_insured:706.0', 'customer_age:433.0', 'year_built:301.0', 'policyholder_age:239.0', 'energy_rating:227.3', 'high_value_items:128.7', 'credit_band:127.7', 'security_level:83.3']"
+contents,2024_vs_2021-23_noweather,80000,80000,0.554,0.0024,"['sum_insured:614.0', 'customer_age:451.0', 'year_built:330.7', 'policyholder_age:245.7', 'energy_rating:231.3', 'credit_band:131.0', 'high_value_items:117.7', 'property_type:92.7']"

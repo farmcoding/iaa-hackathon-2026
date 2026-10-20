@@ -895,6 +895,33 @@ def replay_section(root: Path) -> str:
     return intro + body
 
 
+def owner_runs_section(root: Path, assets: Path) -> str:
+    path = root / "reports" / "reviews" / "2026-10-20_owner_runs.md"
+    if not path.exists():
+        return md("No owner runs recorded yet.")
+    body = md(path.read_text().split("\n", 2)[2])
+    charts = [
+        ("double_lift_champion_vs_glm.png", "Double lift: champion vs GLM baseline (fold B)"),
+        ("decile_ae_fold_B.png", "Actual / expected by predicted-risk decile, fold B"),
+        (
+            "adversarial_auc.png",
+            "Adversarial validation: can a model tell 2025 from the training years?",
+        ),
+        (
+            "item2_case_adequacy_diagnostic.png",
+            "BI case-reserve adequacy by claim age (cross-sectional)",
+        ),
+        (
+            "item1_bi_delay_curve.png",
+            "BI reporting delay: chain ladder vs truncated parametric fit",
+        ),
+    ]
+    grid = "".join(
+        img(assets / f, alt) + f'<p class="note">{html.escape(alt)}</p>' for f, alt in charts
+    )
+    return body + md("### Selected evidence charts") + grid
+
+
 def explain_section(root: Path, assets: Path) -> str:
     path = root / "reports" / "explain" / "explain.json"
     if not path.exists():
@@ -992,6 +1019,7 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
 - The model has improved from a validation score of **{base["score"]:.4f}** to **{best["score"]:.4f}** over {n_runs} supervised experiments. On the public leaderboard it moved from 0.1060 to {max(lb):.4f} (13th on 20 October; the leader is at about 0.130).
 - **Current model:** motor bodily injury is priced on claim counts (LightGBM Poisson) with a separate severity level; other motor perils blend LightGBM with an Explainable Boosting Machine (EBM, a glass-box additive model). Buildings and contents average three learners: LightGBM, an EBM and CatBoost, with the number of boosting rounds set by early stopping on an inner time split. Each line's level is anchored to its trended history.
 - **Owner decisions** (each scored and logged in the assumptions log): email domain, written premium on every line, licence points on property and five sales fields removed (channel kept); the 11.9m motor bodily injury claim capped at 1m with the excess loaded from a fitted Pareto tail; bodily injury developed by frequency x severity without the "larger of two estimates" floor (20 October, +0.0002); buildings trended by peril (weather and escape of water 9%, fire and accidental damage 4%; 20 October, +0.0002).
+- **Afternoon owner decisions (20 October):** no customer-level claim history on any line; buildings construction type relabelled consistently across years (one category was coded T in 2021-22 and W from 2023); motor credit band constrained to rise from band A to E and river distance removed from motor, for defensible relativities at a fold B cost of 0.00007. Champion 0.14252. A GLM baseline scores 0.1268. See Owner runs.
 - **Fairness (20 October):** age, credit band and occupation (buildings) stay in; marital status and household size stay out. Dropping age alone would change nothing, because years licensed rebuilds it almost exactly; a discrimination-free price would cost about 10% of motor accuracy. See the Fairness section.
 - **The ideas list is exhausted on the current target.** Every motor item, including nine from an independent second-opinion review, was tried on 20 October and none cleared the bar. An as-if reserving replay and a simulated book (20 October) then tested whether a different development method would give a better target: none beat the current one, and capping the one 11.9m bodily injury claim in the target scored the same (-0.00008), so the current target stands; see Target check.
 - Local validation predicts the leaderboard well on the later validation year (fold B) and overstates gains on the earlier one (fold A). The score weights fold B twice for that reason, and the final submission is the best fold B candidate (rule pre-declared in docs/SIGNOFF.md). Why two out-of-time folds, and what they cannot test, is question Q19.
@@ -1200,6 +1228,7 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
             ("explain", "Explainability"),
             ("fairness", "Fairness"),
             ("replay", "Target check"),
+            ("owner", "Owner runs"),
             ("tested", "Ideas tested"),
             ("next", "Next"),
             ("alt", "Directions"),
@@ -1225,6 +1254,7 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
 {section("explain", "Explainability: do the relativities make sense?", explain_section(root, assets))}
 {section("fairness", "Fairness and proxy review", fairness_section(root))}
 {section("replay", "Checking the target: as-if reserving replay and a simulated book", replay_section(root))}
+{section("owner", "Owner runs and evidence, 20 October afternoon", owner_runs_section(root, assets))}
 {section("tested", "Ideas tested so far", tested)}
 {section("next", "What comes next, and why", md(backlog))}
 {section("alt", "Alternative directions", alternatives)}
