@@ -1,0 +1,23 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 4eb4ea6..9ffca64 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -323,6 +323,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if frozen is not None and line in FROZEN_LINES:
+             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+             continue
++        if line == "motor":
++            # backlog 2.65: short-period rows (exposure under 0.5) are persistently
++            # under-predicted on motor. A discrete exposure band lets trees split
++            # cleanly on the partial-year/full-year boundary instead of needing to
++            # learn an exact threshold on the continuous exposure value (2.21, which
++            # exposed raw log(exposure) as a continuous feature, was discarded).
++            tr, va = tr.copy(), va.copy()
++            bins = [-0.01, 0.25, 0.5, 0.75, 1.0, np.inf]
++            labels = ["0-25", "25-50", "50-75", "75-100", "100+"]
++            tr["exposure_band"] = pd.cut(tr["exposure"], bins=bins, labels=labels)
++            va["exposure_band"] = pd.cut(va["exposure"], bins=bins, labels=labels)
++
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
