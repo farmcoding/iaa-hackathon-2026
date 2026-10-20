@@ -307,7 +307,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
 # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
 # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
 # same change.
-FROZEN_LINES: tuple[str, ...] = ()
+FROZEN_LINES: tuple[str, ...] = ("motor",)
 
 
 def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
@@ -345,10 +345,34 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
         # than most real improvements, so every model is an average over SEEDS
         def bag(target: pd.Series, weight: pd.Series, params: dict = PARAMS) -> np.ndarray:
+            n_estimators = params["n_estimators"]
+            if line != "motor":
+                # backlog 2.34 / Tier 0c.3, restricted to property: rows 71 and 98
+                # showed early stopping chosen on the pooled target cuts motor's
+                # rounds and costs motor fold-B D2 (~-0.001) while raising
+                # buildings/contents fold-B D2 (~+0.0024/+0.0025) -- the lines don't
+                # share an optimum here either, so apply it to property only.
+                last_year = tr["year"].max()
+                inner_mask = (tr["year"] < last_year).to_numpy()
+                if inner_mask.any() and (~inner_mask).any():
+                    probe = lgb.LGBMRegressor(
+                        **{**params, "n_estimators": 3000, "seed": SEEDS[0]},
+                        monotone_constraints=mono,
+                        monotone_constraints_method="advanced",
+                    )
+                    probe.fit(
+                        tr_x[inner_mask],
+                        target[inner_mask],
+                        sample_weight=weight[inner_mask],
+                        eval_set=[(tr_x[~inner_mask], target[~inner_mask])],
+                        eval_sample_weight=[weight[~inner_mask]],
+                        callbacks=[lgb.early_stopping(50, verbose=False)],
+                    )
+                    n_estimators = max(100, int(probe.best_iteration_ * 1.1))
             out = np.zeros(len(va))
             for seed in SEEDS:
                 model = lgb.LGBMRegressor(
-                    **{**params, "seed": seed},
+                    **{**params, "n_estimators": n_estimators, "seed": seed},
                     monotone_constraints=mono,
                     monotone_constraints_method="advanced",
                 )
