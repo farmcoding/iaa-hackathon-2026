@@ -1,0 +1,74 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..6c4ae41 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -12,6 +12,7 @@ Both frames hold all three lines; `line` says which.
+ from __future__ import annotations
+ 
+ import os
++from functools import lru_cache
+ 
+ import lightgbm as lgb
+ import numpy as np
+@@ -20,6 +21,42 @@ from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
++from iaa import data
++from iaa.features import _window_counts
++
++# Tier 0c.1: hist_n_customer pools a customer's claims across all three lines. Buildings
++# is the only line where it still survives pruning (near the 0.0001 d2_drop threshold,
++# model_card.json); motor and contents already prune it outright. Replacing the pooled
++# count/cost with a same-line-only version should sharpen that thin signal instead of
++# diluting it with the other two lines' claims. Re-test of a012553 (+0.0016 on an older
++# champion), restricted to buildings since that is the only line carrying the feature.
++PROPERTY_LINES = ("buildings",)
++HIST_COLS = ("hist_n_customer", "hist_cost_customer")
++
++
++@lru_cache(maxsize=3)
++def _same_line_claims(line: str) -> pd.DataFrame:
++    c = data.claims()
++    c = c[(c["status"] != "repudiated") & (c["line"] == line)]
++    pol = data.all_policies("train")[["policy_id", "customer_id"]].drop_duplicates("policy_id")
++    return c.merge(pol, on="policy_id", how="left").dropna(subset=["customer_id"])
++
++
++def _same_line_history(rows: pd.DataFrame, line: str) -> tuple[np.ndarray, np.ndarray]:
++    same = _same_line_claims(line)
++    n, s = _window_counts(
++        rows["customer_id"],
++        rows["period_start"],
++        same["customer_id"],
++        same["report_date"],
++        same["net"].to_numpy(),
++    )
++    # features.py blanks hist_n_customer/hist_cost_customer for rows without a full
++    # 365-day look-back (period_start before 2022-01-01); match that here.
++    full = (rows["period_start"] >= pd.Timestamp("2022-01-01")).to_numpy()
++    return np.where(full, n, np.nan), np.where(full, s, np.nan)
++
++
+ NON_FEATURES = {
+     "row_id",
+     "policy_id",
+@@ -338,6 +375,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if frozen is not None and line in FROZEN_LINES:
+             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+             continue
++        if line in PROPERTY_LINES and all(h in tr.columns for h in HIST_COLS):
++            # Named off the PRUNED list on purpose: hist_cost_customer is pruned by name
++            # on buildings, but the same-line-only version of it is an untested feature,
++            # not the pooled one the pruning measured.
++            n_tr, s_tr = _same_line_history(tr, line)
++            n_va, s_va = _same_line_history(va, line)
++            tr = tr.drop(columns=list(HIST_COLS)).assign(
++                hist_n_customer_sameline=n_tr, hist_cost_customer_sameline=s_tr
++            )
++            va = va.drop(columns=list(HIST_COLS)).assign(
++                hist_n_customer_sameline=n_va, hist_cost_customer_sameline=s_va
++            )
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
