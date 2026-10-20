@@ -1,0 +1,33 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 4eb4ea6..f894b27 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -135,11 +135,9 @@ PRUNED = {
+         "days_quote_to_inception",
+         "discount_applied",
+         "document_preference",
+-        "driver_assist",
+         "elevation_m",
+         "energy_rating",
+         "flood_zone",
+-        "hail_days",
+         "hist_cost_customer",
+         "hist_n_customer",
+         "household_size",
+@@ -148,8 +146,6 @@ PRUNED = {
+         "marketing_consent",
+         "marketing_segment",
+         "new_business",
+-        "occupation",
+-        "previous_insurer",
+         "property_age",
+         "property_type",
+         "rainfall_mm",
+@@ -159,7 +155,6 @@ PRUNED = {
+         "solar_panels",
+         "telematics_opt_in",
+         "transmission",
+-        "trees_within_5m",
+         "vehicle_use",
+         "wind_exposure_index",
+         "year_built",
