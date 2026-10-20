@@ -1,0 +1,22 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 9827ab4..22b9cb9 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -356,6 +356,17 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             tr = tr.assign(ncb_years_new=tr["ncb_years"].where(is_new))
+             is_new_va = va["new_business"].astype(str) == "True"
+             va = va.assign(ncb_years_new=va["ncb_years"].where(is_new_va))
++
++            # backlog 2.82 (Tier 0f, second-opinion review #3): driver_age and
++            # years_licensed are highly collinear, so the informative quantity is age
++            # at obtaining a licence. Keep driver_age; replace years_licensed with the
++            # derived age, treating out-of-range results ([17, driver_age]) as missing.
++            def _age_at_licensing(d: pd.DataFrame) -> pd.Series:
++                aal = d["driver_age"] - d["years_licensed"]
++                return aal.where((aal >= 17) & (aal <= d["driver_age"]))
++
++            tr = tr.assign(age_at_licensing=_age_at_licensing(tr)).drop(columns=["years_licensed"])
++            va = va.assign(age_at_licensing=_age_at_licensing(va)).drop(columns=["years_licensed"])
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
