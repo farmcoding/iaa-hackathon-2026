@@ -224,7 +224,8 @@ def main() -> None:
                     "d2_drop": float(np.mean(drops)),
                     "gini_drop": float(np.mean(gdrops)),
                     "encoded": bool(
-                        isinstance(tr[c].dtype, pd.CategoricalDtype)
+                        c in tr.columns
+                        and isinstance(tr[c].dtype, pd.CategoricalDtype)
                         and pd.api.types.is_float_dtype(lgbm_X[c].dtype)
                     ),
                     **{f"d2_drop_{p}": float(np.mean(v)) for p, v in split.items()},
