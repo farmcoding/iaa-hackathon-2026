@@ -1,0 +1,86 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index aabc8cd..2e48bbb 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -17,7 +17,11 @@ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
+-from sklearn.preprocessing import TargetEncoder
++from sklearn.compose import ColumnTransformer
++from sklearn.impute import SimpleImputer
++from sklearn.linear_model import TweedieRegressor
++from sklearn.pipeline import Pipeline
++from sklearn.preprocessing import OneHotEncoder, SplineTransformer, TargetEncoder
+ 
+ NON_FEATURES = {
+     "row_id",
+@@ -103,6 +107,56 @@ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+     return x
+ 
+ 
++# backlog 2.73: a spline GLM as a diversity blend member for motor's non-BI perils (a
++# light bake-off found a GLM the best single technique on motor, +0.0075 within-line vs
++# LightGBM). The one prior GLM-blend attempt on property (results.tsv `760ab72`,
++# `8eb2031`) broke because it one-hot-encoded train and valid separately with
++# `pd.get_dummies`, so the two frames could get different dummy columns and the fitted
++# coefficients lined up with the wrong columns at predict time. Fitting one
++# ColumnTransformer on train only and calling `.transform` (not `.fit_transform`) on
++# valid guarantees the same columns in the same order on both sides.
++def _motor_glm_rate(
++    tr_x: pd.DataFrame, va_x: pd.DataFrame, target: pd.Series, weight: pd.Series
++) -> np.ndarray:
++    num_cols = [c for c in tr_x.columns if not isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
++    cat_cols = [c for c in tr_x.columns if c not in num_cols]
++    tr_d = pd.concat([tr_x[num_cols], _ebm_safe(tr_x[cat_cols])], axis=1)
++    va_d = pd.concat([va_x[num_cols], _ebm_safe(va_x[cat_cols])], axis=1)
++    pre = ColumnTransformer(
++        [
++            (
++                "num",
++                Pipeline(
++                    [
++                        ("impute", SimpleImputer(strategy="median")),
++                        # constant extrapolation bounds the design for out-of-range
++                        # valid rows instead of letting the spline basis blow up
++                        ("spline", SplineTransformer(n_knots=5, degree=3, include_bias=False)),
++                    ]
++                ),
++                num_cols,
++            ),
++            ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
++        ]
++    )
++    model = Pipeline(
++        [
++            ("pre", pre),
++            (
++                "glm",
++                TweedieRegressor(
++                    power=PARAMS["tweedie_variance_power"],
++                    link="log",
++                    solver="newton-cholesky",
++                    max_iter=300,
++                ),
++            ),
++        ]
++    )
++    model.fit(tr_d, target, glm__sample_weight=weight)
++    return model.predict(va_d)
++
++
+ # owner 2026-10-19 (Karl): fields without a rating rationale on a line. written_premium is
+ # the incumbent's price, an output of someone else's tariff, so no line rates on it (motor
+ # renewal premium also carries experience re-rating on claims reported after renewal).
+@@ -331,7 +385,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+-            other_rate = bag(other / tr["exposure"], tr["exposure"])
++            other_target = other / tr["exposure"]
++            lgbm_other = bag(other_target, tr["exposure"])
++            glm_other = _motor_glm_rate(tr_x, va_x, other_target, tr["exposure"])
++            other_rate = 0.5 * lgbm_other + 0.5 * glm_other
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
+ 
