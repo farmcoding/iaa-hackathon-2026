@@ -1,0 +1,38 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..b6a2358 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -305,9 +305,11 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # owner 2026-10-19 (Karl, meta-review): motor is where the gap is, and every motor experiment
+ # was paying for a full property refit. Lines listed here reuse the saved validation
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+-# fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+-# same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# fit always refits every line. To experiment on motor, this must list ("buildings",
++# "contents") -- a discarded run reverts the file, so a motor edit that leaves this at
++# ("motor",) (its state on disk since champion 639914c) silently no-ops, as several
++# byte-identical results.tsv rows confirm (a2f0d7f, 00ba862, 3fb947c, 2486d5b).
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -410,6 +412,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
++            # backlog 2.21, scoped to the other-perils model only: motor rows under 0.25
++            # exposure claim at 0.168 per exposure-year vs 0.141 for full years (meta-
++            # review), so frequency is not proportional to exposure. Not given to the BI
++            # model above: its target is a raw count (not a rate) with no exposure offset,
++            # so a row's own exposure as a feature would let it learn count ~ exposure and
++            # the exposure multiply on line ~430 would then double-count it (this is what
++            # sank backlog 2.65's exposure-band retry, -0.005 on d2_motor_B both times).
++            # other_target below is already a rate, so no such double-counting here.
++            tr_x = tr_x.assign(log_exposure=np.log(tr["exposure"].clip(lower=1e-3)))
++            va_x = va_x.assign(log_exposure=np.log(va["exposure"].clip(lower=1e-3)))
++            mono = mono + [0]
++
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+             other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
