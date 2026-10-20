@@ -1,0 +1,17 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..80b1d5a 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -384,6 +384,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+             continue
+         if line == "motor":
++            # backlog 2.86 (Tier 0f #2): both BI frequency and other-peril cost flatten
++            # past 9 years' no-claims discount per the second-opinion review; cap before
++            # the new-business split below so both the renewal and transferred-NCB
++            # columns see the same ceiling.
++            tr = tr.assign(ncb_years=tr["ncb_years"].clip(upper=9))
++            va = va.assign(ncb_years=va["ncb_years"].clip(upper=9))
+             # backlog 2.63 refinement: NCB transferred onto a brand-new policy is
+             # unverified (quoted by the customer, not earned on this book), unlike
+             # renewal NCB, so give it its own monotone column instead of sharing one
