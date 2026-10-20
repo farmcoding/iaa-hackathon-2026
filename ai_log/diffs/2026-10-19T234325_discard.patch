@@ -1,0 +1,28 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 1e88eef..924ceac 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ()
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -388,9 +388,11 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+-                other_target, tr["exposure"], mono
+-            )
++            other_rate = (
++                bag(other_target, tr["exposure"])
++                + ebm_rate(other_target, tr["exposure"], mono)
++                + cb_rate(other_target, tr["exposure"])
++            ) / 3
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
+ 
