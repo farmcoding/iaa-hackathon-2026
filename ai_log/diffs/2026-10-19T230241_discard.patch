@@ -1,0 +1,58 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 1e88eef..92ef0c9 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -89,6 +89,16 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# motor BI frequency has never had a second learner: every real gain since 18 Oct came
++# from adding a blend member (EBM on property, EBM on motor's "other" perils, CatBoost on
++# property), but BI frequency is still a LightGBM-only Poisson bag. EBM additive
++# (interactions=0) is GLM-shaped, and a spline GLM was the best single technique on motor
++# in the interactions bake-off, so give BI the same treatment as motor's "other" perils.
++EBM_BI_PARAMS = {
++    "objective": "poisson_deviance",
++    "interactions": 0,
++    "outer_bags": 2,
++}
+ # backlog 2.13 / Tier 0e.3: CatBoost's native Tweedie as a third equal-weight property
+ # blend member. Validated single-seed (results.tsv `b46f2be`, `89324f8`: +0.0014/+0.0018
+ # vs their day's champion, both folds up each time) and re-tested alone on the final
+@@ -307,7 +317,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ()
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -357,11 +367,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             return out
+ 
+         def ebm_rate(
+-            target: pd.Series, weight: pd.Series, mono: list[int] | None = None
++            target: pd.Series,
++            weight: pd.Series,
++            mono: list[int] | None = None,
++            params: dict = EBM_PARAMS,
+         ) -> np.ndarray:
+             ebm_tr_x, ebm_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
+             model = ExplainableBoostingRegressor(
+-                **EBM_PARAMS, random_state=SEEDS[0], monotone_constraints=mono
++                **params, random_state=SEEDS[0], monotone_constraints=mono
+             )
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+@@ -382,7 +395,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             # keep the original Tweedie-on-cost treatment.
+             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+-            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
++            freq = 0.5 * bag(tr["n_bodily_injury"], tr["exposure"], bi_params) + 0.5 * ebm_rate(
++                tr["n_bodily_injury"], tr["exposure"], mono, EBM_BI_PARAMS
++            )
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
