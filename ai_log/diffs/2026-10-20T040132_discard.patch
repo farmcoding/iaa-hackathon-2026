@@ -1,0 +1,49 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..f8dfdb0 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -162,7 +162,6 @@ PRUNED = {
+         "marital_status",
+         "marketing_consent",
+         "marketing_segment",
+-        "new_business",
+         "occupation",
+         "previous_insurer",
+         "property_age",
+@@ -307,7 +306,15 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# BUG FOUND 2026-10-20 (this run): this tuple had listed ("motor",) -- the inverse of the
++# comment above and of program.md's description ("FROZEN_LINES makes buildings and contents
++# reuse the saved predictions... so a motor experiment runs in about 2 minutes"). With
++# "motor" listed, every motor edit hit `continue` before its code ever ran: results.tsv
++# `a2f0d7f`, `00ba862`, `3fb947c`, `2486d5b` are byte-identical to the champion on every
++# column (including gini_B) -- confirmed by diffing the saved patches, whose motor-only
++# changes sit after the frozen-check `continue`. Flipped to freeze property instead, which
++# is what every motor hypothesis since 19 Oct actually needed.
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -338,6 +345,19 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if frozen is not None and line in FROZEN_LINES:
+             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+             continue
++        if line == "motor":
++            # backlog 2.63's second branch: new_business restored alone (results.tsv
++            # `4d6fc82`, discarded) lets the trees find a new_business x ncb_years split
++            # themselves, but num_leaves=15 / min_data_in_leaf=2000 is shallow enough
++            # that a 9%-exposure segment may not survive the split search. Pre-compute
++            # the interaction instead: NCB years earned, zeroed for renewals (where it
++            # should carry no extra signal) and for missing NCB (new customers with no
++            # verified claims-free history, which the -1 monotone constraint on the raw
++            # ncb_years column would otherwise treat as a full discount via NaN handling).
++            is_new = (tr["new_business"].astype(str) == "True").astype(float)
++            tr = tr.assign(nb_x_ncb=is_new * tr["ncb_years"].fillna(0.0))
++            is_new_va = (va["new_business"].astype(str) == "True").astype(float)
++            va = va.assign(nb_x_ncb=is_new_va * va["ncb_years"].fillna(0.0))
+         cols = _feature_cols(tr)
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
