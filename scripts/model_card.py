@@ -27,6 +27,7 @@ import types
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from catboost import CatBoostRegressor
 from interpret.glassbox import ExplainableBoostingRegressor
 
 from iaa import data, harness, score, ultimate
@@ -80,10 +81,16 @@ def _instrument(exp, rec: _Rec) -> None:
             rec.events.append(("ebm", self, X))
             return super().predict(X, *a, **k)
 
+    class CB(CatBoostRegressor):
+        def predict(self, X, *a, **k):  # noqa: N803
+            rec.events.append(("cb", self, X))
+            return super().predict(X, *a, **k)
+
     shim = types.SimpleNamespace(**{k: getattr(lgb, k) for k in dir(lgb) if not k.startswith("__")})
     shim.LGBMRegressor = LGBM
     exp.lgb = shim
     exp.ExplainableBoostingRegressor = EBM
+    exp.CatBoostRegressor = CB
     orig = exp._anchor
 
     def anchor(rate, target_lc, va):
@@ -112,7 +119,7 @@ def _segments(events: list[tuple]) -> dict[str, list[tuple]]:
 
 def _rebuild(line: str, seg: list[tuple], w: np.ndarray, perm: dict | None = None) -> dict:
     """Predicted rate per row, optionally with columns shuffled in some sub-models.
-    perm: {"cols": [...], "idx": array, "parts": {"bi", "other", "lgbm", "ebm"}}"""
+    perm: {"cols": [...], "idx": array, "parts": {"bi", "other", "prop"}}"""
 
     def pred(kind, model, X, part):
         if perm and part in perm["parts"]:
@@ -120,26 +127,30 @@ def _rebuild(line: str, seg: list[tuple], w: np.ndarray, perm: dict | None = Non
             for c in perm["cols"]:
                 if c in X.columns:
                     X[c] = X[c].iloc[perm["idx"]].set_axis(X.index)
-        return (
-            lgb.LGBMRegressor.predict(model, X)
-            if kind == "lgbm"
-            else ExplainableBoostingRegressor.predict(model, X)
-        )
+        if kind == "lgbm":
+            return lgb.LGBMRegressor.predict(model, X)
+        if kind == "ebm":
+            return ExplainableBoostingRegressor.predict(model, X)
+        return CatBoostRegressor.predict(model, X)
 
+    lg = [e for e in seg if e[0] == "lgbm"]
+    eb = [e for e in seg if e[0] == "ebm"]
+    cb = [e for e in seg if e[0] == "cb"]
     if line == "motor":
-        lg = [e for e in seg if e[0] == "lgbm"]
+        # BI: LightGBM Poisson seeds; other perils: LightGBM Tweedie seeds averaged 50/50 with an EBM
         an = [e[1] for e in seg if e[0] == "anchor"]
         k = len(lg) // 2
         bi = np.mean([pred("lgbm", m, X, "bi") for _, m, X in lg[:k]], axis=0)
         ot = np.mean([pred("lgbm", m, X, "other") for _, m, X in lg[k:]], axis=0)
+        if eb:
+            ot = 0.5 * ot + 0.5 * pred("ebm", eb[0][1], eb[0][2], "other")
         return _anchor(bi, an[0], w) + _anchor(ot, an[1], w)
-    lg = [e for e in seg if e[0] == "lgbm"]
-    eb = [e for e in seg if e[0] == "ebm"]
+    # property: LightGBM seeds, EBM and CatBoost, equal weights
     lc = [e[1] for e in seg if e[0] == "anchor"][0]
-    r = np.mean([pred("lgbm", m, X, "lgbm") for _, m, X in lg], axis=0)
-    if eb:
-        r = 0.5 * r + 0.5 * pred("ebm", eb[0][1], eb[0][2], "ebm")
-    return _anchor(r, lc, w)
+    members = [np.mean([pred("lgbm", m, X, "prop") for _, m, X in lg], axis=0)]
+    members += [pred("ebm", e[1], e[2], "prop") for e in eb]
+    members += [pred("cb", e[1], e[2], "prop") for e in cb]
+    return _anchor(np.mean(members, axis=0), lc, w)
 
 
 def _unused(df: pd.DataFrame, used: dict[str, list[str]]) -> list[dict]:
@@ -194,7 +205,7 @@ def main() -> None:
             f"{line}: rebuild differs from the model"
         )
         base_gini = score.gini(y, base_rate * w, w)
-        parts = [{"bi", "other"}] if line == "motor" else [{"lgbm", "ebm"}]
+        parts = [{"bi", "other"}] if line == "motor" else [{"prop"}]
         rows = []
         for c in cols:
             drops, gdrops, split = [], [], {}
@@ -234,13 +245,16 @@ def main() -> None:
             )
         n_lgbm = sum(e[0] == "lgbm" for e in seg)
         info["components"] = (
-            f"BI claim frequency: LightGBM Poisson ({n_lgbm // 2} seeds); other perils: LightGBM Tweedie ({n_lgbm // 2} seeds)"
+            f"BI claim frequency: LightGBM Poisson ({n_lgbm // 2} seeds); other perils: LightGBM Tweedie ({n_lgbm // 2} seeds) averaged 50/50 with an EBM"
             if line == "motor"
-            else f"LightGBM Tweedie ({n_lgbm} seeds) averaged 50/50 with an EBM"
+            else f"LightGBM Tweedie ({n_lgbm} seeds, rounds by early stopping), an EBM and CatBoost Tweedie, equal weights"
         )
         card["lines"][line] = info
         print(f"{line}: D2 {base:.4f}, {len(cols)} features, {time.time() - t0:.0f} s", flush=True)
 
+    for ln, cols in getattr(exp, "PRUNED", {}).items():
+        for c in cols:
+            REASONS.setdefault(c, "Pruned 19 Oct (owner-approved): no measurable contribution on that line, or a sales/admin field")
     card["unused"] = _unused(df, used)
     card["seconds"] = round(time.time() - t0)
     card["dataset"] = harness._fingerprint()

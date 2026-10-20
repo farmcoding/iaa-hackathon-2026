@@ -19,6 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 import markdown
+import yaml
 import numpy as np
 import pandas as pd
 import yaml
@@ -85,7 +86,7 @@ def md(text: str) -> str:
     return markdown.markdown(text, extensions=["tables"])
 
 
-NOISE_FLOOR = 0.001  # primary margin (config harness.noise_floor, 19 Oct)
+NOISE_FLOOR = yaml.safe_load((Path(__file__).resolve().parents[1] / "configs" / "market_dev.yaml").read_text())["harness"]["noise_floor"]  # today's primary margin
 FOLD_FLOOR = 0.002
 
 
@@ -860,6 +861,26 @@ The three gains are queued for the loop as full tests (backlog 2.70, 2.71, 2.73)
     return "".join(out)
 
 
+def fairness_section(root: Path) -> str:
+    path = root / "reports" / "reviews" / "2026-10-20_fairness.md"
+    if not path.exists():
+        return md("The fairness review has not run yet.")
+    text = path.read_text()
+    rec = text.split("## 5. Recommendation", 1)[1].split("## Scripts", 1)[0]
+    dfp = text.split("## 4. Discrimination-free pricing check", 1)[1].split("## 5.", 1)[0]
+    return md(
+        """For each sensitive field the review measured three things on fold B: how much accuracy the field adds, how well the model's other inputs rebuild it (proxy strength), and how prices move under three versions of the model: with the field, refitted without it, and discrimination-free (the field averaged out over the portfolio, after Lindholm, Richman, Tsanakas and Wüthrich, 2022). Sex, race, ethnicity and religion are not in the data. The review used a light single-seed model, so differences under about 0.002 D² are noise.
+
+The one change it proposed, dropping the duplicate age column on contents, was tested by the loop at 09:31 on 20 October: 0.14263 against 0.14260, neutral, so the model is unchanged.
+
+### Recommendation by field"""
+        + rec
+        + "\n### Discrimination-free check"
+        + dfp
+        + "\nFull review: reports/reviews/2026-10-20_fairness.md."
+    )
+
+
 def explain_section(root: Path, assets: Path) -> str:
     path = root / "reports" / "explain" / "explain.json"
     if not path.exists():
@@ -954,22 +975,23 @@ def build(root: Path, out: Path, batch: str, assets: Path) -> None:
 </div>"""
 
     summary = tiles + md(f"""
-- The model has improved from a validation score of **{base["score"]:.4f}** to **{best["score"]:.4f}** over {n_runs} supervised experiments. On the public leaderboard it moved from 0.1060 to {max(lb):.4f} (13th on 19 October; the leader is at about 0.130).
-- **Current model:** gradient-boosted trees (LightGBM) for every line, with an Explainable Boosting Machine (EBM, a glass-box additive model) averaged in on buildings and contents. Motor bodily injury is priced on claim counts with a separate severity level. The EBM blend was found and kept by the loop overnight on 18 October and passed the fresh-seed rerun; it scored 0.1233 on the public leaderboard on 19 October.
-- **The neural net (TabM) no longer adds anything:** with the EBM in place, blending TabM adds +0.0001 to +0.0015 depending on its seed, inside the noise floor. It is not used for Part 1.
-- **Owner decisions on 19 October** (each scored and logged in the assumptions log): email domain removed (it is noise, unrelated to any other customer field); licence points removed from buildings and contents (no rating rationale there); the one 11.9m motor bodily injury claim capped at 1m with the expected excess loaded from a fitted Pareto tail, instead of assuming a claim that size every four years; buildings escape-of-water trend raised to 9%; written premium removed from every line, because it is the incumbent's price, not a characteristic of the risk.
-- Local validation predicts the leaderboard well on the later validation year (fold B) and overstates gains on the earlier one (fold A). The score weights fold B twice for that reason. Why two out-of-time folds, and what they cannot test, is question Q19.
+- The model has improved from a validation score of **{base["score"]:.4f}** to **{best["score"]:.4f}** over {n_runs} supervised experiments. On the public leaderboard it moved from 0.1060 to {max(lb):.4f} (13th on 20 October; the leader is at about 0.130).
+- **Current model:** motor bodily injury is priced on claim counts (LightGBM Poisson) with a separate severity level; other motor perils blend LightGBM with an Explainable Boosting Machine (EBM, a glass-box additive model). Buildings and contents average three learners: LightGBM, an EBM and CatBoost, with the number of boosting rounds set by early stopping on an inner time split. Each line's level is anchored to its trended history.
+- **Owner decisions** (each scored and logged in the assumptions log): email domain, written premium on every line, licence points on property and five sales fields removed (channel kept); the 11.9m motor bodily injury claim capped at 1m with the excess loaded from a fitted Pareto tail; bodily injury developed by frequency x severity without the "larger of two estimates" floor (20 October, +0.0002); buildings trended by peril (weather and escape of water 9%, fire and accidental damage 4%; 20 October, +0.0002).
+- **Fairness (20 October):** age, credit band and occupation (buildings) stay in; marital status and household size stay out. Dropping age alone would change nothing, because years licensed rebuilds it almost exactly; a discrimination-free price would cost about 10% of motor accuracy. See the Fairness section.
+- **The ideas list is exhausted on the current target.** Every motor item, including nine from an independent second-opinion review, was tried on 20 October and none cleared the bar. Remaining gains are expected from the target (development and trend choices), not the model; see What comes next.
+- Local validation predicts the leaderboard well on the later validation year (fold B) and overstates gains on the earlier one (fold A). The score weights fold B twice for that reason, and the final submission is the best fold B candidate (rule pre-declared in docs/SIGNOFF.md). Why two out-of-time folds, and what they cannot test, is question Q19.
 - Data problems found and treated: exposure recorded in days on about 0.4% of rows, a field that leaks claim information in the training data only, light motor bodily injury case reserves, and the 11.9m claim. Orphan claims (loss before the policy's first row) are 0.23% of cost and immaterial.
-- An AI agent proposes one change at a time; a frozen harness scores it; a fixed rule keeps or reverts it, and a candidate keep must pass again on fresh seeds; nothing reaches the leaderboard without the actuary's sign-off. The loop stopped itself at 08:00 on 19 October when its ideas ran out; three independent reviews (claims, variables, the failed CANN model) added new ones (reports/reviews/).
+- An AI agent proposes one change at a time; a frozen harness scores it; a fixed rule keeps or reverts it, and a candidate keep must pass again on fresh seeds; nothing reaches the leaderboard without the actuary's sign-off.
 """)
 
-    evals = md("""
+    evals = md(f"""
 | Measure | What it tells you | How it is used |
 |---|---|---|
 | **Tweedie D² (power 1.5)** | Share of the deviance of a flat "everyone pays the average" model that our model removes. 0 means no better than the average; higher is better. Tweedie deviance suits insurance costs: many zeros and a long right tail. | The leaderboard metric. Computed locally exactly as Kaggle does (confirmed by a calibration submission). |
 | **Score (weighted)** | Fold A and fold B D², with fold B counted twice. | The number the loop optimises. Fold B is weighted up because it tracks the leaderboard. |
 | **Worse fold** | The lower of the two fold scores. | A gate: a change that improves the average but hurts either year by more than seed noise is rejected. |
-| **Noise floor (0.001)** | How much the score moves from random seeds alone: standard deviation 0.0002 for the seed-bagged model (measured 19 October over five full seed shifts; 0.002 until then). | A change must beat the best model by more than this to be kept. |
+| **Noise floor ({NOISE_FLOOR})** | How much the score moves from random seeds alone: standard deviation 0.0002 for the seed-bagged model (measured 19 October over five full seed shifts). The floor was 0.002 until 19 October, 0.001 on 19 October and 0.0005 from 20 October, each lowered by the owner after the seed-noise measurements. | A change must beat the best model by more than this to be kept. |
 | **Within-line D²** | Accuracy of the ranking inside motor, buildings and contents separately. | Shows where improvement is coming from; pooled D² also rewards getting line levels right. |
 | **Actual ÷ expected by line** | Whether each line's total is priced at the right level. | Should sit between 0.97 and 1.03. |
 | **Lift and Gini** | How well the model separates cheap risks from expensive ones; the lift chart shows actual cost by predicted-risk decile. | A steeper lift curve means better risk selection. |
@@ -1031,7 +1053,7 @@ Every policy-period row is used; nothing is sampled away. A policy can appear in
         img(assets / "loop.png", "Supervised experiment loop")
         + chart(fig_progress(df))
         + md(
-            '<p class="note">The line is the best kept model. A discarded run can sit slightly above it: its gain was inside the noise floor (0.002 until 19 October, 0.001 since) noise floor or it hurt one validation year, so the rule did not count it. Purple marks owner decisions.</p>'
+            '<p class="note">The line is the best kept model. A discarded run can sit slightly above it: its gain was inside the noise floor (0.002 until 19 October, 0.001 on 19 October, 0.0005 since) or it hurt one validation year, so the rule did not count it. Purple marks owner decisions.</p>'
         )
         + '<div class="grid2">'
         + chart(fig_folds(df))
@@ -1162,6 +1184,7 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
             ("variables", "Variables"),
             ("interactions", "Interactions"),
             ("explain", "Explainability"),
+            ("fairness", "Fairness"),
             ("tested", "Ideas tested"),
             ("next", "Next"),
             ("alt", "Directions"),
@@ -1185,6 +1208,7 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
 {section("variables", "Rating variables: individual and combined predictive power", variables)}
 {section("interactions", "Interactions: two-way views and what the model captures", interactions_section(root))}
 {section("explain", "Explainability: do the relativities make sense?", explain_section(root, assets))}
+{section("fairness", "Fairness and proxy review", fairness_section(root))}
 {section("tested", "Ideas tested so far", tested)}
 {section("next", "What comes next, and why", md(backlog))}
 {section("alt", "Alternative directions", alternatives)}
