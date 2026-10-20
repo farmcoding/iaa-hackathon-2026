@@ -75,6 +75,13 @@ harness:
   # a candidate keep is re-run with seeds shifted by this offset and must pass the keep
   # rule again (Karl, 2026-10-18); the experiment reads IAA_SEED_OFFSET
   confirm_seed_offset: 100
+  # owner (3.30): lets written_premium back into the features on every line when true;
+  # read by experiment._feature_cols. Default off for Part 1 (2026-10-19 decision: the
+  # incumbent's price is an output of another tariff, not a risk characteristic). Kept
+  # under harness: so flipping it does not change the dataset fingerprint or rebuild the
+  # cache. Re-run the four admissibility tests in docs/pipeline_review.md section 2.1 on
+  # the Part 2 market's premium before turning this on there.
+  use_premium: false
 
 large_loss:
   # per-claim cap applied to the training target; the excess is reloaded per line

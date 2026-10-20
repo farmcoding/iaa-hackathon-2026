@@ -1,0 +1,144 @@
+column,role,family,availability_at_quote,competition_admissible,real_world_admissible,fairness_flag,used_on_lines,reason_if_excluded
+customer_service_contacts,excluded,other,"n/a, removed before features.build finishes",no,no,no,,"leak, never reaches harness.dataset (features.FORBIDDEN); see the comment above features.FORBIDDEN in src/iaa/features.py and reports/data_quality.md"
+customer_since_year,excluded,other,"n/a, removed before features.build finishes",no,no,no,,"leak, never reaches harness.dataset (features.FORBIDDEN); see the comment above features.FORBIDDEN in src/iaa/features.py and reports/data_quality.md"
+dq_exposure_fixed,excluded,other,"n/a, removed before features.build finishes",no,no,no,,"leak, never reaches harness.dataset (features.FORBIDDEN); see the comment above features.FORBIDDEN in src/iaa/features.py and reports/data_quality.md"
+email_domain,excluded,customer,yes,yes,"no: found independent of every other customer field and unstable between years (Cramer's V < 0.01), i.e. noise, not a risk factor (owner 2026-10-19, reports/reviews/2026-10-19_features.md)",yes,,"owner-excluded, not a rating factor (experiment.NON_FEATURES; see the inline comment in src/iaa/experiment.py and reports/assumptions_log.md)"
+exposure,excluded,other,yes,yes,yes,no,,"harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES)"
+exposure_raw,excluded,other,"n/a, removed before features.build finishes",no,no,no,,"leak, never reaches harness.dataset (features.FORBIDDEN); see the comment above features.FORBIDDEN in src/iaa/features.py and reports/data_quality.md"
+line,excluded,other,yes,yes,yes,no,,"harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES)"
+lines_held,excluded,policy admin/sales,yes,yes,yes,no,,"owner-excluded, not a rating factor (experiment.NON_FEATURES; see the inline comment in src/iaa/experiment.py and reports/assumptions_log.md)"
+period_end,excluded,other,yes,yes,yes,no,,"harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES)"
+period_start,excluded,other,yes,yes,yes,no,,"harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES)"
+renewal_decision,excluded,other,"n/a, removed before features.build finishes",no,no,no,,"leak, never reaches harness.dataset (features.FORBIDDEN); see the comment above features.FORBIDDEN in src/iaa/features.py and reports/data_quality.md"
+split,excluded,other,yes,yes,yes,no,,"harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES)"
+year,excluded,other,yes,yes,yes,no,,"harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES)"
+accidental_damage_cover,feature,property risk/policy,yes,yes,yes,no,"buildings, contents",motor: not populated for this line
+annual_mileage,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+basement,feature,property risk/policy,yes,yes,yes,no,buildings,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+bedrooms,feature,property risk/policy,yes,yes,yes,no,"buildings, contents","motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+bicycle_cover,feature,property risk/policy,yes,yes,yes,no,contents,motor: not populated for this line; buildings: not populated for this line
+body_type,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+branch_id,feature,policy admin/sales,yes,yes,"no: describes how the policy was sold, not the risk (owner 2026-10-19, reports/reviews/2026-10-19_features.md)",no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+campaign_code,feature,policy admin/sales,yes,yes,"no: describes how the policy was sold, not the risk (owner 2026-10-19, reports/reviews/2026-10-19_features.md)",no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+channel,feature,policy admin/sales,yes,yes,yes,no,"motor, buildings, contents",
+compulsory_excess,feature,motor risk/policy,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+construction_type,feature,property risk/policy,yes,yes,yes,no,buildings,motor: not populated for this line; contents: not populated for this line
+cover_type,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+credit_band,feature,customer,yes,yes,contested: predictive in this data but credit-based rating is restricted or banned for some lines in some jurisdictions; needs a fairness and regulatory review,yes,"motor, buildings, contents",
+customer_age,feature,customer,yes,yes,contested: a common rating factor but jurisdiction-dependent restrictions apply (e.g. age/gender rating rules); needs a fairness review before a real tariff (docs/pipeline_review.md fairness row),yes,contents,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+customer_tenure,feature,customer,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+days_quote_to_inception,feature,policy admin/sales,yes,yes,"no: describes how the policy was sold, not the risk (owner 2026-10-19, reports/reviews/2026-10-19_features.md)",no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+days_unoccupied,feature,property risk/policy,yes,yes,yes,no,,"motor: not populated for this line; buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: not populated for this line"
+discount_applied,feature,customer,yes,yes,yes,no,contents,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+distance_to_river_km,feature,geography,yes,yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"motor, buildings","contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+document_preference,feature,policy admin/sales,yes,yes,"no: describes how the policy was sold, not the risk (owner 2026-10-19, reports/reviews/2026-10-19_features.md)",no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+driver_age,feature,motor risk/policy,yes,yes,contested: a common rating factor but jurisdiction-dependent restrictions apply (e.g. age/gender rating rules); needs a fairness review before a real tariff (docs/pipeline_review.md fairness row),yes,motor,buildings: not populated for this line; contents: not populated for this line
+driver_assist,feature,motor risk/policy,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: not populated for this line; contents: not populated for this line"
+dry_summer_index,feature,weather,"partial: an address's climate normal is knowable at quote; the row's own-year realized weather (joined by [address_id, year], features.py) is not, and for the 2025 test rows it is host-supplied (docs/pipeline_review.md stage-1 admissibility row)",yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"motor, buildings","contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+elevation_m,feature,geography,yes,yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"buildings, contents","motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+energy_rating,feature,property risk/policy,yes,yes,yes,no,"buildings, contents","motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+engine_size_cc,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+flood_zone,feature,geography,yes,yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"buildings, contents","motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+freezing_days,feature,weather,"partial: an address's climate normal is knowable at quote; the row's own-year realized weather (joined by [address_id, year], features.py) is not, and for the 2025 test rows it is host-supplied (docs/pipeline_review.md stage-1 admissibility row)",yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"motor, contents","buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+fuel_type,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+hail_days,feature,weather,"partial: an address's climate normal is knowable at quote; the row's own-year realized weather (joined by [address_id, year], features.py) is not, and for the 2025 test rows it is host-supplied (docs/pipeline_review.md stage-1 admissibility row)",yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+high_value_items,feature,property risk/policy,yes,yes,yes,no,contents,motor: not populated for this line; buildings: not populated for this line
+hist_cost_customer,feature,claim history,"yes, as of the row's period_start (features.claim_history)",yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+hist_cost_policy,feature,claim history,"yes, as of the row's period_start (features.claim_history)",yes,yes,no,,"buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+hist_n_customer,feature,claim history,"yes, as of the row's period_start (features.claim_history)",yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+hist_n_policy,feature,claim history,"yes, as of the row's period_start (features.claim_history)",yes,yes,no,,"contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+household_size,feature,customer,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+licence_points,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: owner-dropped (experiment.LINE_DROP); contents: owner-dropped (experiment.LINE_DROP)
+listed_building,feature,property risk/policy,yes,yes,yes,no,buildings,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+lodgers,feature,customer,yes,yes,yes,no,contents,motor: not populated for this line; buildings: not populated for this line
+make_model,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+marital_status,feature,customer,yes,yes,contested: a common rating factor but jurisdiction-dependent restrictions apply (e.g. age/gender rating rules); needs a fairness review before a real tariff (docs/pipeline_review.md fairness row),yes,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+marketing_consent,feature,policy admin/sales,yes,yes,"no: describes how the policy was sold, not the risk (owner 2026-10-19, reports/reviews/2026-10-19_features.md)",no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+marketing_segment,feature,policy admin/sales,yes,yes,"no: describes how the policy was sold, not the risk (owner 2026-10-19, reports/reviews/2026-10-19_features.md)",no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+mean_temperature_c,feature,weather,"partial: an address's climate normal is knowable at quote; the row's own-year realized weather (joined by [address_id, year], features.py) is not, and for the 2025 test rows it is host-supplied (docs/pipeline_review.md stage-1 admissibility row)",yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"motor, buildings","contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+missed_payments_12m,feature,customer,yes,yes,yes,no,"motor, buildings, contents",
+mortgage,feature,property risk/policy,yes,yes,yes,no,,"motor: not populated for this line; buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: not populated for this line"
+named_young_driver,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+ncb_years,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+new_business,feature,motor risk/policy,yes,yes,yes,no,motor,"buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+occupancy,feature,property risk/policy,yes,yes,yes,no,buildings,motor: not populated for this line; contents: not populated for this line
+occupation,feature,customer,yes,yes,contested: a common rating factor but jurisdiction-dependent restrictions apply (e.g. age/gender rating rules); needs a fairness review before a real tariff (docs/pipeline_review.md fairness row),yes,buildings,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+overnight_parking,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+payment_method,feature,customer,yes,yes,yes,no,"motor, buildings, contents",
+policyholder_age,feature,customer,yes,yes,contested: a common rating factor but jurisdiction-dependent restrictions apply (e.g. age/gender rating rules); needs a fairness review before a real tariff (docs/pipeline_review.md fairness row),yes,contents,"motor: not populated for this line; buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+previous_insurer,feature,policy admin/sales,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+prior_claims_5y,feature,motor risk/policy,yes,yes,yes,no,"motor, buildings, contents",
+property_age,feature,property risk/policy,yes,yes,yes,no,buildings,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+property_type,feature,property risk/policy,yes,yes,yes,no,contents,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+rainfall_mm,feature,weather,"partial: an address's climate normal is knowable at quote; the row's own-year realized weather (joined by [address_id, year], features.py) is not, and for the 2025 test rows it is host-supplied (docs/pipeline_review.md stage-1 admissibility row)",yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"buildings, contents","motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+region,feature,geography,yes,yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"motor, contents","buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+renewal_count,feature,motor risk/policy,yes,yes,yes,no,buildings,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+roof_type,feature,property risk/policy,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+seats,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+security_level,feature,property risk/policy,yes,yes,yes,no,contents,motor: not populated for this line; buildings: not populated for this line
+smoke_alarms,feature,property risk/policy,yes,yes,yes,no,,"motor: not populated for this line; buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: not populated for this line"
+soil_type,feature,geography,yes,yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,buildings,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+solar_panels,feature,property risk/policy,yes,yes,yes,no,contents,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+start_month,feature,policy admin/sales,yes,yes,yes,no,"motor, buildings","contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+sum_insured,feature,property risk/policy,yes,yes,yes,no,"buildings, contents",motor: not populated for this line
+telematics_opt_in,feature,motor risk/policy,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: not populated for this line; contents: not populated for this line"
+telematics_score,feature,motor risk/policy,only for the ~12.6% of customers opted in; missing otherwise,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+tenure,feature,customer,yes,yes,yes,no,contents,motor: not populated for this line; buildings: not populated for this line
+transmission,feature,motor risk/policy,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: not populated for this line; contents: not populated for this line"
+trees_within_5m,feature,property risk/policy,yes,yes,yes,no,contents,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+urban_density,feature,geography,yes,yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"motor, contents","buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+vehicle_age,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+vehicle_colour,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+vehicle_use,feature,motor risk/policy,yes,yes,yes,no,,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: not populated for this line; contents: not populated for this line"
+vehicle_value_group,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+voluntary_excess,feature,motor risk/policy,yes,yes,yes,no,"motor, buildings, contents",
+wildfire_index,feature,weather,"partial: an address's climate normal is knowable at quote; the row's own-year realized weather (joined by [address_id, year], features.py) is not, and for the 2025 test rows it is host-supplied (docs/pipeline_review.md stage-1 admissibility row)",yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,"motor, buildings, contents",
+wind_exposure_index,feature,weather,"partial: an address's climate normal is knowable at quote; the row's own-year realized weather (joined by [address_id, year], features.py) is not, and for the 2025 test rows it is host-supplied (docs/pipeline_review.md stage-1 admissibility row)",yes,"yes as a physical hazard factor, but between 66% and 96% of its variance is between addresses rather than between years (docs/pipeline_review.md section 2.2), so it also acts as a location fingerprint; review alongside the fairness fields",yes,buildings,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+works_from_home,feature,customer,yes,yes,yes,no,contents,motor: not populated for this line; buildings: not populated for this line
+written_premium,feature,policy admin/sales,"yes, but it is the incumbent's existing price, not available for a genuinely new risk (docs/pipeline_review.md section 2.1)","yes: a supplied test field, fixed at inception, with no same-period claim signal found (docs/pipeline_review.md section 2.1); the owner drops it by choice, not because it is inadmissible","no as a rating input for the tariff being built: it is an output of someone else's pricing, not a risk characteristic (docs/pipeline_review.md section 2.1). Usable after modelling for adequacy and dislocation analysis",no,,motor: owner-dropped (experiment.LINE_DROP); buildings: owner-dropped (experiment.LINE_DROP); contents: owner-dropped (experiment.LINE_DROP)
+year_built,feature,property risk/policy,yes,yes,yes,no,"buildings, contents","motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+years_at_address,feature,geography,yes,yes,yes,no,buildings,"motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json)"
+years_licensed,feature,motor risk/policy,yes,yes,yes,no,motor,buildings: not populated for this line; contents: not populated for this line
+address_id,identifier,other,yes,yes,yes,no,,
+customer_id,identifier,other,yes,yes,yes,no,,
+policy_id,identifier,other,yes,yes,yes,no,,
+row_id,identifier,other,yes,yes,yes,no,,
+comp_ad,target,other,yes,yes,yes,no,,
+comp_all,target,other,yes,yes,yes,no,,
+comp_bodily_injury,target,other,yes,yes,yes,no,,
+comp_fire,target,other,yes,yes,yes,no,,
+comp_other,target,other,yes,yes,yes,no,,
+comp_water,target,other,yes,yes,yes,no,,
+comp_weather,target,other,yes,yes,yes,no,,
+cost_accidental_damage,target,other,yes,yes,yes,no,,
+cost_bodily_injury,target,other,yes,yes,yes,no,,
+cost_escape_of_water,target,other,yes,yes,yes,no,,
+cost_fire,target,other,yes,yes,yes,no,,
+cost_flood,target,other,yes,yes,yes,no,,
+cost_glass_hail,target,other,yes,yes,yes,no,,
+cost_own_damage,target,other,yes,yes,yes,no,,
+cost_storm,target,other,yes,yes,yes,no,,
+cost_subsidence,target,other,yes,yes,yes,no,,
+cost_theft,target,other,yes,yes,yes,no,,
+cost_third_party_prop,target,other,yes,yes,yes,no,,
+cost_total,target,other,yes,yes,yes,no,,
+n_accidental_damage,target,other,yes,yes,yes,no,,
+n_bodily_injury,target,other,yes,yes,yes,no,,
+n_escape_of_water,target,other,yes,yes,yes,no,,
+n_fire,target,other,yes,yes,yes,no,,
+n_flood,target,other,yes,yes,yes,no,,
+n_glass_hail,target,other,yes,yes,yes,no,,
+n_own_damage,target,other,yes,yes,yes,no,,
+n_storm,target,other,yes,yes,yes,no,,
+n_subsidence,target,other,yes,yes,yes,no,,
+n_theft,target,other,yes,yes,yes,no,,
+n_third_party_prop,target,other,yes,yes,yes,no,,
+n_total,target,other,yes,yes,yes,no,,
+ult_ad,target,other,yes,yes,yes,no,,
+ult_all,target,other,yes,yes,yes,no,,
+ult_bodily_injury,target,other,yes,yes,yes,no,,
+ult_fire,target,other,yes,yes,yes,no,,
+ult_other,target,other,yes,yes,yes,no,,
+ult_water,target,other,yes,yes,yes,no,,
+ult_weather,target,other,yes,yes,yes,no,,
+y_ult,target,other,yes,yes,yes,no,,
