@@ -761,6 +761,171 @@ def models_section(root: Path) -> str:
     return "".join(out)
 
 
+SUBMODEL_NAMES = {
+    "motor_bi": "Motor: bodily injury claim frequency",
+    "motor_other": "Motor: other perils",
+    "buildings": "Buildings",
+    "contents": "Contents",
+}
+
+
+def _lst(v):
+    return json.loads(v.replace("'", '"')) if isinstance(v, str) else v
+
+
+def interactions_section(root: Path) -> str:
+    tw_path = root / "reports" / "features" / "twoway.json"
+    it_path = root / "reports" / "features" / "interactions.json"
+    if not tw_path.exists():
+        return md("_Two-way tables not yet computed._")
+    tw = json.loads(tw_path.read_text())
+    it = json.loads(it_path.read_text()) if it_path.exists() else {}
+    out = [
+        md("""**How the modelling has handled interactions so far.** Gradient-boosted trees capture interactions implicitly: a split on one predictor inside a split on another. The EBM member on property runs main effects only. Hand-built interaction features were tried twice (peril-mechanics terms on 18 October, a property bundle on 19 October) and again on the detected pairs below; each time they scored worse. Square-root, log or square transforms of a single predictor make no difference to a tree model, which uses only the ordering of values; they matter for GLMs and smooth curves.
+
+**How interactions were looked for.** Three methods: the EBM's own interaction detector, Friedman's H-statistic from a boosted model, and residual actual-to-expected tables against the current model's 2024 predictions. All three put flood zone × elevation first on property; motor's interactions are about a hundredth as strong. The heatmaps show observed loss cost (bodily injury: claim frequency) on 2021-23 for the strongest pairs, as a relativity to the line average; where available, the label adds the current model's actual-to-expected on 2024.""")
+    ]
+    for sub, pairs in tw.items():
+        ranked = [tuple(r["pair"]) for r in it.get(f"{sub}_hstat", [])]
+        order = {frozenset(pr): i for i, pr in enumerate(ranked)}
+        pairs = sorted(pairs, key=lambda q: order.get(frozenset((q["x"], q["y"])), 999))[:4]
+        fig = make_subplots(
+            rows=2,
+            cols=2,
+            subplot_titles=[f"{q['x']} × {q['y']}" for q in pairs],
+            horizontal_spacing=0.18,
+            vertical_spacing=0.22,
+        )
+        for k, q in enumerate(pairs):
+            act = np.array(_lst(q["actual"]), dtype=float)
+            ex = np.array(_lst(q["exposure"]), dtype=float)
+            ae = np.array(_lst(q["ae"]), dtype=float)
+            mean = np.nansum(act * ex) / np.nansum(ex)
+            rel = act / mean
+
+            def cell(i, j):
+                if not np.isfinite(rel[i, j]) or ex[i, j] <= 0:
+                    return ""
+                lab = f"{rel[i, j]:.2f}"
+                if sub != "motor_bi" and np.isfinite(ae[i, j]) and ae[i, j] > 0:
+                    lab += f"<br>A/E {ae[i, j]:.2f}"
+                return lab
+
+            text = [[cell(i, j) for j in range(rel.shape[1])] for i in range(rel.shape[0])]
+            fig.add_trace(
+                go.Heatmap(
+                    z=rel,
+                    x=_lst(q["y_levels"]),
+                    y=_lst(q["x_levels"]),
+                    text=text,
+                    texttemplate="%{text}",
+                    colorscale="Blues",
+                    showscale=False,
+                    hovertemplate=f"{q['x']} %{{y}}<br>{q['y']} %{{x}}<br>relativity %{{z:.2f}}<extra></extra>",
+                ),
+                row=k // 2 + 1,
+                col=k % 2 + 1,
+            )
+        layout(fig, SUBMODEL_NAMES.get(sub, sub), height=640, showlegend=False)
+        fig.update_xaxes(tickfont={"size": 9})
+        fig.update_yaxes(tickfont={"size": 9})
+        out.append(chart(fig))
+    rows = []
+    for sub in ("buildings", "contents", "motor_other", "motor_bi"):
+        h = it.get(f"{sub}_hstat", [])[:3]
+        rows.append(
+            f"| {SUBMODEL_NAMES[sub]} | "
+            + "; ".join(f"{a} × {b} ({r['h_stat']:.2f})" for r in h for a, b in [r["pair"]])
+            + " |"
+        )
+    out.append(
+        md(
+            "**Strongest pairs by H-statistic** (share of the pair's joint effect that is not additive; 0 = purely additive):\n\n| Sub-model | Top pairs |\n|---|---|\n"
+            + "\n".join(rows)
+        )
+    )
+    out.append(
+        md("""**Techniques compared on the full admissible predictor set** (light single-seed fits on 2024, change in within-line D² against the current LightGBM approach; measured noise 0.0012 buildings, 0.0006 contents):
+
+| Technique | Motor | Buildings | Contents |
+|---|---|---|---|
+| CatBoost | n/a | +0.0077 | +0.0037 |
+| EBM with 15 interactions | −0.032 | +0.0048 | +0.0044 |
+| Spline GLM (transparent benchmark) | +0.0075 | −0.013 | −0.017 |
+| Explicit interaction features | worse | worse | worse |
+| All valid predictors instead of the pruned set | worse | worse | worse |
+
+The three gains are queued for the loop as full tests (backlog 2.70, 2.71, 2.73). Full review: reports/reviews/2026-10-19_interactions.md.""")
+    )
+    return "".join(out)
+
+
+def explain_section(root: Path, assets: Path) -> str:
+    path = root / "reports" / "explain" / "explain.json"
+    if not path.exists():
+        return md("_Explainability pack not yet run._")
+    ex = json.loads(path.read_text())
+    out = [
+        md("""**Why this section.** A regulator, a pricing committee or a judge needs to see that each rating factor moves the price in a direction that makes sense, by a believable amount, and consistently. Three checks go beyond actual-to-expected:
+
+1. **Relativity curves** for every predictor in every sub-model: the predicted rate across the predictor's levels with everything else held at its observed values, set to 1.00 at a base level. Two versions: partial dependence (the familiar one) and accumulated local effects (ALE), which stays honest when predictors are correlated (driver age and years licensed, flood zone and elevation). The observed one-way experience on 2021-23 is shown alongside.
+2. **Direction checks.** An expected direction for each predictor from actuarial reasoning (no-claims years and excess down; mileage, sum insured, flood zone and prior claims up; driver age U-shaped), then for each: the model's direction, the share of individual policies whose own curve goes the other way (ICE), whether the 2021-22 and 2021-23 fits agree, and flags for contradictions or wiggles a regulator would query.
+3. **A surrogate GLM** fitted to the model's own predictions per line: a conventional relativity table that shows how much of the model a GLM can reproduce.""")
+    ]
+    sur = ex.get("surrogate", {})
+    if sur:
+        rows = "\n".join(
+            f"| {ln.title()} | {s['d2_tweedie']:.2f} | {s['r2_weighted']:.2f} | {len(s['features'])} |"
+            for ln, s in sur.items()
+        )
+        out.append(
+            md(f"""**Surrogate GLM.** A banded Tweedie GLM on 12 predictors per line reproduces most of what the model does:
+
+| Line | Share of model's deviance explained (D²) | R² on the rate | Predictors |
+|---|---|---|---|
+{rows}
+
+Its relativities line up with the curves below. It is the bridge for a filing: the GLM table explains the bulk; the boosted model adds the rest, chiefly through interactions such as flood zone × elevation.""")
+        )
+    flags = []
+    for ln, L in ex["fold_B"]["lines"].items():
+        for sm, S in L["sub_models"].items():
+            for col, P in S["predictors"].items():
+                real = [f for f in P.get("flags", []) if "wiggle" not in f]
+                if real:
+                    flags.append((ln, sm, col, "; ".join(real)))
+    trs = "".join(
+        f"<tr><td>{html.escape(a)}</td><td>{html.escape(b)}</td><td>{html.escape(c)}</td><td>{html.escape(d)}</td></tr>"
+        for a, b, c, d in flags
+    )
+    out.append(
+        md(f"""**Direction check results.** {sum(len(S["predictors"]) for L in ex["fold_B"]["lines"].values() for S in L["sub_models"].values())} predictor × sub-model combinations were tested. Flags that are only "wiggles" on an 8-point grid are omitted here (they mean "look at the chart", not "wrong"). The substantive flags:
+
+**Points for the actuary.** (1) Wildfire index runs against its expected upward direction on motor other perils and contents, and rainfall against it on buildings: candidates to constrain monotone or remove. (2) Distance to river on motor and buildings, and customer claim history on buildings, also cut against the prior. (3) Not testable by a sign check: monotone-constrained fields (their direction is enforced), ordinal fields stored as categories (credit band, security level, urban density) and U-shaped priors (driver age, policyholder age); read their charts.""")
+        + f"<table><tr><th>Line</th><th>Sub-model</th><th>Predictor</th><th>Flag</th></tr>{trs}</table>"
+    )
+    pngs = sorted(assets.glob("explain_*.png"))
+    if pngs:
+        out.append(
+            md(
+                "**Relativity charts for the main predictors** (partial dependence and ALE against the observed one-way, base level = 1.00):"
+            )
+        )
+        out.append(
+            '<div class="grid2">'
+            + "".join(img(q, q.stem.replace("explain_", "").replace("_", " ")) for q in pngs)
+            + "</div>"
+        )
+    lit = root / "reports" / "explain" / "literature.md"
+    if lit.exists():
+        out.append(
+            "<details><summary>Literature behind these methods (Richman and Wüthrich; Laval; Utrecht; ALE and SHAP)</summary>"
+            + md(lit.read_text())
+            + "</details>"
+        )
+    return "".join(out)
+
+
 def section(sid: str, title: str, body: str) -> str:
     return f'<section id="{sid}"><h2>{html.escape(title)}</h2>{body}</section>'
 
@@ -995,6 +1160,8 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
             ("progress", "Progress"),
             ("models", "Models"),
             ("variables", "Variables"),
+            ("interactions", "Interactions"),
+            ("explain", "Explainability"),
             ("tested", "Ideas tested"),
             ("next", "Next"),
             ("alt", "Directions"),
@@ -1016,6 +1183,8 @@ The GPU track (TabM, a neural network for tables that Richman's 2026 paper found
 {section("progress", "Experiment progress", progress_body)}
 {section("models", "The models: predictors and the lift each adds", models_section(root))}
 {section("variables", "Rating variables: individual and combined predictive power", variables)}
+{section("interactions", "Interactions: two-way views and what the model captures", interactions_section(root))}
+{section("explain", "Explainability: do the relativities make sense?", explain_section(root, assets))}
 {section("tested", "Ideas tested so far", tested)}
 {section("next", "What comes next, and why", md(backlog))}
 {section("alt", "Alternative directions", alternatives)}
