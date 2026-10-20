@@ -1,0 +1,57 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..9c06161 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -108,6 +108,20 @@ CATBOOST_PARAMS = {
+     "allow_writing_files": False,
+     "verbose": False,
+ }
++# Tier 0f / backlog 2.83 (second-opinion review #5): BI has only one effective learner
++# (LightGBM Poisson on credibility-encoded features). This challenger fits CatBoost's
++# native Poisson on the raw, un-encoded BI predictors (no target-encoded make_model/
++# occupation/previous_insurer), so it tests learner + encoding diversity together, the
++# same way CatBoost's native categoricals added a diverse property blend member.
++CATBOOST_BI_PARAMS = {
++    "loss_function": "Poisson",
++    "iterations": 600,
++    "depth": 4,
++    "learning_rate": 0.03,
++    "l2_leaf_reg": 20,
++    "allow_writing_files": False,
++    "verbose": False,
++}
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -452,6 +466,20 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
+             return model.predict(cb_va_x)
+ 
++        def bi_cb_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            # backlog 2.83: raw (un-encoded) predictors, so CatBoost's native
++            # categorical handling replaces the cost-trained credibility encoder here.
++            raw_tr, raw_va = _ebm_safe(tr[cols]), _ebm_safe(va[cols])
++            cat_cols = [c for c in cols if isinstance(tr[c].dtype, pd.CategoricalDtype)]
++            out = np.zeros(len(va))
++            for seed in SEEDS:
++                model = CatBoostRegressor(
++                    **CATBOOST_BI_PARAMS, random_seed=seed, monotone_constraints=mono
++                )
++                model.fit(raw_tr, target, sample_weight=weight, cat_features=cat_cols)
++                out += model.predict(raw_va) / len(SEEDS)
++            return out
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -461,7 +489,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             # keep the original Tweedie-on-cost treatment.
+             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+-            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
++            freq = 0.75 * bag(tr["n_bodily_injury"], tr["exposure"], bi_params) + 0.25 * bi_cb_rate(
++                tr["n_bodily_injury"], tr["exposure"]
++            )
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
