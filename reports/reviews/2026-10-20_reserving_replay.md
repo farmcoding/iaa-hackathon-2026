@@ -6,6 +6,9 @@ All code and intermediate output live under `~/.cache/iaa-owner/1020/replay/`;
 the competition repository at `~/Projects/iaa-hackathon-2026` was read-only
 throughout (imported as a library, never edited).
 
+
+> **Corrections after owner review (20 Oct, afternoon).** (1) The `BF_priorB_foldA` prior used a full year of expected cost at as-if dates part-way through 2023; scaled to the exposure earned by the as-if date it matches `BF_priorA` at every date (pooled -9.2% vs -9.0% on the same cells). The "+32%" result and its explanation in section 9 are withdrawn. (2) The replay applied the BI `max(1, .)` floor that the owner removed from the model level on 20 Oct; rerun without it (`out_v2`, `sim/nofloor`), the capped-severity variants separate from the current method, the simulated-book result holds (current +1.5%, BF/Cape Cod/Benktander -14.5%), and no method can be ranked on BI cost because one 11.9m claim exceeds every between-method difference. (3) The buildings-fire "90%" is on late-reported fire cost of about 0.3m per date, 2% of a year's fire ultimate; the credibility recommendation is withdrawn. (4) The 11.9m claim takes 12.8m of the fixed 2023 frequency x severity total, leaving the other 2023 BI rows about 21% below neighbouring years per vehicle-year. Explainer with charts: `2026-10-20_replay_explained.html`.
+
 ## 1. Limitation: this is a snapshot, not a valuation history
 
 The claims table is a single extract valued 31 December 2024. It carries no
