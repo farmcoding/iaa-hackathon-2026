@@ -1,0 +1,46 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..e755bac 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -94,6 +94,15 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# Tier 0f / backlog 2.84 (second-opinion review, reports/reviews/2026-10-20_alt_review_motor.md):
++# vehicle_value_group x telematics_score was the strongest motor-other pair by the FAST
++# interaction-detection statistic, with a clear mechanism (telematics-scored drivers in
++# high-value vehicles are a materially different risk than the same score on a cheap
++# vehicle) -- give motor-other's EBM blend member this one interaction instead of 0.
++MOTOR_OTHER_EBM_PARAMS = {
++    **EBM_PARAMS,
++    "interactions": [("vehicle_value_group", "telematics_score")],
++}
+ # backlog 2.13 / Tier 0e.3: CatBoost's native Tweedie as a third equal-weight property
+ # blend member. Validated single-seed (results.tsv `b46f2be`, `89324f8`: +0.0014/+0.0018
+ # vs their day's champion, both folds up each time) and re-tested alone on the final
+@@ -436,11 +445,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             return out
+ 
+         def ebm_rate(
+-            target: pd.Series, weight: pd.Series, mono: list[int] | None = None
++            target: pd.Series,
++            weight: pd.Series,
++            mono: list[int] | None = None,
++            params: dict = EBM_PARAMS,
+         ) -> np.ndarray:
+             ebm_tr_x, ebm_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
+             model = ExplainableBoostingRegressor(
+-                **EBM_PARAMS, random_state=SEEDS[0], monotone_constraints=mono
++                **params, random_state=SEEDS[0], monotone_constraints=mono
+             )
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+@@ -468,7 +480,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+             other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+-                other_target, tr["exposure"], mono
++                other_target, tr["exposure"], mono, MOTOR_OTHER_EBM_PARAMS
+             )
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
