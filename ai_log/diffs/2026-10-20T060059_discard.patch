@@ -1,0 +1,36 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..be6c130 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,12 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# bug (found 2026-10-20, ai_log/diffs/2026-10-20T040132_discard.patch): this had been left
++# as ("motor",), the inverse of the comment above -- it froze motor itself, so every
++# motor-only edit since champion fa7c164 hit the `continue` below before its code ran and
++# scored byte-identical to the champion. A discard reverts the file to this buggy state,
++# so it must be re-fixed in every motor-focused diff until a motor keep re-commits it.
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -406,6 +411,17 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             # keep the original Tweedie-on-cost treatment.
+             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
++            # backlog 2.62, isolated to the BI side: the bundled loosen-both variant
++            # (num_leaves 31 / min_data_in_leaf 500 on both BI and other) scored +0.00035,
++            # both folds up, just inside the 0.0005 bar (results.tsv `300b323`). Isolating
++            # the loosening to "other" alone instead made motor worse (results.tsv
++            # `7b21f01`, d2_motor_B 0.08514 vs champion 0.08546), which points at the BI
++            # count model -- not "other" -- as the source of that gain: BI's 15-leaf,
++            # 2000-min-data budget was tuned (K9, 18 Oct) for a pooled cost target that no
++            # longer exists now that BI is its own Poisson count model with far fewer
++            # non-zero rows to split on.
++            bi_params["num_leaves"] = 31
++            bi_params["min_data_in_leaf"] = 500
+             freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
