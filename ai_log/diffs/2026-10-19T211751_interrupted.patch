@@ -1,0 +1,119 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index aabc8cd..42b2f3d 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -17,6 +17,7 @@ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
+ from interpret.glassbox import ExplainableBoostingRegressor
++from sklearn.isotonic import IsotonicRegression
+ from sklearn.preprocessing import TargetEncoder
+ 
+ NON_FEATURES = {
+@@ -287,6 +288,54 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+     return rate * target_lc / np.average(rate, weights=va["exposure"])
+ 
+ 
++def _fit_bag(
++    tr_x: pd.DataFrame,
++    va_x: pd.DataFrame,
++    target: pd.Series,
++    weight: pd.Series,
++    mono: list[int],
++    params: dict = PARAMS,
++) -> np.ndarray:
++    # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
++    # than most real improvements, so every model is an average over SEEDS
++    out = np.zeros(len(va_x))
++    for seed in SEEDS:
++        model = lgb.LGBMRegressor(
++            **{**params, "seed": seed},
++            monotone_constraints=mono,
++            monotone_constraints_method="advanced",
++        )
++        model.fit(tr_x, target, sample_weight=weight)
++        out += model.predict(va_x) / len(SEEDS)
++    return out
++
++
++def _calibrate(
++    tr: pd.DataFrame,
++    cols: list[str],
++    numerator: pd.Series,
++    weight: pd.Series,
++    raw_rate: np.ndarray,
++    predict_fn,
++) -> np.ndarray:
++    # backlog 2.3 / Tier 0c.4: an inner-train-only model's out-of-sample rate on the most
++    # recent training year, isotonically mapped to that year's actual rate, corrects
++    # systematic under/over-prediction the regularised trees can't fully express. Skipped
++    # for motor's BI model (poisson counts, not a Tweedie sub-rate) per the backlog item.
++    years = sorted(tr["year"].unique())
++    if len(years) < 2:
++        return raw_rate
++    holdout_year = years[-1]
++    itr, iho = tr[tr["year"] != holdout_year], tr[tr["year"] == holdout_year]
++    itr_x, iho_x = _credibility_encode(itr, iho, cols, itr["y"] / itr["exposure"])
++    inum, iwt = numerator.loc[itr.index], weight.loc[itr.index]
++    raw_ho = predict_fn(itr_x, iho_x, inum, iwt)
++    actual_ho = (numerator.loc[iho.index] / weight.loc[iho.index]).to_numpy()
++    iso = IsotonicRegression(out_of_bounds="clip")
++    iso.fit(raw_ho, actual_ho, sample_weight=weight.loc[iho.index].to_numpy())
++    return iso.predict(raw_rate)
++
++
+ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+     pred = np.zeros(len(valid))
+     for line in ("motor", "buildings", "contents"):
+@@ -297,19 +346,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
+ 
+-        # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
+-        # than most real improvements, so every model is an average over SEEDS
+         def bag(target: pd.Series, weight: pd.Series, params: dict = PARAMS) -> np.ndarray:
+-            out = np.zeros(len(va))
+-            for seed in SEEDS:
+-                model = lgb.LGBMRegressor(
+-                    **{**params, "seed": seed},
+-                    monotone_constraints=mono,
+-                    monotone_constraints_method="advanced",
+-                )
+-                model.fit(tr_x, target, sample_weight=weight)
+-                out += model.predict(va_x) / len(SEEDS)
+-            return out
++            return _fit_bag(tr_x, va_x, target, weight, mono, params)
+ 
+         def ebm_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
+             ebm_tr_x, ebm_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
+@@ -332,6 +370,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_rate = bag(other / tr["exposure"], tr["exposure"])
++            other_rate = _calibrate(
++                tr,
++                cols,
++                other,
++                tr["exposure"],
++                other_rate,
++                lambda itr_x, iho_x, num, wt: _fit_bag(itr_x, iho_x, num / wt, wt, mono),
++            )
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
+ 
+@@ -339,6 +385,15 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         else:
+             lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
+             rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
++
++            def _property_predict(itr_x, iho_x, num, wt):
++                lgbm_ho = _fit_bag(itr_x, iho_x, num / wt, wt, mono)
++                ebm_itr_x, ebm_iho_x = _ebm_safe(itr_x), _ebm_safe(iho_x)
++                ebm_model = ExplainableBoostingRegressor(**EBM_PARAMS, random_state=SEEDS[0])
++                ebm_model.fit(ebm_itr_x, num / wt, sample_weight=wt)
++                return 0.5 * lgbm_ho + 0.5 * ebm_model.predict(ebm_iho_x)
++
++            rate = _calibrate(tr, cols, tr["y"], tr["exposure"], rate, _property_predict)
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred

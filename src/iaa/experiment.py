@@ -287,12 +287,42 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
     return rate * target_lc / np.average(rate, weights=va["exposure"])
 
 
+# owner 2026-10-19 (Karl, meta-review): motor is where the gap is, and every motor experiment
+# was paying for a full property refit. Lines listed here reuse the saved validation
+# predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+# fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+# same change.
+FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+
+
+def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+    """Saved predictions of the run to beat for these validation rows, or None if there
+    are none (the 2025 final fit, or a fold the run did not score)."""
+    from iaa import harness
+
+    best = harness.best_kept()
+    if not FROZEN_LINES or best is None or not best.get("run_id"):
+        return None
+    path = harness.PREDS / f"{best['run_id']}.parquet"
+    if not path.exists():
+        return None
+    saved = pd.read_parquet(path, columns=["row_id", "line", "pred"])
+    saved = saved[saved["line"].isin(FROZEN_LINES)].drop_duplicates("row_id")
+    rows = valid.loc[valid["line"].isin(FROZEN_LINES), "row_id"].astype(str)
+    hit = saved.set_index(saved["row_id"].astype(str))["pred"].reindex(rows)
+    return None if hit.isna().any() else hit
+
+
 def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
     pred = np.zeros(len(valid))
+    frozen = _frozen_preds(valid)
     for line in ("motor", "buildings", "contents"):
         tr = train[train["line"] == line]
         mask = (valid["line"] == line).to_numpy()
         va = valid[mask]
+        if frozen is not None and line in FROZEN_LINES:
+            pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
+            continue
         cols = _feature_cols(tr)
         mono = [MONOTONE.get(c, 0) for c in cols]
         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])

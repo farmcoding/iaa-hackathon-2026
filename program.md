@@ -57,13 +57,18 @@ iteration is logged as a violation.
 
 ## Rules
 
+- Motor focus (owner, 19 Oct): the gap to the field is motor ranking (within-line D2 flat
+  at 0.085 for two days). `FROZEN_LINES` in experiment.py makes buildings and contents
+  reuse the saved predictions of the run to beat, so a motor experiment runs in about
+  2 minutes. Prefer motor hypotheses. To change property, set `FROZEN_LINES = ()` in the
+  same edit, or your property change has no effect.
 - Time budget: the harness marks a run `over_budget` above 1800 seconds (the current
   model takes about 1,000 s, mostly the EBM fit). Seed-bag
   (`SEEDS`) every model; single-seed noise is about 0.0026, bigger than most gains.
 - Keep rule (applied by the harness): the primary score, a weighted mean of fold D²
   with fold B (score 2024) counted twice because it tracks the public leaderboard, must
-  beat the best kept run by more than 0.001 (about five times the measured seed noise,
-  0.0002), and the worse fold must not fall by more than 0.002. An owner keep re-bases
+  beat the best kept run by more than 0.0005 (2.5 times the measured seed noise,
+  0.0002; the fresh-seed confirmation guards against luck), and the worse fold must not fall by more than 0.002. An owner keep re-bases
   the bar: the best run since the latest owner keep is the one to beat. Gains that only show in fold A have not reached the leaderboard.
   A run that passes is re-run with every seed shifted (`IAA_SEED_OFFSET`) and must pass
   again; otherwise it is logged `unconfirmed`. So every random choice you add (model

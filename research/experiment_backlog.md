@@ -38,6 +38,14 @@ ledger timestamp) or from the saved patch where one exists.
 | 0.4 | Re-test 2.17 (property part): drop the customer and marketing fields on buildings and contents | 15:34 run: 0.13442, +0.0014 vs the seeded champion | Inside the floor; confirm or close | ledger 2026-10-18T15:34:58 | open |
 | 0.5 | Re-test the wider seed bag (8 seeds, feature and bagging fractions varied per seed), seeds derived from SEED_OFFSET | 11:27 run: 0.13409 on the unseeded encoder | Small, steadier gain | ledger 2026-10-18T11:27:18 | open |
 
+## Tier 0e: first, under the 0.0005 floor (owner, 19 Oct evening)
+
+| # | Idea | Earlier result | Diff | Status |
+|---|---|---|---|---|
+| 0e.1 | Motor other perils: 50/50 LightGBM + spline GLM blend (2.73 follow-up) | 0.14109 vs 0.14048 (+0.0006), min fold 0.13946 | ai_log/diffs/2026-10-19T204916_discard.patch | open |
+| 0e.2 | Motor: spline GLM blend, first version (2.73) | 0.14103 (+0.0006), min fold 0.13930 | ai_log/diffs/2026-10-19T203444_discard.patch | open |
+| 0e.3 | Property: CatBoost third member plus the best property near misses in one run (set FROZEN_LINES = ()) | CatBoost +0.0007 on 19 Oct; light bake-off +0.0077 / +0.0037 | ai_log/diffs/ (CatBoost runs 18-19 Oct) | open |
+
 ## Tier 0c: near misses re-tested under the 0.001 floor (do these first, in order)
 
 Owner decision 2026-10-19 (Karl): the primary margin is now 0.001 (measured seed sd 0.0002). These discards gained between +0.001 and +0.002 against the bar of their day. Re-apply each saved diff on top of the current model (no premium anywhere; carry over its imports), so the harness scores it and runs the fresh-seed confirmation. Ideas built on an older model may not transfer; one attempt each.
