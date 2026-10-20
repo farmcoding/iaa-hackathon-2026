@@ -1,0 +1,25 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..ecf85c0 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -94,6 +94,11 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# backlog 2.85 / Tier 0f: tweedie_variance_power 1.1 was chosen in batch 1 when motor's
++# target still pooled the 11.9m BI claim with other-peril cost; now BI is a separate
++# Poisson count model (backlog 1.1), the "other" perils target's distribution has
++# changed and the power was never revisited. Scoped to motor-other only.
++OTHER_PARAMS = {**PARAMS, "tweedie_variance_power": 1.3}
+ # backlog 2.13 / Tier 0e.3: CatBoost's native Tweedie as a third equal-weight property
+ # blend member. Validated single-seed (results.tsv `b46f2be`, `89324f8`: +0.0014/+0.0018
+ # vs their day's champion, both folds up each time) and re-tested alone on the final
+@@ -467,7 +472,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
++            other_rate = 0.5 * bag(other_target, tr["exposure"], OTHER_PARAMS) + 0.5 * ebm_rate(
+                 other_target, tr["exposure"], mono
+             )
+             other_lc = other.sum() / tr["exposure"].sum()
