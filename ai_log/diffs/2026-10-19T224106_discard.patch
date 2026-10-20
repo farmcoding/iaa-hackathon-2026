@@ -1,0 +1,71 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 1e88eef..8cb47d1 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -18,6 +18,7 @@ import numpy as np
+ import pandas as pd
+ from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
++from sklearn.isotonic import IsotonicRegression
+ from sklearn.preprocessing import TargetEncoder
+ 
+ NON_FEATURES = {
+@@ -302,6 +303,42 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+     return rate * target_lc / np.average(rate, weights=va["exposure"])
+ 
+ 
++def _calibrate(
++    tr: pd.DataFrame,
++    cols: list[str],
++    mono: list[int],
++    numerator: pd.Series,
++    weight: pd.Series,
++    raw_rate: np.ndarray,
++    params: dict = PARAMS,
++) -> np.ndarray:
++    # Tier 0c.4 / backlog 2.3: a plain LightGBM bag fit on all training years but the
++    # last, scored out-of-sample on that last year, gives a raw-rate -> actual-rate
++    # curve; isotonic regression on that curve corrects systematic under/over-prediction
++    # the regularised trees leave on the table, then applies to the full blended rate.
++    years = sorted(tr["year"].unique())
++    if len(years) < 2:
++        return raw_rate
++    holdout_year = years[-1]
++    itr, iho = tr[tr["year"] != holdout_year], tr[tr["year"] == holdout_year]
++    itr_x, iho_x = _credibility_encode(itr, iho, cols, itr["y"] / itr["exposure"])
++    itr_w, iho_w = weight.loc[itr.index], weight.loc[iho.index]
++    itr_target = numerator.loc[itr.index] / itr_w
++    out = np.zeros(len(iho))
++    for seed in SEEDS:
++        model = lgb.LGBMRegressor(
++            **{**params, "seed": seed},
++            monotone_constraints=mono,
++            monotone_constraints_method="advanced",
++        )
++        model.fit(itr_x, itr_target, sample_weight=itr_w)
++        out += model.predict(iho_x) / len(SEEDS)
++    actual_ho = (numerator.loc[iho.index] / iho_w).to_numpy()
++    iso = IsotonicRegression(out_of_bounds="clip")
++    iso.fit(out, actual_ho, sample_weight=iho_w.to_numpy())
++    return iso.predict(raw_rate)
++
++
+ # owner 2026-10-19 (Karl, meta-review): motor is where the gap is, and every motor experiment
+ # was paying for a full property refit. Lines listed here reuse the saved validation
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+@@ -391,6 +428,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+                 other_target, tr["exposure"], mono
+             )
++            other_rate = _calibrate(tr, cols, mono, other, tr["exposure"], other_rate)
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
+ 
+@@ -402,6 +440,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                 + ebm_rate(rate_target, tr["exposure"])
+                 + cb_rate(rate_target, tr["exposure"])
+             ) / 3
++            rate = _calibrate(tr, cols, mono, tr["y"], tr["exposure"], rate)
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
