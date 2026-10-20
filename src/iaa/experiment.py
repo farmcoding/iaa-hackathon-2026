@@ -16,6 +16,7 @@ import os
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from catboost import CatBoostRegressor
 from interpret.glassbox import ExplainableBoostingRegressor
 from sklearn.preprocessing import TargetEncoder
 
@@ -87,6 +88,20 @@ EBM_PARAMS = {
     "objective": "tweedie_deviance:variance_power=1.5",
     "interactions": 0,
     "outer_bags": 2,
+}
+# backlog 2.13 / Tier 0e.3: CatBoost's native Tweedie as a third equal-weight property
+# blend member. Validated single-seed (results.tsv `b46f2be`, `89324f8`: +0.0014/+0.0018
+# vs their day's champion, both folds up each time) and re-tested alone on the final
+# pruned, no-premium, BI-Pareto-capped champion (results.tsv `9d37636`, +0.00067, both
+# folds up) -- every other attempt stacked it with another change that scored lower than
+# this single-seed solo form.
+CATBOOST_PARAMS = {
+    "loss_function": "Tweedie:variance_power=1.5",
+    "iterations": 300,
+    "depth": 6,
+    "learning_rate": 0.08,
+    "allow_writing_files": False,
+    "verbose": False,
 }
 
 
@@ -292,7 +307,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
 # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
 # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
 # same change.
-FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+FROZEN_LINES: tuple[str, ...] = ()
 
 
 def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
@@ -351,6 +366,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             model.fit(ebm_tr_x, target, sample_weight=weight)
             return model.predict(ebm_va_x)
 
+        def cb_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
+            cat_cols = [c for c in tr_x.columns if isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
+            cb_tr_x, cb_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
+            model = CatBoostRegressor(**CATBOOST_PARAMS, random_seed=SEEDS[0])
+            model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
+            return model.predict(cb_va_x)
+
         if line == "motor":
             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
             # Tweedie on the combined target. BI claim frequency is far more
@@ -374,8 +396,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
 
             rate = bi_rate + other_rate
         else:
-            lgbm_rate = bag(tr["y"] / tr["exposure"], tr["exposure"])
-            rate = 0.5 * lgbm_rate + 0.5 * ebm_rate(tr["y"] / tr["exposure"], tr["exposure"])
+            rate_target = tr["y"] / tr["exposure"]
+            rate = (
+                bag(rate_target, tr["exposure"])
+                + ebm_rate(rate_target, tr["exposure"])
+                + cb_rate(rate_target, tr["exposure"])
+            ) / 3
             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
         pred[mask] = rate * va["exposure"].to_numpy()
     return pred
