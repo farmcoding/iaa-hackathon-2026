@@ -1,0 +1,48 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..7920ca4 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -138,10 +138,18 @@ LINE_DROP = {
+ # line in both periods, unrelated to age or region). (2) Pruning: predictors that added
+ # at most 0.0001 of within-line D2 when shuffled on 2024 (reports/features/model_card.json).
+ # Pruning alone scored 0.14033 vs 0.13867, confirmed on fresh seeds at 0.14002.
++# backlog 2.17 (motor half, untested until now): the weaker vehicle-group fields are
++# still live features and diagnostics.md still flags them as PERSISTENT misses (seats=7.0,
++# body_type=estate, vehicle_colour=silver) -- the model has the signal and still gets
++# these segments wrong, which argues they're adding noise splits rather than missing
++# signal. Keeping the vehicle group's strongest fields (make_model via the credibility
++# encoder, vehicle_age, engine_size_cc, annual_mileage) and cover_type; dropping the rest
++# (vehicle_use already pruned above).
+ PRUNED = {
+     "motor": [
+         "basement",
+         "bedrooms",
++        "body_type",
+         "branch_id",
+         "campaign_code",
+         "compulsory_excess",
+@@ -170,12 +178,15 @@ PRUNED = {
+         "rainfall_mm",
+         "renewal_count",
+         "roof_type",
++        "seats",
+         "soil_type",
+         "solar_panels",
+         "telematics_opt_in",
+         "transmission",
+         "trees_within_5m",
++        "vehicle_colour",
+         "vehicle_use",
++        "vehicle_value_group",
+         "wind_exposure_index",
+         "year_built",
+         "years_at_address",
+@@ -307,7 +318,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
