@@ -19,7 +19,6 @@ from datetime import datetime
 from pathlib import Path
 
 import markdown
-import yaml
 import numpy as np
 import pandas as pd
 import yaml
@@ -86,7 +85,9 @@ def md(text: str) -> str:
     return markdown.markdown(text, extensions=["tables"])
 
 
-NOISE_FLOOR = yaml.safe_load((Path(__file__).resolve().parents[1] / "configs" / "market_dev.yaml").read_text())["harness"]["noise_floor"]  # today's primary margin
+NOISE_FLOOR = yaml.safe_load(
+    (Path(__file__).resolve().parents[1] / "configs" / "market_dev.yaml").read_text()
+)["harness"]["noise_floor"]  # today's primary margin
 FOLD_FLOOR = 0.002
 
 

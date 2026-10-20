@@ -254,7 +254,10 @@ def main() -> None:
 
     for ln, cols in getattr(exp, "PRUNED", {}).items():
         for c in cols:
-            REASONS.setdefault(c, "Pruned 19 Oct (owner-approved): no measurable contribution on that line, or a sales/admin field")
+            REASONS.setdefault(
+                c,
+                "Pruned 19 Oct (owner-approved): no measurable contribution on that line, or a sales/admin field",
+            )
     card["unused"] = _unused(df, used)
     card["seconds"] = round(time.time() - t0)
     card["dataset"] = harness._fingerprint()
