@@ -1,0 +1,48 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..bf215f9 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -80,6 +80,18 @@ PARAMS = {
+     "deterministic": True,
+     "force_row_wise": True,
+ }
++# backlog 2.62, narrowed: the first test of this idea (results.tsv `394e940`) loosened
++# num_leaves/min_data_in_leaf for BOTH motor sub-models together and lost 0.0014 of
++# d2_motor_B -- but it conflates two very different targets. BI's Poisson frequency
++# model fits rare counts (sparse, needs the strong regularisation the 15/2000 setting
++# was built for); the "other" perils Tweedie-on-cost model has ample continuous-cost
++# data and no longer carries the one 11.9m BI claim since the 1.1 split moved BI out,
++# so its 15/2000 setting -- chosen back when that claim still swamped every split --
++# may now be over-regularised on its own. This loosens only the "other" cost model,
++# leaving BI's frequency model at the original PARAMS. (Saved but never executed as
++# ai_log/diffs/2026-10-20T012632_discard.patch -- FROZEN_LINES still had motor frozen,
++# so the change was a no-op; re-running with motor unfrozen below.)
++MOTOR_OTHER_PARAMS = {**PARAMS, "num_leaves": 31, "min_data_in_leaf": 500}
+ # backlog 2.15: EBM blended with LightGBM on buildings and contents. results.tsv
+ # b54959b/2abf7b5 ran 1884-1889s against the 1800s budget; halving outer_bags (2->1,
+ # EBM's internal bagging) only saved 5s, so the external SEEDS loop was the cost. EBM
+@@ -307,7 +319,10 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# Champion 639914c left this as ("motor",) after a property-only test; that inverts the
++# comment above and silently no-ops every motor edit (caught 2026-10-20, 300b323).
++# Flipped here to freeze property for this motor hypothesis.
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -412,9 +427,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+-                other_target, tr["exposure"], mono
+-            )
++            other_rate = 0.5 * bag(
++                other_target, tr["exposure"], MOTOR_OTHER_PARAMS
++            ) + 0.5 * ebm_rate(other_target, tr["exposure"], mono)
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
+ 
