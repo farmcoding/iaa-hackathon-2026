@@ -56,6 +56,17 @@ def reported_targets(kind_line: str | None = None) -> tuple[pd.DataFrame, pd.Dat
         .size()
         .to_dict()
     )
+    from iaa import ultimate
+
+    cfg = ultimate.load_config()
+    cap = ultimate.bi_cap(cfg)
+    if cap:
+        # large_loss.caps: motor bodily injury net cost capped per claim; excess kept apart
+        perils = cfg["development"]["peril_groups"]["motor"]["bodily_injury"]
+        m = (hits["line"] == "motor") & hits["peril"].isin(perils)
+        hits = hits.assign(bi_excess=0.0)
+        hits.loc[m, "bi_excess"] = (hits.loc[m, "net"] - cap).clip(lower=0.0)
+        hits.loc[m, "net"] = hits.loc[m, "net"].clip(upper=cap)
     agg = hits.pivot_table(
         index="row_id", columns="peril", values="net", aggfunc=["size", "sum"], fill_value=0
     )
@@ -65,4 +76,7 @@ def reported_targets(kind_line: str | None = None) -> tuple[pd.DataFrame, pd.Dat
     rows[peril_cols] = rows[peril_cols].fillna(0)
     rows["n_total"] = rows[[c for c in peril_cols if c.startswith("n_")]].sum(axis=1)
     rows["cost_total"] = rows[[c for c in peril_cols if c.startswith("cost_")]].sum(axis=1)
+    if cap:
+        xs = hits.groupby("row_id")["bi_excess"].sum()
+        rows["cost_bi_excess"] = rows["row_id"].map(xs).fillna(0.0)
     return rows, hits, stats

@@ -78,4 +78,8 @@ harness:
 
 large_loss:
   # per-claim cap applied to the training target; the excess is reloaded per line
-  caps: {motor_bodily_injury: null}
+  # 2026-10-20 (Karl, owner test): cap motor BI at 1m per claim in the target. The one 11.9m
+  # AY2023 claim took 12.8m of 2023's fixed frequency x severity total and left the other 2023
+  # BI rows ~21% below neighbouring years. Excess kept as ult_bi_excess for the model's
+  # Pareto large-loss load (experiment._bi_level); not in y_ult.
+  caps: {motor_bodily_injury: 1000000}

@@ -38,6 +38,26 @@ def _months(d: pd.Series) -> pd.Series:
     return d.dt.year * 12 + d.dt.month - 1
 
 
+def bi_cap(cfg: dict) -> float | None:
+    """Per-claim cap on motor bodily injury (large_loss.caps), or None."""
+    return ((cfg.get("large_loss") or {}).get("caps") or {}).get("motor_bodily_injury")
+
+
+def capped_claims(cfg: dict) -> pd.DataFrame:
+    """data.claims() with motor bodily-injury net cost capped per claim at large_loss.caps.
+    The excess above the cap is carried separately (target.reported_targets, ult_bi_excess)
+    and reloaded as an expected large-loss load in the model's level, not in the target."""
+    clm = data.claims()
+    cap = bi_cap(cfg)
+    if not cap:
+        return clm
+    perils = cfg["development"]["peril_groups"]["motor"]["bodily_injury"]
+    m = (clm["line"] == "motor") & clm["peril"].isin(perils)
+    clm = clm.copy()
+    clm.loc[m, "net"] = clm.loc[m, "net"].clip(upper=cap)
+    return clm
+
+
 def delay_cdfs(claims: pd.DataFrame, cfg: dict, value: str = "amt") -> pd.DataFrame:
     """Cumulative development pattern (share of ultimate reported) by delay month.
 
@@ -104,7 +124,7 @@ def freq_sev_adjustment(rows: pd.DataFrame, cfg: dict) -> dict[tuple[str, str, i
     fs = cfg["development"].get("freq_sev", {}) or {}
     if not fs:
         return out
-    clm = data.claims()
+    clm = capped_claims(cfg)
     ccdf = completion_by_month(delay_cdfs(clm, cfg, value="count"), cfg)
     acdf = completion_by_month(delay_cdfs(clm, cfg, value="amt"), cfg)
     gmap = peril_group_map(cfg)
@@ -139,7 +159,7 @@ def developed_targets(rows: pd.DataFrame, cfg: dict | None = None) -> pd.DataFra
     development.freq_sev are then rescaled by year to the frequency-severity ultimate.
     """
     cfg = cfg or load_config()
-    cdfs = delay_cdfs(data.claims(), cfg)
+    cdfs = delay_cdfs(capped_claims(cfg), cfg)
     comp = completion_by_month(cdfs, cfg)
     adj = freq_sev_adjustment(rows, cfg)
     rows = rows.copy()
@@ -155,4 +175,8 @@ def developed_targets(rows: pd.DataFrame, cfg: dict | None = None) -> pd.DataFra
             rows.loc[m, f"ult_{grp}"] = ult
             rows.loc[m, f"comp_{grp}"] = c / k
             rows.loc[m, "y_ult"] += ult
+            if (line, grp) == ("motor", "bodily_injury") and "cost_bi_excess" in rows.columns:
+                # developed excess above the BI cap: kept out of y_ult, used only for the
+                # large-loss load in the model's level
+                rows.loc[m, "ult_bi_excess"] = rows.loc[m, "cost_bi_excess"].to_numpy() / c
     return rows

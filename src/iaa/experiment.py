@@ -301,7 +301,7 @@ def _bi_fs_ratio() -> dict[int, float]:
     spec = (cfg["development"].get("freq_sev") or {}).get("motor.bodily_injury")
     if not spec:
         return out
-    clm = data.claims()
+    clm = ultimate.capped_claims(cfg)
     perils = cfg["development"]["peril_groups"]["motor"]["bodily_injury"]
     c = clm[clm["peril"].isin(perils) & (clm["line"] == "motor") & (clm["status"] != "repudiated")]
     base = c[c["ay"] == spec["base_year"]]["net"].mean()
@@ -327,6 +327,9 @@ def _bi_level(tr: pd.DataFrame) -> float:
     # take the lower estimate (the developed ult already carries max(1, r))
     fix = tr["year"].map({y: min(r, 1.0) for y, r in _bi_fs_ratio().items()}).fillna(1.0)
     ult, trend = tr["ult_bodily_injury"].fillna(0.0) * fix, tr["trend_factor"]
+    if "ult_bi_excess" in tr.columns:
+        # capped target (large_loss.caps): add the excess back for the cap-and-Pareto load
+        ult = ult + tr["ult_bi_excess"].fillna(0.0)
     capped = (ult.clip(upper=BI_CAP) * trend).sum()
     tail = ult[ult > BI_TAIL]
     excess = (ult - BI_CAP).clip(lower=0.0)
