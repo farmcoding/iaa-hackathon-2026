@@ -1,0 +1,34 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index aabc8cd..1d285d2 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -79,6 +79,12 @@ PARAMS = {
+     "deterministic": True,
+     "force_row_wise": True,
+ }
++# backlog 2.62: motor's own leaves/min_data were set in the original "stronger
++# regularization" run (results.tsv 3e8a968) while the pooled target still carried the
++# 11.9m BI claim; since the BI/other split (1.1) that claim no longer sits in motor's
++# trees, but motor's regularisation was never revisited (only property's was, several
++# times). Motor within-line D2 has been flat at 0.0847-0.0849 since 18 Oct.
++MOTOR_PARAMS = {**PARAMS, "num_leaves": 31, "min_data_in_leaf": 500}
+ # backlog 2.15: EBM blended with LightGBM on buildings and contents. results.tsv
+ # b54959b/2abf7b5 ran 1884-1889s against the 1800s budget; halving outer_bags (2->1,
+ # EBM's internal bagging) only saved 5s, so the external SEEDS loop was the cost. EBM
+@@ -324,14 +330,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             # count model; severity is a flat level shared by every policy, supplied
+             # entirely by anchoring to the developed BI loss cost. Other motor perils
+             # keep the original Tweedie-on-cost treatment.
+-            bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
++            bi_params = {k: v for k, v in MOTOR_PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+             freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+-            other_rate = bag(other / tr["exposure"], tr["exposure"])
++            other_rate = bag(other / tr["exposure"], tr["exposure"], MOTOR_PARAMS)
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
+ 
