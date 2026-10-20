@@ -130,7 +130,8 @@ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
 # weather fields: hail and flood drive its glass/hail and own damage perils.
 # reports/reviews/2026-10-19_features.md
 LINE_DROP = {
-    "motor": {"written_premium"},
+    # distance to river: no rating rationale on motor (owner 2026-10-20, Karl, option 2b)
+    "motor": {"written_premium", "distance_to_river_km"},
     "buildings": {"written_premium", "licence_points"},
     "contents": {"written_premium", "licence_points"},
 }
@@ -403,8 +404,17 @@ def _fit_predict_core(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             tr = tr.assign(ncb_years_new=tr["ncb_years"].where(is_new))
             is_new_va = va["new_business"].astype(str) == "True"
             va = va.assign(ncb_years_new=va["ncb_years"].where(is_new_va))
+        if line == "motor" and "credit_band" in tr.columns:
+            # owner 2026-10-20 (Karl, option 2b): motor credit band as an ordered code with a
+            # monotone increasing constraint, so the relativity cannot wiggle between bands
+            order = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
+            tr = tr.assign(credit_band=tr["credit_band"].astype(str).map(order).astype(float))
+            va = va.assign(credit_band=va["credit_band"].astype(str).map(order).astype(float))
         cols = _feature_cols(tr)
-        mono = [MONOTONE.get(c, 0) for c in cols]
+        mono = [
+            ({**MONOTONE, "credit_band": 1} if line == "motor" else MONOTONE).get(c, 0)
+            for c in cols
+        ]
         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
 
         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
