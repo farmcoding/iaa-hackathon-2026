@@ -1,0 +1,12 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index aabc8cd..3c506ba 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -172,7 +172,6 @@ PRUNED = {
+         "customer_age",
+         "customer_tenure",
+         "days_quote_to_inception",
+-        "days_unoccupied",
+         "discount_applied",
+         "document_preference",
+         "freezing_days",
