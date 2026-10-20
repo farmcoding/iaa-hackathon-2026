@@ -1,0 +1,25 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..59882a0 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -84,9 +84,19 @@ PARAMS = {
+ # b54959b/2abf7b5 ran 1884-1889s against the 1800s budget; halving outer_bags (2->1,
+ # EBM's internal bagging) only saved 5s, so the external SEEDS loop was the cost. EBM
+ # now fits once, on SEEDS[0], with outer_bags back to 2 for internal diversity.
++# backlog 2.71 (Tier 0d) retry: pairwise interactions 0->15. The only prior test
++# (results.tsv `da034d3`, discarded at +0.00001) ran against the pre-2.66 champion,
++# when EBM only blended on property, and still came out flat rather than negative.
++# Since then backlog 2.66 added a second EBM member on motor's "other" perils
++# (results.tsv `d6fa78e`, kept), so this single param now reaches both blend members:
++# the features review's bake-off found flood_zone x elevation_m the top property pair
++# (buildings over-predicts moderate flood zone at high elevation, A/E 0.44-0.52), and
++# diagnostics.md flags motor segments (seats, cover_type, body_type) that 15-leaf
++# LightGBM trees may also be missing as interactions EBM's additive structure can
++# still represent with pairwise terms.
+ EBM_PARAMS = {
+     "objective": "tweedie_deviance:variance_power=1.5",
+-    "interactions": 0,
++    "interactions": 15,
+     "outer_bags": 2,
+ }
+ # backlog 2.13 / Tier 0e.3: CatBoost's native Tweedie as a third equal-weight property
