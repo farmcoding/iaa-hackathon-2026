@@ -18,6 +18,8 @@ submission is selected by the human.
 
 **Final selection rule (pre-declared 2026-10-20, Karl):** the one final submission selected on Kaggle is the signed-off candidate with the best fold B D²; ties go to the higher primary, then the higher worse fold. Public leaderboard rank is not a criterion.
 
+**Amendment for two target tracks (pre-declared 2026-10-20, Karl, before any track-2 result existed):** fold B D² is not comparable across tracks, because each track scores against its own developed actuals. The track is chosen first, in this order: (1) the development method the as-if reserving replay (backlog 3.9-lite) favours on late-reported claims; (2) confirmed by the score against reported cost at the valuation date (backlog 3.6), which is the same yardstick for both tracks; (3) one leaderboard submission of track 2's best model, as the only ground truth both tracks share. Within the chosen track, the rule above applies unchanged.
+
 ### Artefact hashes (sha256)
 
 TabM training on Metal is not bit-for-bit reproducible, so these saved files are the artefacts of record. Dataset fingerprint `6250034b1783`.
