@@ -1,0 +1,26 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..4d433f0 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -465,6 +465,21 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
++            # backlog 2.87 / Tier 0f #10 (second-opinion review): other-peril permutation
++            # contributions are negative or negligible for these weather fields, with
++            # contradictory directions and suspicious weather-weather interactions; drop
++            # them from the other-perils models only (BI already fit above, untouched).
++            # freezing_days stays: its other-peril contribution is appreciably larger.
++            OTHER_DROP = {
++                "dry_summer_index",
++                "distance_to_river_km",
++                "wildfire_index",
++                "mean_temperature_c",
++            }
++            other_cols = [c for c in cols if c not in OTHER_DROP]
++            tr_x, va_x = tr_x[other_cols], va_x[other_cols]
++            mono = [MONOTONE.get(c, 0) for c in other_cols]
++
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+             other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
