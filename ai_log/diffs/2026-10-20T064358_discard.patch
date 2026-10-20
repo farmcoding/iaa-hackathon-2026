@@ -1,0 +1,56 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 9827ab4..fe11786 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -93,6 +93,23 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# Tier 0f / backlog 2.81 (second-opinion review, reports/reviews/2026-10-20_alt_review_motor.md
++# #2): these matter for motor-other cost but have ~0 or negative BI contribution and drive
++# BI direction/ICE flags. Drop them from BI's own feature matrix only; motor-other keeps
++# every column.
++BI_DROP = {
++    "cover_type",
++    "vehicle_age",
++    "vehicle_value_group",
++    "fuel_type",
++    "overnight_parking",
++    "make_model",
++    "body_type",
++    "seats",
++    "engine_size_cc",
++    "voluntary_excess",
++    "missed_payments_12m",
++}
+ # backlog 2.13 / Tier 0e.3: CatBoost's native Tweedie as a third equal-weight property
+ # blend member. Validated single-seed (results.tsv `b46f2be`, `89324f8`: +0.0014/+0.0018
+ # vs their day's champion, both folds up each time) and re-tested alone on the final
+@@ -362,7 +379,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
+         # than most real improvements, so every model is an average over SEEDS
+-        def bag(target: pd.Series, weight: pd.Series, params: dict = PARAMS) -> np.ndarray:
++        def bag(
++            target: pd.Series,
++            weight: pd.Series,
++            params: dict = PARAMS,
++            tr_x: pd.DataFrame = tr_x,
++            va_x: pd.DataFrame = va_x,
++            mono: list[int] = mono,
++        ) -> np.ndarray:
+             n_estimators = params["n_estimators"]
+             if line != "motor":
+                 # backlog 2.34 / Tier 0c.3, restricted to property: rows 71 and 98
+@@ -424,7 +448,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             # keep the original Tweedie-on-cost treatment.
+             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+-            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
++            cols_bi = [c for c in cols if c not in BI_DROP]
++            mono_bi = [MONOTONE.get(c, 0) for c in cols_bi]
++            tr_x_bi, va_x_bi = _credibility_encode(tr, va, cols_bi, tr["y"] / tr["exposure"])
++            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params, tr_x_bi, va_x_bi, mono_bi)
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
