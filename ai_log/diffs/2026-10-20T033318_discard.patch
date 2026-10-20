@@ -1,0 +1,65 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..26ab553 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -20,6 +20,9 @@ from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
+ from sklearn.preprocessing import TargetEncoder
+ 
++from iaa.score import tweedie_deviance
++
++
+ NON_FEATURES = {
+     "row_id",
+     "policy_id",
+@@ -302,6 +305,41 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+     return rate * target_lc / np.average(rate, weights=va["exposure"])
+ 
+ 
++# backlog 2.24: buildings/contents deciles run wider than the data supports
++# (diagnostics.md: buildings fold B decile 1 A/E 0.67 vs decile 10 1.14; contents
++# 0.85 vs 1.16). Temper the blended property rate with an exponent chosen on an
++# inner time split (fit on all training years but the last, score the held-out
++# last year by Tweedie deviance) before anchoring, so the choice never sees the
++# fold being scored.
++ALPHA_GRID = (0.7, 0.8, 0.9, 1.0)
++
++
++def _select_alpha(
++    tr: pd.DataFrame, tr_x: pd.DataFrame, target: pd.Series, weight: pd.Series, mono: list[int]
++) -> float:
++    last_year = tr["year"].max()
++    inner_mask = (tr["year"] < last_year).to_numpy()
++    if not inner_mask.any() or inner_mask.all():
++        return 1.0
++    probe = lgb.LGBMRegressor(
++        **{**PARAMS, "n_estimators": 300, "seed": SEEDS[0]},
++        monotone_constraints=mono,
++        monotone_constraints_method="advanced",
++    )
++    probe.fit(tr_x[inner_mask], target[inner_mask], sample_weight=weight[inner_mask])
++    inner_rate = np.clip(probe.predict(tr_x[~inner_mask]), 1e-6, None)
++    held = tr[~inner_mask]
++    y_held, exp_held = held["y"].to_numpy(), held["exposure"].to_numpy()
++    best_alpha, best_dev = 1.0, np.inf
++    for alpha in ALPHA_GRID:
++        r = inner_rate**alpha
++        anchored = r * (y_held.sum() / exp_held.sum()) / np.average(r, weights=exp_held)
++        dev = tweedie_deviance(y_held, anchored * exp_held).sum()
++        if dev < best_dev:
++            best_dev, best_alpha = dev, alpha
++    return best_alpha
++
++
+ # owner 2026-10-19 (Karl, meta-review): motor is where the gap is, and every motor experiment
+ # was paying for a full property refit. Lines listed here reuse the saved validation
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+@@ -426,6 +464,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                 + ebm_rate(rate_target, tr["exposure"])
+                 + cb_rate(rate_target, tr["exposure"])
+             ) / 3
++            alpha = _select_alpha(tr, tr_x, rate_target, tr["exposure"], mono)
++            rate = np.clip(rate, 1e-6, None) ** alpha
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
+         pred[mask] = rate * va["exposure"].to_numpy()
+     return pred
