@@ -1,0 +1,12 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 4eb4ea6..7e99555 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -148,7 +148,6 @@ PRUNED = {
+         "marketing_consent",
+         "marketing_segment",
+         "new_business",
+-        "occupation",
+         "previous_insurer",
+         "property_age",
+         "property_type",
