@@ -12,6 +12,7 @@ Both frames hold all three lines; `line` says which.
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 
 import lightgbm as lgb
 import numpy as np
@@ -288,8 +289,44 @@ def _credibility_encode(
 BI_CAP, BI_TAIL = 1_000_000.0, 250_000.0
 
 
+@lru_cache(maxsize=1)
+def _bi_fs_ratio() -> dict[int, float]:
+    """Frequency-severity ultimate / chain-ladder ultimate per BI loss year, without the
+    max(1, .) floor that ultimate.freq_sev_adjustment applies (owner 2026-10-20, Karl:
+    taking the larger of two estimates biased BI up 0.5-2.4% in 2022-23)."""
+    from iaa import data, ultimate
+
+    cfg = ultimate.load_config()
+    out: dict[int, float] = {}
+    spec = (cfg["development"].get("freq_sev") or {}).get("motor.bodily_injury")
+    if not spec:
+        return out
+    clm = data.claims()
+    perils = cfg["development"]["peril_groups"]["motor"]["bodily_injury"]
+    c = clm[clm["peril"].isin(perils) & (clm["line"] == "motor") & (clm["status"] != "repudiated")]
+    base = c[c["ay"] == spec["base_year"]]["net"].mean()
+    from iaa import target
+
+    rows, _, _ = target.reported_targets("motor")
+    ccdf = ultimate.completion_by_month(ultimate.delay_cdfs(clm, cfg, value="count"), cfg)
+    acdf = ultimate.completion_by_month(ultimate.delay_cdfs(clm, cfg, value="amt"), cfg)
+    cc = ultimate.row_completion(rows, ccdf, "motor", "bodily_injury")
+    ac = ultimate.row_completion(rows, acdf, "motor", "bodily_injury")
+    n = rows[[f"n_{q}" for q in perils]].sum(axis=1).to_numpy()
+    cost = rows[[f"cost_{q}" for q in perils]].sum(axis=1).to_numpy()
+    for yr in sorted(rows["year"].unique()):
+        k = (rows["year"] == yr).to_numpy()
+        sev = base * (1 + spec["sev_trend"]) ** (yr - spec["base_year"])
+        r = (n[k] / cc[k]).sum() * sev / (cost[k] / ac[k]).sum()
+        out[int(yr)] = r if yr > spec["base_year"] else 1.0
+    return out
+
+
 def _bi_level(tr: pd.DataFrame) -> float:
-    ult, trend = tr["ult_bodily_injury"].fillna(0.0), tr["trend_factor"]
+    # remove the upward floor: years where frequency x severity is below the chain ladder
+    # take the lower estimate (the developed ult already carries max(1, r))
+    fix = tr["year"].map({y: min(r, 1.0) for y, r in _bi_fs_ratio().items()}).fillna(1.0)
+    ult, trend = tr["ult_bodily_injury"].fillna(0.0) * fix, tr["trend_factor"]
     capped = (ult.clip(upper=BI_CAP) * trend).sum()
     tail = ult[ult > BI_TAIL]
     excess = (ult - BI_CAP).clip(lower=0.0)
