@@ -1,0 +1,51 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..277e38f 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -305,9 +305,9 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # owner 2026-10-19 (Karl, meta-review): motor is where the gap is, and every motor experiment
+ # was paying for a full property refit. Lines listed here reuse the saved validation
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+-# fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+-# same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# fit always refits every line. To experiment on motor, set FROZEN_LINES to freeze property
++# instead (as here), or your motor change has no effect.
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -381,11 +381,17 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             return out
+ 
+         def ebm_rate(
+-            target: pd.Series, weight: pd.Series, mono: list[int] | None = None
++            target: pd.Series,
++            weight: pd.Series,
++            mono: list[int] | None = None,
++            interactions: int | None = None,
+         ) -> np.ndarray:
+             ebm_tr_x, ebm_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
++            params = (
++                EBM_PARAMS if interactions is None else {**EBM_PARAMS, "interactions": interactions}
++            )
+             model = ExplainableBoostingRegressor(
+-                **EBM_PARAMS, random_state=SEEDS[0], monotone_constraints=mono
++                **params, random_state=SEEDS[0], monotone_constraints=mono
+             )
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+@@ -412,8 +418,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
++            # backlog 2.66 retry: interactions=10 (0 was tried and kept at `d6fa78e`;
++            # fdac6bf's interactions=15 run never touched motor since motor was frozen
++            # then). Pairwise terms let the additive EBM pick up seats x cover_type-style
++            # combinations the main-effects version and 15-leaf LightGBM both miss.
+             other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+-                other_target, tr["exposure"], mono
++                other_target, tr["exposure"], mono, interactions=10
+             )
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
