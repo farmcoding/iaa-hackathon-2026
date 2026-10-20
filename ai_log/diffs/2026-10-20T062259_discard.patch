@@ -1,0 +1,98 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 9827ab4..c9b1ff3 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -287,6 +287,25 @@ def _credibility_encode(
+ # training rows above BI_TAIL (refitted per fold, so no look-ahead).
+ BI_CAP, BI_TAIL = 1_000_000.0, 250_000.0
+ 
++# Tier 0f / backlog 2.81 (second-opinion review, reports/reviews/2026-10-20_alt_review_motor.md
++# #2): these vehicle and severity predictors matter for motor-other cost but contribute
++# ~zero or negative to BI frequency and generate spurious BI direction flags. BI gets its
++# own restricted feature matrix instead of sharing motor's full column set; motor-other is
++# untouched.
++BI_DROP = {
++    "cover_type",
++    "vehicle_age",
++    "vehicle_value_group",
++    "fuel_type",
++    "overnight_parking",
++    "make_model",
++    "body_type",
++    "seats",
++    "engine_size_cc",
++    "voluntary_excess",
++    "missed_payments_12m",
++}
++
+ 
+ def _bi_level(tr: pd.DataFrame) -> float:
+     ult, trend = tr["ult_bodily_injury"].fillna(0.0), tr["trend_factor"]
+@@ -360,9 +379,24 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         mono = [MONOTONE.get(c, 0) for c in cols]
+         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
+ 
++        if line == "motor":
++            bi_cols = [c for c in cols if c not in BI_DROP]
++            bi_mono = [MONOTONE.get(c, 0) for c in bi_cols]
++            tr_x_bi, va_x_bi = _credibility_encode(tr, va, bi_cols, tr["y"] / tr["exposure"])
++
+         # seed bagging: single-seed noise (sd 0.0026 on the primary metric) is larger
+         # than most real improvements, so every model is an average over SEEDS
+-        def bag(target: pd.Series, weight: pd.Series, params: dict = PARAMS) -> np.ndarray:
++        def bag(
++            target: pd.Series,
++            weight: pd.Series,
++            params: dict = PARAMS,
++            feat_tr: pd.DataFrame | None = None,
++            feat_va: pd.DataFrame | None = None,
++            feat_mono: list[int] | None = None,
++        ) -> np.ndarray:
++            feat_tr = tr_x if feat_tr is None else feat_tr
++            feat_va = va_x if feat_va is None else feat_va
++            feat_mono = mono if feat_mono is None else feat_mono
+             n_estimators = params["n_estimators"]
+             if line != "motor":
+                 # backlog 2.34 / Tier 0c.3, restricted to property: rows 71 and 98
+@@ -375,14 +409,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                 if inner_mask.any() and (~inner_mask).any():
+                     probe = lgb.LGBMRegressor(
+                         **{**params, "n_estimators": 3000, "seed": SEEDS[0]},
+-                        monotone_constraints=mono,
++                        monotone_constraints=feat_mono,
+                         monotone_constraints_method="advanced",
+                     )
+                     probe.fit(
+-                        tr_x[inner_mask],
++                        feat_tr[inner_mask],
+                         target[inner_mask],
+                         sample_weight=weight[inner_mask],
+-                        eval_set=[(tr_x[~inner_mask], target[~inner_mask])],
++                        eval_set=[(feat_tr[~inner_mask], target[~inner_mask])],
+                         eval_sample_weight=[weight[~inner_mask]],
+                         callbacks=[lgb.early_stopping(50, verbose=False)],
+                     )
+@@ -391,11 +425,11 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             for seed in SEEDS:
+                 model = lgb.LGBMRegressor(
+                     **{**params, "n_estimators": n_estimators, "seed": seed},
+-                    monotone_constraints=mono,
++                    monotone_constraints=feat_mono,
+                     monotone_constraints_method="advanced",
+                 )
+-                model.fit(tr_x, target, sample_weight=weight)
+-                out += model.predict(va_x) / len(SEEDS)
++                model.fit(feat_tr, target, sample_weight=weight)
++                out += model.predict(feat_va) / len(SEEDS)
+             return out
+ 
+         def ebm_rate(
+@@ -424,7 +458,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             # keep the original Tweedie-on-cost treatment.
+             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+-            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
++            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params, tr_x_bi, va_x_bi, bi_mono)
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
