@@ -179,6 +179,24 @@ def test_ensure_header_migrates_old_ledger_in_place(tmp_path):
     assert rows2 == rows
 
 
+def test_ensure_header_preserves_crlf_data_rows(tmp_path):
+    """A CRLF ledger must not have its data rows silently rewritten as LF: that would
+    show up as a whole-file git diff on the next run after this change merges."""
+    path = tmp_path / "results.tsv"
+    old_fields = [f for f in harness.FIELDS if f != "ae_flag"]
+    header = "\t".join(old_fields)
+    data_row = "t1\tkeep\t\t0.12"
+    raw = (header + "\r\n" + data_row + "\r\n").encode()
+    path.write_bytes(raw)
+    harness._ensure_header(path, harness.FIELDS)
+    new_raw = path.read_bytes()
+    assert new_raw.endswith(data_row.encode() + b"\r\n")
+    assert new_raw.count(b"\r\n") == 2
+    assert b"\n\n" not in new_raw.replace(b"\r\n", b"")  # no stray bare LF introduced
+    new_header = new_raw.split(b"\r\n", 1)[0].decode()
+    assert new_header.split("\t") == harness.FIELDS
+
+
 def test_peril_trend_retrends_only_its_group():
     df = pd.DataFrame(
         {

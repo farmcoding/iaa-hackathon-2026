@@ -18,6 +18,7 @@ Writes docs/feature_registry.csv and docs/feature_registry.md.
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -27,6 +28,7 @@ from iaa import data, experiment, features, harness
 ROOT = Path(__file__).resolve().parents[1]
 OUT_CSV = ROOT / "docs" / "feature_registry.csv"
 OUT_MD = ROOT / "docs" / "feature_registry.md"
+MODEL_CARD = ROOT / "reports" / "features" / "model_card.json"
 
 TARGET_PREFIXES = ("cost_", "n_", "ult_", "comp_")
 IDENTIFIER_COLS = {"row_id", "policy_id", "customer_id", "address_id"}
@@ -267,13 +269,15 @@ FIELDS = [
 
 
 def _feature_cols_by_line(df: pd.DataFrame, cfg: dict) -> dict[str, set[str]]:
-    """Precompute once per line, not once per column: `_feature_cols` only reads the
-    first row's `line` value and the per-column notna-any, so a small sample per line
-    is enough and avoids re-filtering the full multi-million-row frame per column."""
+    """Precompute once per line, not once per column: that alone turns 414 full-frame
+    filters into 3. `_feature_cols` drops an all-null column (`df[c].notna().any()`),
+    and `hist_*` is blanked for every row before 2022 (features.claim_history); a
+    head() sample of a date-ordered frame can be all-2021 and wrongly read as
+    all-null, so the full per-line slice is used here, not a sample."""
     out = {}
     for line in data.LINES:
-        sample = df.loc[df["line"] == line].head(500)
-        out[line] = set(experiment._feature_cols(sample, cfg=cfg)) if len(sample) else set()
+        sub = df.loc[df["line"] == line]
+        out[line] = set(experiment._feature_cols(sub, cfg=cfg)) if len(sub) else set()
     return out
 
 
@@ -286,12 +290,23 @@ def _used_on_lines(col: str, feature_cols_by_line: dict[str, set[str]]) -> list[
     return [line for line in data.LINES if col in feature_cols_by_line[line]]
 
 
+# owner-excluded columns in experiment.NON_FEATURES whose own reason is not "not a
+# rating factor"; overrides the generic NON_FEATURES text below.
+NON_FEATURES_REASON_OVERRIDE = {
+    "lines_held": "owner-excluded 2026-10-18: tested once restored, no gain (primary 0.1334 "
+    "vs 0.1339); not a leak or an inadmissibility finding (experiment.NON_FEATURES, "
+    "reports/assumptions_log.md)",
+}
+
+
 def _exclusion_reason(col: str, nonnull_by_line: pd.DataFrame) -> str:
     if col in features.FORBIDDEN:
         return "leak, removed in features.build before harness.dataset (features.FORBIDDEN)"
     if col in experiment.NON_FEATURES:
         if col in IDENTIFIER_COLS or col in STRUCTURAL_COLS:
             return "harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES)"
+        if col in NON_FEATURES_REASON_OVERRIDE:
+            return NON_FEATURES_REASON_OVERRIDE[col]
         return (
             "owner-excluded, not a rating factor (experiment.NON_FEATURES; see the inline "
             "comment in src/iaa/experiment.py and reports/assumptions_log.md)"
@@ -360,6 +375,36 @@ def build_registry() -> pd.DataFrame:
     return pd.DataFrame(rows, columns=FIELDS).sort_values(["role", "column"]).reset_index(drop=True)
 
 
+def _model_card_divergence(reg: pd.DataFrame) -> list[str]:
+    """Cross-check `used_on_lines` (read from the live code) against the champion
+    features actually recorded in reports/features/model_card.json. A divergence is a
+    finding, not necessarily a bug: the card is a snapshot (last written 2026-10-19/20
+    per its own timestamp handling) and can go stale as PRUNED or LINE_DROP change."""
+    if not MODEL_CARD.exists():
+        return ["model_card.json not found; skipped the cross-check."]
+    card = json.loads(MODEL_CARD.read_text())
+    out = []
+    for line in data.LINES:
+        if line not in card.get("lines", {}):
+            continue
+        card_feats = {f["feature"] for f in card["lines"][line]["features"]}
+        reg_feats = set(
+            reg.loc[
+                reg["used_on_lines"].str.contains(rf"\b{line}\b", na=False, regex=True), "column"
+            ]
+        )
+        only_card = sorted(card_feats - reg_feats)
+        only_reg = sorted(reg_feats - card_feats)
+        if only_card or only_reg:
+            out.append(
+                f"{line}: in model_card.json but not registry used_on_lines: {only_card or 'none'}; "
+                f"in registry but not model_card.json: {only_reg or 'none'}"
+            )
+    return out or [
+        "None: every line's model_card.json features match the registry's used_on_lines."
+    ]
+
+
 def write(reg: pd.DataFrame) -> None:
     reg.to_csv(OUT_CSV, index=False, quoting=csv.QUOTE_MINIMAL)
     lines = [
@@ -387,7 +432,11 @@ def write(reg: pd.DataFrame) -> None:
         "Full detail, including availability at quote, competition admissibility and "
         "real-world admissibility, is in `feature_registry.csv`."
     )
-    OUT_MD.write_text("\n".join(lines))
+    lines.append("")
+    lines.append("## Cross-check against reports/features/model_card.json")
+    lines.append("")
+    lines.extend(f"- {d}" for d in _model_card_divergence(reg))
+    OUT_MD.write_text("\n".join(lines) + "\n")
 
 
 def main() -> None:

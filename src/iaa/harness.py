@@ -194,19 +194,25 @@ def verdict(res: dict, cfg: dict) -> str:
 def _ensure_header(path: Path, fields: list[str]) -> None:
     """Rewrite the ledger's header line in place when FIELDS has grown (append-only:
     new columns land at the end). Data rows are untouched; DictReader fills a row that
-    is now short a trailing value with its restval, so old rows still parse."""
+    is now short a trailing value with its restval, so old rows still parse. Reads and
+    writes with newline="" so a CRLF ledger keeps its line endings instead of every
+    data row being silently rewritten as LF (a large, spurious git diff)."""
     if not path.exists():
         return
-    text = path.read_text()
+    with path.open("r", newline="") as f:
+        text = f.read()
     if not text:
         return
-    first, _, rest = text.partition("\n")
-    existing = first.split("\t")
+    first_line, _, rest = text.partition("\n")
+    line_end = "\r\n" if first_line.endswith("\r") else "\n"
+    header_text = first_line[: -len("\r")] if line_end == "\r\n" else first_line
+    existing = header_text.split("\t")
     if existing == fields:
         return
     if fields[: len(existing)] != existing:
         return  # unrecognized header shape; leave it rather than guess
-    path.write_text("\t".join(fields) + "\n" + rest)
+    with path.open("w", newline="") as f:
+        f.write("\t".join(fields) + line_end + rest)
 
 
 def validate(

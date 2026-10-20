@@ -13,7 +13,7 @@ Counts by role: {'feature': 87, 'target': 39, 'excluded': 13, 'identifier': 4}
 | exposure | excluded | other |  | no | harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES) |
 | exposure_raw | excluded | other |  | no | leak, never reaches harness.dataset (features.FORBIDDEN); see the comment above features.FORBIDDEN in src/iaa/features.py and reports/data_quality.md |
 | line | excluded | other |  | no | harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES) |
-| lines_held | excluded | policy admin/sales |  | no | owner-excluded, not a rating factor (experiment.NON_FEATURES; see the inline comment in src/iaa/experiment.py and reports/assumptions_log.md) |
+| lines_held | excluded | policy admin/sales |  | no | owner-excluded 2026-10-18: tested once restored, no gain (primary 0.1334 vs 0.1339); not a leak or an inadmissibility finding (experiment.NON_FEATURES, reports/assumptions_log.md) |
 | period_end | excluded | other |  | no | harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES) |
 | period_start | excluded | other |  | no | harness/dataset bookkeeping, not a rating input (experiment.NON_FEATURES) |
 | renewal_decision | excluded | other |  | no | leak, never reaches harness.dataset (features.FORBIDDEN); see the comment above features.FORBIDDEN in src/iaa/features.py and reports/data_quality.md |
@@ -51,9 +51,9 @@ Counts by role: {'feature': 87, 'target': 39, 'excluded': 13, 'identifier': 4}
 | hail_days | feature | weather |  | yes | motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
 | high_value_items | feature | property risk/policy | contents | no | motor: not populated for this line; buildings: not populated for this line |
 | hist_cost_customer | feature | claim history |  | no | motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
-| hist_cost_policy | feature | claim history |  | no | buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
-| hist_n_customer | feature | claim history |  | no | motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
-| hist_n_policy | feature | claim history |  | no | contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
+| hist_cost_policy | feature | claim history | motor | no | buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
+| hist_n_customer | feature | claim history | buildings | no | motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
+| hist_n_policy | feature | claim history | motor, buildings | no | contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
 | household_size | feature | customer |  | no | motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); buildings: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
 | licence_points | feature | motor risk/policy | motor | no | buildings: owner-dropped (experiment.LINE_DROP); contents: owner-dropped (experiment.LINE_DROP) |
 | listed_building | feature | property risk/policy | buildings | no | motor: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json); contents: pruned, <=0.0001 D2 on shuffle (reports/features/model_card.json) |
@@ -151,3 +151,7 @@ Counts by role: {'feature': 87, 'target': 39, 'excluded': 13, 'identifier': 4}
 | y_ult | target | other |  | no |  |
 
 Full detail, including availability at quote, competition admissibility and real-world admissibility, is in `feature_registry.csv`.
+
+## Cross-check against reports/features/model_card.json
+
+- motor: in model_card.json but not registry used_on_lines: ['ncb_years_new']; in registry but not model_card.json: none
