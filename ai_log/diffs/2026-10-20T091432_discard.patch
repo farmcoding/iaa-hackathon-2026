@@ -1,0 +1,38 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..225f719 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -218,6 +218,12 @@ PRUNED = {
+         "solar_panels",
+         "trees_within_5m",
+         "urban_density",
++        # backlog 2.22, retested under today's champion: year_built vs property_age
++        # Spearman -1.00 (pipeline_review.md table, row 45); property_age is live and
++        # kept here, so year_built is now the only remaining duplicate pair still both
++        # live on any line (customer_age/driver_age and customer_tenure/renewal_count
++        # were already resolved by the prior owner prunes above).
++        "year_built",
+     ],
+     "contents": [
+         "basement",
+@@ -250,6 +256,11 @@ PRUNED = {
+         "start_month",
+         "wind_exposure_index",
+         "years_at_address",
++        # backlog 2.22, retested under today's champion: customer_age vs
++        # policyholder_age, Spearman 1.00 (pipeline_review.md row 45); customer_age is
++        # live and kept here, so policyholder_age is the only remaining duplicate of
++        # that pair still live on any line (buildings already pruned it).
++        "policyholder_age",
+     ],
+ }
+ 
+@@ -352,7 +363,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
++FROZEN_LINES: tuple[str, ...] = ()
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
