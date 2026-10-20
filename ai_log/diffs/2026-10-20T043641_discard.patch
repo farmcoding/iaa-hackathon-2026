@@ -1,0 +1,55 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..3df8db8 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -279,6 +279,14 @@ def _credibility_encode(
+ # training rows above BI_TAIL (refitted per fold, so no look-ahead).
+ BI_CAP, BI_TAIL = 1_000_000.0, 250_000.0
+ 
++# backlog 2.33: motor's "other" peril group (config motor.other) pools own damage,
++# third-party property, theft and glass/hail into one Tweedie, but these have different
++# drivers (collision vs parking-related theft vs weather-driven glass/hail). comp_other
++# (the group's completion factor) is shared across its perils, so cost_<peril>/comp_other
++# is each peril's own developed ultimate on the same basis as ult_other (= cost_other /
++# comp_other), summing back to it exactly.
++OTHER_PERILS = ("own_damage", "third_party_prop", "theft", "glass_hail")
++
+ 
+ def _bi_level(tr: pd.DataFrame) -> float:
+     ult, trend = tr["ult_bodily_injury"].fillna(0.0), tr["trend_factor"]
+@@ -307,7 +315,13 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++# bug found 2026-10-20 (loop iterations 1-4, run 300b323 et al.): this was inverted to
++# ("motor",) by champion commit 639914c (Tier 0c.3), which silently froze MOTOR instead of
++# property and made every motor-targeted edit since a no-op (results.tsv rows a2f0d7f,
++# 00ba862, 3fb947c, 2486d5b, 3f38e76 are byte-identical to champion on every column). Fixed
++# back to the documented direction; must be re-applied every iteration since a discard
++# reverts this file to the buggy champion state.
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -410,13 +424,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
+-            other = tr["ult_other"] * tr["trend_factor"]
+-            other_target = other / tr["exposure"]
+-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+-                other_target, tr["exposure"], mono
+-            )
+-            other_lc = other.sum() / tr["exposure"].sum()
+-            other_rate = _anchor(other_rate, other_lc, va)
++            other_rate = np.zeros(len(va))
++            for peril in OTHER_PERILS:
++                peril_ult = tr[f"cost_{peril}"] / tr["comp_other"] * tr["trend_factor"]
++                peril_target = peril_ult / tr["exposure"]
++                peril_rate = bag(peril_target, tr["exposure"])
++                peril_lc = peril_ult.sum() / tr["exposure"].sum()
++                other_rate += _anchor(peril_rate, peril_lc, va)
+ 
+             rate = bi_rate + other_rate
+         else:
