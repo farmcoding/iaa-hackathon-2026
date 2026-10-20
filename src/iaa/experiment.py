@@ -255,9 +255,18 @@ PRUNED = {
 }
 
 
-def _feature_cols(df: pd.DataFrame) -> list[str]:
+def _feature_cols(df: pd.DataFrame, cfg: dict | None = None) -> list[str]:
     drop = {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
     drop |= LINE_DROP.get(str(df["line"].iloc[0]), set())
+    # owner (3.30): config `harness.use_premium` (configs/market_dev.yaml), default
+    # off, re-admits written_premium on every line for a market where it is not an
+    # admissible rating factor concern; see the config comment for the re-test rule.
+    if cfg is None:
+        from iaa import ultimate
+
+        cfg = ultimate.load_config()
+    if cfg.get("harness", {}).get("use_premium", False):
+        drop.discard("written_premium")
     drop |= set(PRUNED.get(str(df["line"].iloc[0]), []))
     cols = [c for c in df.columns if c not in NON_FEATURES and c not in drop]
     return [c for c in cols if df[c].notna().any()]

@@ -87,7 +87,9 @@ iteration is logged as a violation.
   feature. Encodings fitted on the target must be fitted inside `fit_predict` on the
   training frame only, out of fold.
 - Keep the level anchoring (or an equivalent balance step) unless the experiment is
-  about the level itself; actual-to-expected per line should stay within 0.97 to 1.03.
+  about the level itself. The harness logs an `ae_flag` on every run when any line's
+  fold-B A/E falls outside 0.97-1.03 (`results.tsv`); it is a ledger flag for the
+  owner, not a rule the agent enforces.
 - Portability: Part 2 brings a new market with different data. Prefer features and
   methods that would transfer (rates, ratios, generic encodings) over hard-coded
   levels, thresholds or category lists from this market.

@@ -56,7 +56,11 @@ FIELDS = [
     "run_id",
     "confirm_primary",
     "confirm_min_fold",
+    # owner (3.23): 1 when any line's fold-B A/E falls outside the 0.97-1.03 band set
+    # in program.md, else 0. A ledger flag, not a gate: it does not change the verdict.
+    "ae_flag",
 ]
+AE_BAND = (0.97, 1.03)
 
 
 def _fingerprint() -> str:
@@ -187,6 +191,30 @@ def verdict(res: dict, cfg: dict) -> str:
     return "keep" if better and stable else "discard"
 
 
+def _ensure_header(path: Path, fields: list[str]) -> None:
+    """Rewrite the ledger's header line in place when FIELDS has grown (append-only:
+    new columns land at the end). Data rows are untouched; DictReader fills a row that
+    is now short a trailing value with its restval, so old rows still parse. Reads and
+    writes with newline="" so a CRLF ledger keeps its line endings instead of every
+    data row being silently rewritten as LF (a large, spurious git diff)."""
+    if not path.exists():
+        return
+    with path.open("r", newline="") as f:
+        text = f.read()
+    if not text:
+        return
+    first_line, _, rest = text.partition("\n")
+    line_end = "\r\n" if first_line.endswith("\r") else "\n"
+    header_text = first_line[: -len("\r")] if line_end == "\r\n" else first_line
+    existing = header_text.split("\t")
+    if existing == fields:
+        return
+    if fields[: len(existing)] != existing:
+        return  # unrecognized header shape; leave it rather than guess
+    with path.open("w", newline="") as f:
+        f.write("\t".join(fields) + line_end + rest)
+
+
 def validate(
     description: str, module: str = "iaa.experiment", log: bool = True, owner_keep: bool = False
 ) -> dict:
@@ -217,6 +245,8 @@ def validate(
     )
     if log:
         new = not RESULTS.exists()
+        if not new:
+            _ensure_header(RESULTS, FIELDS)
         with RESULTS.open("a", newline="") as f:
             w = csv.DictWriter(f, fieldnames=FIELDS, delimiter="\t", extrasaction="ignore")
             if new:
@@ -271,6 +301,10 @@ def _score_folds(exp, df: pd.DataFrame, cfg: dict) -> tuple[dict, list]:
     folds = [res[f"d2_{n}"] for n in cfg["harness"]["folds"]]
     res["primary"] = primary_of({n: res[f"d2_{n}"] for n in cfg["harness"]["folds"]}, cfg)
     res["min_fold"] = float(np.min(folds))
+    lo, hi = AE_BAND
+    res["ae_flag"] = int(
+        any(not (lo <= res[f"ae_{k}_B"] <= hi) for k in ("motor", "buildings", "contents"))
+    )
     return res, saved
 
 

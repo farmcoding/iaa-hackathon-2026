@@ -62,3 +62,28 @@ def test_renewal_decision_is_not_a_feature():
     from iaa import features
 
     assert "renewal_decision" in features.FORBIDDEN
+
+
+def test_use_premium_flag_controls_written_premium(monkeypatch):
+    """configs/market_dev.yaml `harness.use_premium` (owner item 3.30): off by default,
+    written_premium stays out of every line; set true and it comes back."""
+    import pandas as pd
+
+    from iaa import experiment
+
+    toy = pd.DataFrame(
+        {
+            "line": ["motor", "motor"],
+            "written_premium": [100.0, 200.0],
+            "some_feature": [1.0, 2.0],
+        }
+    )
+    off = experiment._feature_cols(toy, cfg={"harness": {"use_premium": False}})
+    assert "written_premium" not in off
+    assert "some_feature" in off
+
+    on = experiment._feature_cols(toy, cfg={"harness": {"use_premium": True}})
+    assert "written_premium" in on
+
+    default = experiment._feature_cols(toy, cfg={})
+    assert "written_premium" not in default  # flag absent from config defaults to off
