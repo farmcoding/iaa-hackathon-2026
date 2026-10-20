@@ -341,9 +341,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
                 out += model.predict(va_x) / len(SEEDS)
             return out
 
-        def ebm_rate(target: pd.Series, weight: pd.Series) -> np.ndarray:
+        def ebm_rate(
+            target: pd.Series, weight: pd.Series, mono: list[int] | None = None
+        ) -> np.ndarray:
             ebm_tr_x, ebm_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
-            model = ExplainableBoostingRegressor(**EBM_PARAMS, random_state=SEEDS[0])
+            model = ExplainableBoostingRegressor(
+                **EBM_PARAMS, random_state=SEEDS[0], monotone_constraints=mono
+            )
             model.fit(ebm_tr_x, target, sample_weight=weight)
             return model.predict(ebm_va_x)
 
@@ -361,7 +365,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             bi_rate = _anchor(freq, bi_lc, va)
 
             other = tr["ult_other"] * tr["trend_factor"]
-            other_rate = bag(other / tr["exposure"], tr["exposure"])
+            other_target = other / tr["exposure"]
+            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+                other_target, tr["exposure"], mono
+            )
             other_lc = other.sum() / tr["exposure"].sum()
             other_rate = _anchor(other_rate, other_lc, va)
 
