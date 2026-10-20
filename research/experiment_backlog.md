@@ -38,13 +38,29 @@ ledger timestamp) or from the saved patch where one exists.
 | 0.4 | Re-test 2.17 (property part): drop the customer and marketing fields on buildings and contents | 15:34 run: 0.13442, +0.0014 vs the seeded champion | Inside the floor; confirm or close | ledger 2026-10-18T15:34:58 | open |
 | 0.5 | Re-test the wider seed bag (8 seeds, feature and bagging fractions varied per seed), seeds derived from SEED_OFFSET | 11:27 run: 0.13409 on the unseeded encoder | Small, steadier gain | ledger 2026-10-18T11:27:18 | open |
 
+## Tier 0f: motor, from the independent second-opinion review (20 Oct; reports/reviews/2026-10-20_alt_review_motor.md)
+
+Motor is refitted (FROZEN_LINES = buildings, contents); the champion reproduces exactly at 0.14227. Each is one isolated run; combine only after.
+
+| # | Idea | Why | Expected | Status |
+|---|---|---|---|---|
+| 2.80 | Motor-other EBM with chosen interactions only: (cover_type, driver_age), (cover_type, vehicle_age), (cover_type, urban_density); max_interaction_bins=8 | Cover type dominates the residual tables; vehicle age runs opposite ways for comprehensive and third-party cover, which an additive EBM cannot express | B +0.0004 to +0.0012 motor | open |
+| 2.81 | BI frequency model only: drop vehicle/severity fields (cover_type, vehicle_age, vehicle_value_group, fuel_type, overnight_parking, make_model, body_type, seats, engine_size_cc, voluntary_excess, missed_payments_12m); separate feature matrix and monotone vector for BI | These matter for other-peril cost, add ~0 or negative to BI and drive its direction flags | B +0.0003 to +0.0010 motor | open |
+| 2.82 | Motor: replace years_licensed by age_at_licensing = driver_age - years_licensed (values outside [17, driver_age] set missing); keep driver_age | The two are collinear; age at licensing is the informative quantity | small | open |
+| 2.83 | BI: CatBoost Poisson on raw admissible predictors (depth 4, lr 0.03, l2 20, 600 iterations, 3 seeds), 25% blend with LightGBM, then the BI anchor | BI has a single learner; native categoricals avoid a cost-trained encoder | small | open |
+| 2.84 | Motor-other EBM: single interaction (vehicle_value_group, telematics_score) | Strongest motor-other FAST pair with a clear mechanism | small | open |
+| 2.85 | Motor-other LightGBM: Tweedie power 1.3 (1.1 was chosen when motor's target still included BI) | Target changed since the sweep | small | open |
+| 2.86 | Motor: cap ncb_years at 9 (both sub-models; constraint kept) | BI frequency and other cost flatten after 9 years | small | open |
+| 2.87 | Motor-other only: drop dry_summer_index, distance_to_river_km, wildfire_index, mean_temperature_c | Negative or negligible contribution, direction flags, odd weather-weather interactions | small | open |
+| 2.88 | Pooled other-perils frequency x severity challenger (Poisson on total other count; Gamma severity on rows with claims), anchored and blended 25% with the current other rate | Separates frequency from severity without the four-way split that lost credibility | B +0.0002 to +0.0009 | open |
+
 ## Tier 0e: first, under the 0.0005 floor (owner, 19 Oct evening)
 
 | # | Idea | Earlier result | Diff | Status |
 |---|---|---|---|---|
 | 0e.1 | Motor other perils: 50/50 LightGBM + spline GLM blend (2.73 follow-up) | 0.14109 vs 0.14048 (+0.0006), min fold 0.13946 | ai_log/diffs/2026-10-19T204916_discard.patch | open |
 | 0e.2 | Motor: spline GLM blend, first version (2.73) | 0.14103 (+0.0006), min fold 0.13930 | ai_log/diffs/2026-10-19T203444_discard.patch | open |
-| 0e.3 | Property: CatBoost third member plus the best property near misses in one run (set FROZEN_LINES = ()) | CatBoost +0.0007 on 19 Oct; light bake-off +0.0077 / +0.0037 | ai_log/diffs/ (CatBoost runs 18-19 Oct) | open |
+| 0e.3 | (kept 19 Oct 22:40, 0.14171) Property: CatBoost third member plus the best property near misses in one run (set FROZEN_LINES = ()) | CatBoost +0.0007 on 19 Oct; light bake-off +0.0077 / +0.0037 | ai_log/diffs/ (CatBoost runs 18-19 Oct) | open |
 
 ## Tier 0c: near misses re-tested under the 0.001 floor (do these first, in order)
 

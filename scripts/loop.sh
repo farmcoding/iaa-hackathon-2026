@@ -129,6 +129,15 @@ Fix only these (usually a missing import at the top of the file). Change nothing
     git -c core.hooksPath=/dev/null commit -q -m "exp(keep): $desc" \
       -m "loop iteration $i, $ts; primary $(echo "$row" | cut -f4), min_fold $(echo "$row" | cut -f7)"
     action="committed $(git rev-parse --short HEAD)"
+    # a property experiment flips FROZEN_LINES; restore the motor-focus default after a keep
+    # (19-20 Oct: left inverted, it turned 25 motor experiments into no-ops). The keep's saved
+    # predictions cover every line, so the next run's frozen lines are this keep's.
+    default='FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")'
+    if ! grep -qxF "$default" "$EXP"; then
+      sed -i '' -E "s/^FROZEN_LINES: tuple\[str, \.\.\.\] = .*/$default/" "$EXP"
+      git add "$EXP"; git -c core.hooksPath=/dev/null commit -q -m "loop: restore FROZEN_LINES motor-focus default after keep"
+      action="$action; FROZEN_LINES restored"
+    fi
   else
     # keep the discarded change, so it can be reviewed or re-run on fresh seeds
     patch_file=""

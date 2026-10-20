@@ -53,6 +53,10 @@ MONOTONE = {
     "licence_points": 1,
     "flood_zone": 1,
     "prior_claims_5y": 1,
+    # backlog 2.63 refinement: NCB earned on a brand-new policy is transferred from the
+    # prior insurer and unverified, unlike renewal NCB; split it onto its own monotone
+    # column instead of leaving the discount shared with renewals via one `ncb_years` curve.
+    "ncb_years_new": -1,
 }
 # The harness re-runs a candidate keep with IAA_SEED_OFFSET set, to confirm the gain on
 # fresh seeds. Every random choice in this file must derive from SEED_OFFSET or SEEDS.
@@ -162,7 +166,11 @@ PRUNED = {
         "marital_status",
         "marketing_consent",
         "marketing_segment",
-        "new_business",
+        # backlog 2.63: diagnostics.md flags new_business=True as a PERSISTENT miss
+        # (9.0% of motor exposure, A/E 1.107 fold A / 1.136 fold B, both under-predicted)
+        # that survived pruning for near-zero whole-model D2 on its own; restoring it
+        # together with the ncb_years_new split below (see MONOTONE) targets that miss
+        # directly instead of relying on the pruned-out raw flag alone.
         "occupation",
         "previous_insurer",
         "property_age",
@@ -307,7 +315,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
 # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
 # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
 # same change.
-FROZEN_LINES: tuple[str, ...] = ("motor",)
+FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
 
 
 def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
@@ -338,6 +346,16 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         if frozen is not None and line in FROZEN_LINES:
             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
             continue
+        if line == "motor":
+            # backlog 2.63 refinement: NCB transferred onto a brand-new policy is
+            # unverified (quoted by the customer, not earned on this book), unlike
+            # renewal NCB, so give it its own monotone column instead of sharing one
+            # `-1` curve across both; renewals and zero-NCB new business both get NaN
+            # here, which LightGBM/EBM split on cleanly as a separate missing bin.
+            is_new = tr["new_business"].astype(str) == "True"
+            tr = tr.assign(ncb_years_new=tr["ncb_years"].where(is_new))
+            is_new_va = va["new_business"].astype(str) == "True"
+            va = va.assign(ncb_years_new=va["ncb_years"].where(is_new_va))
         cols = _feature_cols(tr)
         mono = [MONOTONE.get(c, 0) for c in cols]
         tr_x, va_x = _credibility_encode(tr, va, cols, tr["y"] / tr["exposure"])
