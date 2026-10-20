@@ -1,0 +1,21 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..3c0477d 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -150,7 +150,6 @@ PRUNED = {
+         "days_quote_to_inception",
+         "discount_applied",
+         "document_preference",
+-        "driver_assist",
+         "elevation_m",
+         "energy_rating",
+         "flood_zone",
+@@ -307,7 +306,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
