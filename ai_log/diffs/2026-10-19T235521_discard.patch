@@ -1,0 +1,49 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 1e88eef..e03f1e4 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -307,7 +307,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ()
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -373,6 +373,20 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
+             return model.predict(cb_va_x)
+ 
++        # retry of the 19 Oct CatBoost-as-third-member run on motor's "other" perils
++        # (results.tsv d7aebfc), which missed the keep bar by 0.0001 -- comparable to
++        # single-seed CatBoost noise. Seed-bagging it over SEEDS (motor's "other" fit is
++        # small, so three fits stay cheap) is the material change for this retry.
++        def cb_rate_bagged(target: pd.Series, weight: pd.Series) -> np.ndarray:
++            cat_cols = [c for c in tr_x.columns if isinstance(tr_x[c].dtype, pd.CategoricalDtype)]
++            cb_tr_x, cb_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
++            out = np.zeros(len(va))
++            for seed in SEEDS:
++                model = CatBoostRegressor(**CATBOOST_PARAMS, random_seed=seed)
++                model.fit(cb_tr_x, target, sample_weight=weight, cat_features=cat_cols)
++                out += model.predict(cb_va_x) / len(SEEDS)
++            return out
++
+         if line == "motor":
+             # backlog 1.1: one 11.9m bodily-injury claim sits in every split of a cost
+             # Tweedie on the combined target. BI claim frequency is far more
+@@ -388,9 +402,11 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+ 
+             other = tr["ult_other"] * tr["trend_factor"]
+             other_target = other / tr["exposure"]
+-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
+-                other_target, tr["exposure"], mono
+-            )
++            other_rate = (
++                bag(other_target, tr["exposure"])
++                + ebm_rate(other_target, tr["exposure"], mono)
++                + cb_rate_bagged(other_target, tr["exposure"])
++            ) / 3
+             other_lc = other.sum() / tr["exposure"].sum()
+             other_rate = _anchor(other_rate, other_lc, va)
+ 
