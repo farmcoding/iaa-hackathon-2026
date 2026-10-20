@@ -1,0 +1,93 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 3eb202c..a7d874b 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -18,7 +18,6 @@ import numpy as np
+ import pandas as pd
+ from catboost import CatBoostRegressor
+ from interpret.glassbox import ExplainableBoostingRegressor
+-from sklearn.preprocessing import TargetEncoder
+ 
+ NON_FEATURES = {
+     "row_id",
+@@ -253,6 +252,54 @@ def _feature_cols(df: pd.DataFrame) -> list[str]:
+     return [c for c in cols if df[c].notna().any()]
+ 
+ 
++def _bs_level_means(levels: np.ndarray, y: np.ndarray, weight: np.ndarray) -> tuple[dict, float]:
++    """Buhlmann-Straub credibility mean rate per level: Z * level_mean + (1 - Z) *
++    overall_mean, Z = E / (E + sigma2 / tau2), sigma2 the exposure-weighted within-level
++    variance and tau2 the (bias-corrected) between-level variance of the level means."""
++    overall_mean = y.sum() / weight.sum()
++    level = pd.Series(levels)
++    rate = y / weight
++    e = pd.Series(weight).groupby(level).sum()
++    mean_j = pd.Series(y).groupby(level).sum() / e
++    n, j = len(level), len(e)
++    level_mean = level.map(mean_j).to_numpy()
++    sigma2 = float((weight * (rate - level_mean) ** 2).sum() / max(n - j, 1))
++    sum_e = e.sum()
++    c = sum_e - (e**2).sum() / sum_e
++    tau2 = (
++        max(((e * (mean_j - overall_mean) ** 2).sum() - (j - 1) * sigma2) / c, 0.0)
++        if c > 0
++        else 0.0
++    )
++    k = sigma2 / tau2 if tau2 > 0 else np.inf
++    z = e / (e + k)
++    cred = z * mean_j + (1 - z) * overall_mean
++    return cred.to_dict(), overall_mean
++
++
++def _bs_encode(
++    tr_col: pd.Series, va_col: pd.Series, y: np.ndarray, weight: np.ndarray
++) -> tuple[np.ndarray, np.ndarray]:
++    """Out-of-fold Buhlmann-Straub credibility encoding of one high-cardinality column
++    (backlog 2.20): exposure-weighted level means with credibility Z = E / (E + k),
++    k = within-level variance / between-level variance. The sklearn TargetEncoder this
++    replaces averages y/exposure unweighted, so short-period rows (1.6% of motor
++    exposure but 63% of the squared rate mass) set the level means and the smoothing
++    as much as a full-year row does."""
++    levels = tr_col.astype(object).fillna("__missing__").to_numpy()
++    va_levels = va_col.astype(object).fillna("__missing__").to_numpy()
++    n = len(levels)
++    fold = np.random.RandomState(SEED_OFFSET).randint(0, 5, size=n)
++    oof = np.empty(n, dtype=float)
++    for f in range(5):
++        train = fold != f
++        mapping, overall = _bs_level_means(levels[train], y[train], weight[train])
++        oof[~train] = pd.Series(levels[~train]).map(mapping).fillna(overall).to_numpy()
++    full_mapping, full_overall = _bs_level_means(levels, y, weight)
++    va_enc = pd.Series(va_levels).map(full_mapping).fillna(full_overall).to_numpy()
++    return oof, va_enc
++
++
+ def _credibility_encode(
+     tr: pd.DataFrame, va: pd.DataFrame, cols: list[str], target: pd.Series
+ ) -> tuple[pd.DataFrame, pd.DataFrame]:
+@@ -264,12 +311,10 @@ def _credibility_encode(
+     tr_x, va_x = tr[cols].copy(), va[cols].copy()
+     if not high_card:
+         return tr_x, va_x
+-    # fit_transform cross-fits internally so a row's own target doesn't leak into its
+-    # own encoding; transform() on valid reuses the mapping fit on all of tr. Seeded so
+-    # runs reproduce (unseeded folds moved the primary score by up to 0.0007).
+-    enc = TargetEncoder(target_type="continuous", smooth="auto", random_state=SEED_OFFSET)
+-    tr_x[high_card] = enc.fit_transform(tr[high_card], target)
+-    va_x[high_card] = enc.transform(va[high_card])
++    y = (target * tr["exposure"]).to_numpy()
++    weight = tr["exposure"].to_numpy()
++    for c in high_card:
++        tr_x[c], va_x[c] = _bs_encode(tr[c], va[c], y, weight)
+     return tr_x, va_x
+ 
+ 
+@@ -307,7 +352,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("motor",)
++FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
