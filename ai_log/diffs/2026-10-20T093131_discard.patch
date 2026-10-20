@@ -1,0 +1,27 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..33ae8da 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -461,7 +461,21 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             # keep the original Tweedie-on-cost treatment.
+             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+-            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
++            # backlog 2.25: recent periods are less mature (fewer BI claims reported yet),
++            # so weighting the frequency fit by plain exposure credits their lower observed
++            # rate to the period's feature mix rather than reporting lag. m(year, quarter)
++            # is each cell's reported BI frequency relative to the oldest training year's
++            # (itself the most mature, and trained on, never leaked into valid), estimated
++            # from training rows only; weighting by exposure x m down-weights immature cells
++            # instead of adding year/quarter as a feature.
++            quarter = tr["period_start"].dt.quarter
++            cell_n = tr.groupby([tr["year"], quarter])["n_bodily_injury"].transform("sum")
++            cell_exp = tr.groupby([tr["year"], quarter])["exposure"].transform("sum")
++            cell_rate = cell_n / cell_exp.clip(lower=1e-9)
++            base = tr["year"] == tr["year"].min()
++            base_rate = tr.loc[base, "n_bodily_injury"].sum() / tr.loc[base, "exposure"].sum()
++            maturity = cell_rate / max(base_rate, 1e-9)
++            freq = bag(tr["n_bodily_injury"], tr["exposure"] * maturity, bi_params)
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
