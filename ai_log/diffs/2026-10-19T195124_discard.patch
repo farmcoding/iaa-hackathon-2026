@@ -1,0 +1,12 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index aabc8cd..33caac1 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -209,7 +209,6 @@ PRUNED = {
+         "hist_cost_customer",
+         "hist_cost_policy",
+         "hist_n_customer",
+-        "hist_n_policy",
+         "household_size",
+         "listed_building",
+         "marital_status",
