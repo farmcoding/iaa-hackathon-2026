@@ -1,0 +1,49 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 9827ab4..a3ea651 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -107,6 +107,19 @@ CATBOOST_PARAMS = {
+     "allow_writing_files": False,
+     "verbose": False,
+ }
++# backlog 2.83: motor BI frequency has a single learner (LightGBM Poisson); native
++# categorical handling (ordered target statistics) avoids routing make_model,
++# occupation, previous_insurer etc. through the cost-trained TargetEncoder used for
++# LightGBM/EBM, so this member fits on the raw (non-encoded) predictors instead of tr_x.
++BI_CATBOOST_PARAMS = {
++    "loss_function": "Poisson",
++    "iterations": 600,
++    "depth": 4,
++    "learning_rate": 0.03,
++    "l2_leaf_reg": 20,
++    "allow_writing_files": False,
++    "verbose": False,
++}
+ 
+ 
+ def _ebm_safe(x: pd.DataFrame) -> pd.DataFrame:
+@@ -425,6 +438,24 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
+             bi_params["objective"] = "poisson"
+             freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
++
++            # backlog 2.83: 25% blend with CatBoost Poisson on raw, natively-categorical
++            # predictors (not tr_x, which is already TargetEncoder-transformed for
++            # LightGBM/EBM).
++            bi_cat_cols = [c for c in cols if isinstance(tr[c].dtype, pd.CategoricalDtype)]
++            bi_tr_raw, bi_va_raw = _ebm_safe(tr[cols]), _ebm_safe(va[cols])
++            bi_cat_freq = np.zeros(len(va))
++            for seed in SEEDS:
++                cb_bi = CatBoostRegressor(**BI_CATBOOST_PARAMS, random_seed=seed)
++                cb_bi.fit(
++                    bi_tr_raw,
++                    tr["n_bodily_injury"],
++                    sample_weight=tr["exposure"],
++                    cat_features=bi_cat_cols,
++                )
++                bi_cat_freq += cb_bi.predict(bi_va_raw) / len(SEEDS)
++            freq = 0.75 * freq + 0.25 * bi_cat_freq
++
+             bi_lc = _bi_level(tr)
+             bi_rate = _anchor(freq, bi_lc, va)
+ 
