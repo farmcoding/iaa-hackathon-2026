@@ -1,0 +1,58 @@
+diff --git a/src/iaa/experiment.py b/src/iaa/experiment.py
+index 405b384..98e7fe8 100644
+--- a/src/iaa/experiment.py
++++ b/src/iaa/experiment.py
+@@ -94,6 +94,15 @@ EBM_PARAMS = {
+     "interactions": 0,
+     "outer_bags": 2,
+ }
++# backlog 2.47, next untried family after excess_sum_insured_ratio (results.tsv `d1095f5`,
++# discarded) and flood_zone x rainfall_mm (ledger 2026-10-19T183031, discarded): soil_type
++# x dry_summer_index for subsidence risk (clay soils shrink in dry summers). Unlike those
++# two numeric pairs, soil_type is categorical, so a hand-rolled product feature would need
++# a hard-coded clay/non-clay mapping -- not portable to Part 2's market per program.md.
++# EBM's native `interactions` list handles a categorical x numeric pair with no such
++# mapping, so give buildings' EBM blend member this one pair (contents has pruned both
++# fields for near-zero standalone importance, so the pair isn't available there).
++BUILDINGS_EBM_PARAMS = {**EBM_PARAMS, "interactions": [("soil_type", "dry_summer_index")]}
+ # backlog 2.13 / Tier 0e.3: CatBoost's native Tweedie as a third equal-weight property
+ # blend member. Validated single-seed (results.tsv `b46f2be`, `89324f8`: +0.0014/+0.0018
+ # vs their day's champion, both folds up each time) and re-tested alone on the final
+@@ -352,7 +361,7 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
+ # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
+ # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
+ # same change.
+-FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
++FROZEN_LINES: tuple[str, ...] = ()
+ 
+ 
+ def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:
+@@ -436,11 +445,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             return out
+ 
+         def ebm_rate(
+-            target: pd.Series, weight: pd.Series, mono: list[int] | None = None
++            target: pd.Series,
++            weight: pd.Series,
++            mono: list[int] | None = None,
++            params: dict = EBM_PARAMS,
+         ) -> np.ndarray:
+             ebm_tr_x, ebm_va_x = _ebm_safe(tr_x), _ebm_safe(va_x)
+             model = ExplainableBoostingRegressor(
+-                **EBM_PARAMS, random_state=SEEDS[0], monotone_constraints=mono
++                **params, random_state=SEEDS[0], monotone_constraints=mono
+             )
+             model.fit(ebm_tr_x, target, sample_weight=weight)
+             return model.predict(ebm_va_x)
+@@ -476,9 +488,10 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             rate = bi_rate + other_rate
+         else:
+             rate_target = tr["y"] / tr["exposure"]
++            ebm_params = BUILDINGS_EBM_PARAMS if line == "buildings" else EBM_PARAMS
+             rate = (
+                 bag(rate_target, tr["exposure"])
+-                + ebm_rate(rate_target, tr["exposure"])
++                + ebm_rate(rate_target, tr["exposure"], params=ebm_params)
+                 + cb_rate(rate_target, tr["exposure"])
+             ) / 3
+             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
