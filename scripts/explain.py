@@ -32,13 +32,16 @@ import pandas as pd
 # Self-locating: if this file is dropped into <repo>/scripts/, REPO is the repo two
 # levels up; otherwise fall back to the owner's known checkout path.
 _CAND = Path(__file__).resolve().parents[1]
-REPO = _CAND if (_CAND / "src" / "iaa").exists() else Path.home() / "Projects" / "iaa-hackathon-2026"
+REPO = (
+    _CAND if (_CAND / "src" / "iaa").exists() else Path.home() / "Projects" / "iaa-hackathon-2026"
+)
 sys.path.insert(0, str(REPO / "src"))
 os.environ.setdefault("OMP_NUM_THREADS", "3")
 
 OUT_DIR = Path.home() / ".cache" / "iaa-owner" / "1019" / "explain"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 JSON_OUT = OUT_DIR / "explain.json"
+ORDINAL = {"credit_band"}  # banded fields whose labels sort in risk order
 
 import lightgbm as lgb  # noqa: E402
 from interpret.glassbox import ExplainableBoostingRegressor  # noqa: E402
@@ -201,9 +204,10 @@ def _per_seed_predict(models: list, X: pd.DataFrame) -> list[np.ndarray]:
 # ---------------------------------------------------------------------------
 def _grid_for(raw: pd.Series, enc: pd.Series, is_cat_native: bool) -> list[dict]:
     """Returns [{"label": str, "value": <value to assign into the encoded column>}]."""
+    ordinal = raw.name in ORDINAL  # keep band order (A..E) so wiggle checks read it in order
     if is_cat_native:
         counts = raw.value_counts()
-        cats = list(counts.index[:12])
+        cats = sorted(counts.index[:12], key=str) if ordinal else list(counts.index[:12])
         return [{"label": str(c), "value": c} for c in cats]
     if pd.api.types.is_numeric_dtype(enc) and not isinstance(raw.dtype, pd.CategoricalDtype):
         qs = np.linspace(0.05, 0.95, GRID_POINTS)
@@ -214,6 +218,8 @@ def _grid_for(raw: pd.Series, enc: pd.Series, is_cat_native: bool) -> list[dict]
     means = enc.groupby(raw).mean()
     counts = raw.value_counts()
     top = [c for c in counts.index[:12] if c in means.index]
+    if ordinal:
+        top = sorted(top, key=str)
     return [{"label": str(c), "value": float(means[c])} for c in top]
 
 
@@ -268,7 +274,10 @@ def _pd_ale_ice(
             bin_means[i] = (hi_pred - lo_pred).mean()
         uncentered = np.concatenate([[0.0], np.cumsum(bin_means)])
         weights = np.array(
-            [max(((X[col] >= vals[i]) & (X[col] <= vals[i + 1])).sum(), 1) for i in range(len(vals) - 1)]
+            [
+                max(((X[col] >= vals[i]) & (X[col] <= vals[i + 1])).sum(), 1)
+                for i in range(len(vals) - 1)
+            ]
         )
         mid = 0.5 * (uncentered[:-1] + uncentered[1:])
         centered = uncentered - np.average(mid, weights=weights)
@@ -322,7 +331,9 @@ def _pd_ale_ice(
     }
 
 
-def _observed_oneway(tr: pd.DataFrame, col: str, grid: list[dict], is_cat_native: bool, numerator: np.ndarray) -> dict:
+def _observed_oneway(
+    tr: pd.DataFrame, col: str, grid: list[dict], is_cat_native: bool, numerator: np.ndarray
+) -> dict:
     """numerator/exposure, by band -- caller picks the numerator to match the
     sub-model (claim count for motor BI frequency, trended peril cost for motor
     other-perils, total developed cost for the property lines)."""
@@ -366,8 +377,11 @@ def fit_fold(df: pd.DataFrame, cfg: dict, fold_name: str) -> dict:
     """Fit the current experiment once on a fold, instrumented. Reused by run_fold,
     interaction_check and surrogate_glm so each fold is fit exactly once."""
     exp = importlib.reload(importlib.import_module("iaa.experiment"))
+    exp.FROZEN_LINES = ()  # refit every line: frozen lines reuse saved predictions and would not be captured
     exp.PARAMS["num_threads"] = 3
-    exp.EBM_PARAMS["n_jobs"] = 1  # avoid loky pool churn across thousands of .predict() calls in PD/ALE loops
+    exp.EBM_PARAMS["n_jobs"] = (
+        1  # avoid loky pool churn across thousands of .predict() calls in PD/ALE loops
+    )
     f = cfg["harness"]["folds"][fold_name]
     tr, va = harness.split(df, f["train"], f["valid"], cfg)
     rec = _Rec()
@@ -379,7 +393,13 @@ def fit_fold(df: pd.DataFrame, cfg: dict, fold_name: str) -> dict:
 
 
 def run_fold(fitted: dict, fold_name: str, light: bool, card: dict | None = None) -> dict:
-    exp, tr, va, pred, segs = fitted["exp"], fitted["tr"], fitted["va"], fitted["pred"], fitted["segs"]
+    exp, tr, va, pred, segs = (
+        fitted["exp"],
+        fitted["tr"],
+        fitted["va"],
+        fitted["pred"],
+        fitted["segs"],
+    )
 
     out: dict = {"lines": {}}
     for line, seg in segs.items():
@@ -394,7 +414,9 @@ def run_fold(fitted: dict, fold_name: str, light: bool, card: dict | None = None
             X_full = models_X[0][1]
             n = len(X_full)
             pd_idx = RNG.choice(n, size=min(PD_SAMPLE, n), replace=False)
-            ice_idx_local = RNG.choice(len(pd_idx), size=min(ICE_SAMPLE, len(pd_idx)), replace=False)
+            ice_idx_local = RNG.choice(
+                len(pd_idx), size=min(ICE_SAMPLE, len(pd_idx)), replace=False
+            )
             X = X_full.iloc[pd_idx].reset_index(drop=True)
             raw_df = va_line.iloc[pd_idx].reset_index(drop=True)
             cols = list(X.columns)
@@ -420,18 +442,30 @@ def run_fold(fitted: dict, fold_name: str, light: bool, card: dict | None = None
             elif sub_name == "other_perils":
                 numerator = (tr_line["ult_other"] * tr_line["trend_factor"]).to_numpy(dtype=float)
             else:
-                numerator = np.minimum(tr_line["y"].to_numpy(dtype=float), bi_cap) if bi_cap else tr_line["y"].to_numpy(dtype=float)
+                numerator = (
+                    np.minimum(tr_line["y"].to_numpy(dtype=float), bi_cap)
+                    if bi_cap
+                    else tr_line["y"].to_numpy(dtype=float)
+                )
             for col in use_cols:
-                is_cat_native = isinstance(raw_df[col].dtype, pd.CategoricalDtype) and not pd.api.types.is_numeric_dtype(X[col])
-                grid = _grid_for(raw_df[col], X[col], is_cat_native)
+                # derived columns (ncb_years_new) exist only in the model frame X
+                derived = col not in raw_df.columns
+                raw_col = X[col] if derived else raw_df[col]
+                is_cat_native = isinstance(
+                    raw_col.dtype, pd.CategoricalDtype
+                ) and not pd.api.types.is_numeric_dtype(X[col])
+                grid = _grid_for(raw_col, X[col], is_cat_native)
                 if len(grid) < 2:
                     continue
                 prior_dir, prior_note = prior_for(col)
-                res = _pd_ale_ice(predict_fns, X, raw_df[col], col, grid, ice_idx_local, prior_dir)
+                res = _pd_ale_ice(predict_fns, X, raw_col, col, grid, ice_idx_local, prior_dir)
                 res["prior"] = {"direction": prior_dir, "note": prior_note}
-                res["monotone_constrained"] = col in exp.MONOTONE and sub_name != "ebm"
+                # motor credit_band is constrained inline in experiment._fit_predict_core, not via MONOTONE
+                res["monotone_constrained"] = (
+                    col in exp.MONOTONE or (line == "motor" and col == "credit_band")
+                ) and sub_name != "ebm"
                 observed = None
-                if not light:
+                if not light and not derived:
                     observed = _observed_oneway(tr_line, col, grid, is_cat_native, numerator)
                     res["observed_oneway_B" if fold_name == "B" else "observed_oneway_A"] = observed
                 flags = []
@@ -440,21 +474,36 @@ def run_fold(fitted: dict, fold_name: str, light: bool, card: dict | None = None
                     flags.append("model direction opposes the 'up' prior")
                 if prior_dir == "down" and rho is not None and rho > 0.2:
                     flags.append("model direction opposes the 'down' prior")
-                if observed is not None and observed.get("spearman_vs_level") is not None and rho is not None:
+                if (
+                    observed is not None
+                    and observed.get("spearman_vs_level") is not None
+                    and rho is not None
+                ):
                     rho_obs = observed["spearman_vs_level"]
                     if rho * rho_obs < 0 and abs(rho) > 0.2 and abs(rho_obs) > 0.2:
-                        flags.append("model direction contradicts the observed one-way relativity on 2021-23")
+                        flags.append(
+                            "model direction contradicts the observed one-way relativity on 2021-23"
+                        )
                 series = np.array(res["pd_relativity"])
                 if len(series) > 3:
                     diffs = np.diff(series)
                     sign_changes = np.sum(np.diff(np.sign(diffs)) != 0)
                     if sign_changes >= 2 and not res["monotone_constrained"]:
-                        flags.append(f"non-monotone wiggle ({sign_changes} sign changes) a regulator would query")
-                if res.get("ice_violation_share_vs_model") and res["ice_violation_share_vs_model"] > 0.3:
+                        flags.append(
+                            f"non-monotone wiggle ({sign_changes} sign changes) a regulator would query"
+                        )
+                if (
+                    res.get("ice_violation_share_vs_model")
+                    and res["ice_violation_share_vs_model"] > 0.3
+                ):
                     flags.append(
                         f"{res['ice_violation_share_vs_model']:.0%} of sampled ICE curves disagree with the model's own average direction"
                     )
-                if res.get("ice_violation_share_vs_prior") and res["ice_violation_share_vs_prior"] > 0.3 and not res["monotone_constrained"]:
+                if (
+                    res.get("ice_violation_share_vs_prior")
+                    and res["ice_violation_share_vs_prior"] > 0.3
+                    and not res["monotone_constrained"]
+                ):
                     flags.append(
                         f"{res['ice_violation_share_vs_prior']:.0%} of sampled ICE curves disagree with the actuarial prior direction"
                     )
@@ -474,7 +523,11 @@ def direction_stability(fold_b: dict, fold_a: dict) -> None:
             for col, rb in sb["predictors"].items():
                 ra = sa.get("predictors", {}).get(col)
                 rb["spearman_fold_A"] = ra["spearman_vs_level"] if ra else None
-                if ra and rb["spearman_vs_level"] is not None and ra["spearman_vs_level"] is not None:
+                if (
+                    ra
+                    and rb["spearman_vs_level"] is not None
+                    and ra["spearman_vs_level"] is not None
+                ):
                     if rb["spearman_vs_level"] * ra["spearman_vs_level"] < -0.05:
                         rb["flags"].append("direction flips between fold A and fold B (unstable)")
 
@@ -578,7 +631,12 @@ def surrogate_glm(fitted: dict, card: dict) -> dict:
                 cat = X[c].astype(str).where(X[c].isin(top), other="_other_")
                 dummies = pd.get_dummies(cat, prefix=c, drop_first=True)
                 design = pd.concat([design, dummies], axis=1)
-                bands[c] = {"type": "categorical", "reference": str(X[c].value_counts().index[0]) if X[c].value_counts().index[0] in top else "_other_"}
+                bands[c] = {
+                    "type": "categorical",
+                    "reference": str(X[c].value_counts().index[0])
+                    if X[c].value_counts().index[0] in top
+                    else "_other_",
+                }
             else:
                 q = X[c].quantile([0, 0.2, 0.4, 0.6, 0.8, 1.0]).to_numpy()
                 q = np.unique(q)
@@ -612,9 +670,7 @@ def main() -> None:
 
     global JSON_OUT
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument(
-        "--out", default=str(JSON_OUT), help="output JSON path (default: %(default)s)"
-    )
+    ap.add_argument("--out", default=str(JSON_OUT), help="output JSON path (default: %(default)s)")
     args = ap.parse_args()
     JSON_OUT = Path(args.out)
     JSON_OUT.parent.mkdir(parents=True, exist_ok=True)

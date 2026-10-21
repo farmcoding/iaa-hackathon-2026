@@ -8,751 +8,729 @@
  "valid": 2024,
  "lines": {
   "motor": {
-   "d2": 0.08555918580820832,
-   "gini": 0.32218093562120387,
-   "n_features": 35,
+   "d2": 0.08541374066040042,
+   "gini": 0.32114995087184106,
+   "n_features": 34,
    "features": [
     {
      "feature": "ncb_years",
-     "d2_drop": 0.01774342463910017,
-     "gini_drop": 0.0625507661220891,
+     "d2_drop": 0.01804341311436153,
+     "gini_drop": 0.06372175848541473,
      "encoded": false,
-     "d2_drop_bi": 0.004135684383285376,
-     "d2_drop_other": 0.005595128854807174
+     "d2_drop_bi": 0.004260242347531307,
+     "d2_drop_other": 0.00560753984632012
     },
     {
      "feature": "driver_age",
-     "d2_drop": 0.008983480364715635,
-     "gini_drop": 0.0205002151352095,
+     "d2_drop": 0.009295945340650369,
+     "gini_drop": 0.02084609992802766,
      "encoded": false,
-     "d2_drop_bi": 0.001979700792567818,
-     "d2_drop_other": 0.0028805348034962597
+     "d2_drop_bi": 0.002024646722051715,
+     "d2_drop_other": 0.002914247978152762
     },
     {
      "feature": "annual_mileage",
-     "d2_drop": 0.007912703888975692,
-     "gini_drop": 0.02003814308045404,
+     "d2_drop": 0.0078053873833455745,
+     "gini_drop": 0.019777477592567316,
      "encoded": false,
-     "d2_drop_bi": 0.001729098490567571,
-     "d2_drop_other": 0.0025500564544364
+     "d2_drop_bi": 0.001645616927409943,
+     "d2_drop_other": 0.0025467891371900864
     },
     {
      "feature": "years_licensed",
-     "d2_drop": 0.005815019746126526,
-     "gini_drop": 0.014950819536228344,
+     "d2_drop": 0.005636463494916977,
+     "gini_drop": 0.014580294379977765,
      "encoded": false,
-     "d2_drop_bi": 0.0013851414321434108,
-     "d2_drop_other": 0.0027621173239883445
+     "d2_drop_bi": 0.0015044789175198137,
+     "d2_drop_other": 0.002521004969821883
     },
     {
      "feature": "cover_type",
-     "d2_drop": 0.004553902352089301,
-     "gini_drop": 0.015984577749646678,
+     "d2_drop": 0.004518335372614368,
+     "gini_drop": 0.015547304941773032,
      "encoded": false,
-     "d2_drop_bi": 0.00013056517165654924,
-     "d2_drop_other": 0.00506670341392268
-    },
-    {
-     "feature": "vehicle_age",
-     "d2_drop": 0.002857128234275419,
-     "gini_drop": 0.011633637029990873,
-     "encoded": false,
-     "d2_drop_bi": -1.1593448745239598e-05,
-     "d2_drop_other": 0.002516966137897314
+     "d2_drop_bi": 0.0001412219961614003,
+     "d2_drop_other": 0.005094961994755454
     },
     {
      "feature": "region",
-     "d2_drop": 0.0028296191452585884,
-     "gini_drop": 0.0033457807631159797,
+     "d2_drop": 0.002830763869490771,
+     "gini_drop": 0.0035538906284069416,
      "encoded": false,
-     "d2_drop_bi": 0.00043506477850319136,
-     "d2_drop_other": 0.000988440697145876
+     "d2_drop_bi": 0.0005938218357783853,
+     "d2_drop_other": 0.0008439463957533588
+    },
+    {
+     "feature": "vehicle_age",
+     "d2_drop": 0.0026884381317516803,
+     "gini_drop": 0.011004865573417066,
+     "encoded": false,
+     "d2_drop_bi": -0.00012357323578726653,
+     "d2_drop_other": 0.002476830301701871
     },
     {
      "feature": "prior_claims_5y",
-     "d2_drop": 0.0025160670172856836,
-     "gini_drop": 0.012426350233605943,
+     "d2_drop": 0.0024971748291808815,
+     "gini_drop": 0.012229221931690959,
      "encoded": false,
-     "d2_drop_bi": 0.0005745490072061044,
-     "d2_drop_other": 0.00031979786026758994
+     "d2_drop_bi": 0.00043132182311111933,
+     "d2_drop_other": 0.0003713660936192076
     },
     {
      "feature": "telematics_score",
-     "d2_drop": 0.0021717003598076268,
-     "gini_drop": 0.007715384616152288,
+     "d2_drop": 0.002284560008999903,
+     "gini_drop": 0.00804354838995014,
      "encoded": false,
-     "d2_drop_bi": 0.0005125736866129493,
-     "d2_drop_other": 0.0006835920292963538
+     "d2_drop_bi": 0.000589399197550744,
+     "d2_drop_other": 0.0007072150925864218
     },
     {
      "feature": "urban_density",
-     "d2_drop": 0.0020830522560435494,
-     "gini_drop": 0.006427865526021481,
+     "d2_drop": 0.0019033734535341962,
+     "gini_drop": 0.005840087430741492,
      "encoded": false,
-     "d2_drop_bi": 0.0005040791293070557,
-     "d2_drop_other": 0.0010270451675160608
-    },
-    {
-     "feature": "start_month",
-     "d2_drop": 0.0017559657364777381,
-     "gini_drop": 0.005453838549183021,
-     "encoded": false,
-     "d2_drop_bi": 0.0018268758952634245,
-     "d2_drop_other": 7.166688678050814e-05
-    },
-    {
-     "feature": "licence_points",
-     "d2_drop": 0.00138550014049732,
-     "gini_drop": 0.0024519579011234027,
-     "encoded": false,
-     "d2_drop_bi": 0.000539654625033692,
-     "d2_drop_other": 0.0006296354358729106
+     "d2_drop_bi": 0.0003770041531743207,
+     "d2_drop_other": 0.0009781170066437417
     },
     {
      "feature": "credit_band",
-     "d2_drop": 0.0013704807572512134,
-     "gini_drop": 0.0035633353419607383,
-     "encoded": false,
-     "d2_drop_bi": 0.00030897834041376804,
-     "d2_drop_other": 0.0007482433678073219
-    },
-    {
-     "feature": "missed_payments_12m",
-     "d2_drop": 0.001298026728494217,
-     "gini_drop": 0.004278419944172662,
-     "encoded": false,
-     "d2_drop_bi": 0.00031303950230354705,
-     "d2_drop_other": 0.0007445539140005231
-    },
-    {
-     "feature": "voluntary_excess",
-     "d2_drop": 0.001285811761790101,
-     "gini_drop": 0.0049199519797883395,
-     "encoded": false,
-     "d2_drop_bi": -8.032156702963977e-05,
-     "d2_drop_other": 0.0007351306114812273
-    },
-    {
-     "feature": "new_business",
-     "d2_drop": 0.0011724969031737809,
-     "gini_drop": 0.003043513395632469,
-     "encoded": false,
-     "d2_drop_bi": 3.3416367212213416e-06,
-     "d2_drop_other": 0.0011715308510062972
-    },
-    {
-     "feature": "vehicle_value_group",
-     "d2_drop": 0.0011171799982021557,
-     "gini_drop": 0.003384512087547309,
-     "encoded": false,
-     "d2_drop_bi": -0.0001123410258181412,
-     "d2_drop_other": 0.0010310984671549894
-    },
-    {
-     "feature": "vehicle_colour",
-     "d2_drop": 0.0010500570649407681,
-     "gini_drop": 0.001250737493075027,
-     "encoded": false,
-     "d2_drop_bi": 0.0011451936288402464,
-     "d2_drop_other": -0.00011835259221137928
-    },
-    {
-     "feature": "hist_cost_policy",
-     "d2_drop": 0.0009056244801677327,
-     "gini_drop": 0.0024048111823080642,
-     "encoded": false,
-     "d2_drop_bi": 0.000507332060794452,
-     "d2_drop_other": 0.00012856694696272708
+     "d2_drop": 0.0015358304333943362,
+     "gini_drop": 0.0036799275203208692,
+     "encoded": true,
+     "d2_drop_bi": 0.0005298767609803745,
+     "d2_drop_other": 0.0005683255925064135
     },
     {
      "feature": "hist_n_policy",
-     "d2_drop": 0.0008971065167506787,
-     "gini_drop": 0.0023891440872382264,
+     "d2_drop": 0.0013281361912356182,
+     "gini_drop": 0.003053062705399623,
      "encoded": false,
-     "d2_drop_bi": 0.00021590117532099828,
-     "d2_drop_other": 0.0004195488312451756
+     "d2_drop_bi": 0.0003889526705973534,
+     "d2_drop_other": 0.0006226223562366684
+    },
+    {
+     "feature": "missed_payments_12m",
+     "d2_drop": 0.001291962406409164,
+     "gini_drop": 0.004258811420087882,
+     "encoded": false,
+     "d2_drop_bi": 0.0002949676226834397,
+     "d2_drop_other": 0.0007646817124262739
+    },
+    {
+     "feature": "voluntary_excess",
+     "d2_drop": 0.0012710758692968671,
+     "gini_drop": 0.005051145202782492,
+     "encoded": false,
+     "d2_drop_bi": -8.697761952924932e-05,
+     "d2_drop_other": 0.0007094654937483957
+    },
+    {
+     "feature": "new_business",
+     "d2_drop": 0.0012390254059369,
+     "gini_drop": 0.0032156857970079278,
+     "encoded": false,
+     "d2_drop_bi": 1.0263781079600243e-05,
+     "d2_drop_other": 0.0012249676918359986
+    },
+    {
+     "feature": "licence_points",
+     "d2_drop": 0.0011710405297700177,
+     "gini_drop": 0.0018820241813943817,
+     "encoded": false,
+     "d2_drop_bi": 0.00042835844021005265,
+     "d2_drop_other": 0.0005343055166233679
+    },
+    {
+     "feature": "vehicle_value_group",
+     "d2_drop": 0.0009712964489551057,
+     "gini_drop": 0.0029365342297774655,
+     "encoded": false,
+     "d2_drop_bi": -0.00021273961257350926,
+     "d2_drop_other": 0.0009730439923337775
+    },
+    {
+     "feature": "vehicle_colour",
+     "d2_drop": 0.000890451509696355,
+     "gini_drop": 0.0005626316751071725,
+     "encoded": false,
+     "d2_drop_bi": 0.0008848677598247701,
+     "d2_drop_other": -2.6210434203033373e-05
+    },
+    {
+     "feature": "start_month",
+     "d2_drop": 0.0007309799886788815,
+     "gini_drop": 0.0019720859355563114,
+     "encoded": false,
+     "d2_drop_bi": 0.0007733372859234366,
+     "d2_drop_other": 8.692397809262342e-05
+    },
+    {
+     "feature": "hist_cost_policy",
+     "d2_drop": 0.0006795417951056537,
+     "gini_drop": 0.0024327607909268023,
+     "encoded": false,
+     "d2_drop_bi": 0.00034811620857910786,
+     "d2_drop_other": 9.341797166750876e-05
     },
     {
      "feature": "dry_summer_index",
-     "d2_drop": 0.0008144280939980098,
-     "gini_drop": 0.0027745412791716495,
+     "d2_drop": 0.0005498251566581347,
+     "gini_drop": 0.0023670462951227433,
      "encoded": false,
-     "d2_drop_bi": 0.0008550700778966469,
-     "d2_drop_other": -9.739544732090266e-05
-    },
-    {
-     "feature": "mean_temperature_c",
-     "d2_drop": 0.0006838624898696244,
-     "gini_drop": 0.001748685917567161,
-     "encoded": false,
-     "d2_drop_bi": 0.000479973328896266,
-     "d2_drop_other": 0.00019857483526597441
-    },
-    {
-     "feature": "body_type",
-     "d2_drop": 0.00039077706762036257,
-     "gini_drop": 0.00025232911369710287,
-     "encoded": false,
-     "d2_drop_bi": 0.00024164615741750772,
-     "d2_drop_other": 0.00015228994873117685
-    },
-    {
-     "feature": "overnight_parking",
-     "d2_drop": 0.00037613849201345584,
-     "gini_drop": 0.000986178462532794,
-     "encoded": false,
-     "d2_drop_bi": 6.366949244518416e-05,
-     "d2_drop_other": 0.0003812710121861018
-    },
-    {
-     "feature": "make_model",
-     "d2_drop": 0.0002962680070307533,
-     "gini_drop": 7.272353594334202e-05,
-     "encoded": true,
-     "d2_drop_bi": 0.00031509478447355743,
-     "d2_drop_other": -3.349057398049915e-05
-    },
-    {
-     "feature": "payment_method",
-     "d2_drop": 0.00017843243033432987,
-     "gini_drop": 0.0013104863112741727,
-     "encoded": false,
-     "d2_drop_bi": -4.909176571421536e-05,
-     "d2_drop_other": -0.00010681919655186611
-    },
-    {
-     "feature": "distance_to_river_km",
-     "d2_drop": 0.00016670492151260596,
-     "gini_drop": 0.0003325538363397884,
-     "encoded": false,
-     "d2_drop_bi": 7.146652070455506e-05,
-     "d2_drop_other": 0.00010351114370699133
+     "d2_drop_bi": 0.0006038685838942737,
+     "d2_drop_other": -8.651108997514978e-05
     },
     {
      "feature": "wildfire_index",
-     "d2_drop": 0.00016470351199393551,
-     "gini_drop": 7.852405598518519e-05,
+     "d2_drop": 0.0004096962110070601,
+     "gini_drop": 0.0003182026618570033,
      "encoded": false,
-     "d2_drop_bi": -0.00014762605080009816,
-     "d2_drop_other": 0.00033602184473757735
+     "d2_drop_bi": 0.00040186056618507493,
+     "d2_drop_other": 1.8943575443852723e-05
     },
     {
-     "feature": "engine_size_cc",
-     "d2_drop": 9.403014692577205e-05,
-     "gini_drop": 0.00040180892292573933,
+     "feature": "overnight_parking",
+     "d2_drop": 0.00038658404373004274,
+     "gini_drop": 0.0011190141239347806,
      "encoded": false,
-     "d2_drop_bi": 0.00020524069863658845,
-     "d2_drop_other": -3.916519889757275e-05
+     "d2_drop_bi": 4.352813058416949e-05,
+     "d2_drop_other": 0.0004104418295983736
     },
     {
-     "feature": "seats",
-     "d2_drop": 5.472778749071594e-05,
-     "gini_drop": 0.00029639698185823793,
-     "encoded": false,
-     "d2_drop_bi": -3.6338081916054144e-05,
-     "d2_drop_other": 0.00010010731293674802
+     "feature": "make_model",
+     "d2_drop": 0.0003345263044339797,
+     "gini_drop": -2.7455410576138206e-06,
+     "encoded": true,
+     "d2_drop_bi": 0.0002212803292678256,
+     "d2_drop_other": 9.403459763090982e-05
     },
     {
-     "feature": "ncb_years_new",
-     "d2_drop": -2.7681993639672164e-05,
-     "gini_drop": -0.00029490530608311527,
+     "feature": "payment_method",
+     "d2_drop": 0.0002070659805488706,
+     "gini_drop": 0.001663844365153433,
      "encoded": false,
-     "d2_drop_bi": 3.9391074631578427e-05,
-     "d2_drop_other": -7.976057976644135e-05
-    },
-    {
-     "feature": "fuel_type",
-     "d2_drop": -3.114406709647799e-05,
-     "gini_drop": 0.00031320465660533703,
-     "encoded": false,
-     "d2_drop_bi": 3.0204857028870435e-05,
-     "d2_drop_other": -1.2923766545491766e-05
-    },
-    {
-     "feature": "named_young_driver",
-     "d2_drop": -6.42058066708806e-05,
-     "gini_drop": 0.00010110225522452776,
-     "encoded": false,
-     "d2_drop_bi": -8.033130247875331e-05,
-     "d2_drop_other": -9.142564704112122e-05
+     "d2_drop_bi": -6.423903319185964e-05,
+     "d2_drop_other": -7.441043245404177e-05
     },
     {
      "feature": "freezing_days",
-     "d2_drop": -0.000304482541610529,
-     "gini_drop": 0.0005008185076188498,
+     "d2_drop": 0.00018858301296009738,
+     "gini_drop": 0.000521278006352599,
      "encoded": false,
-     "d2_drop_bi": 9.869553193253555e-05,
-     "d2_drop_other": -0.0004820741108213511
+     "d2_drop_bi": 0.00014295418723930808,
+     "d2_drop_other": -2.3352916733831997e-05
+    },
+    {
+     "feature": "engine_size_cc",
+     "d2_drop": 0.00015486536544906393,
+     "gini_drop": 0.0008782976581421797,
+     "encoded": false,
+     "d2_drop_bi": 0.00010799471637279456,
+     "d2_drop_other": 9.894936724352821e-05
+    },
+    {
+     "feature": "body_type",
+     "d2_drop": 0.00014719135104912517,
+     "gini_drop": 3.9098363053824414e-06,
+     "encoded": false,
+     "d2_drop_bi": 6.23247859148357e-05,
+     "d2_drop_other": 9.235089190651191e-05
+    },
+    {
+     "feature": "seats",
+     "d2_drop": 0.00011123130083168231,
+     "gini_drop": 0.0004242816451498488,
+     "encoded": false,
+     "d2_drop_bi": 1.2909153979889787e-05,
+     "d2_drop_other": 0.00010691033763166047
+    },
+    {
+     "feature": "fuel_type",
+     "d2_drop": -5.91035059106515e-05,
+     "gini_drop": 0.000298875079599803,
+     "encoded": false,
+     "d2_drop_bi": 1.107012281309494e-05,
+     "d2_drop_other": -1.8003895703833095e-05
+    },
+    {
+     "feature": "named_young_driver",
+     "d2_drop": -9.831184791442293e-05,
+     "gini_drop": 1.4070683297395803e-05,
+     "encoded": false,
+     "d2_drop_bi": -0.00010486719614943851,
+     "d2_drop_other": -0.00011189843927916776
+    },
+    {
+     "feature": "mean_temperature_c",
+     "d2_drop": -0.00029407451146623576,
+     "gini_drop": -2.9356467210917003e-05,
+     "encoded": false,
+     "d2_drop_bi": 9.198588948633457e-05,
+     "d2_drop_other": -0.00039083413503837594
     },
     {
      "feature": "channel",
-     "d2_drop": -0.00047032404845959164,
-     "gini_drop": 0.0013690916734367953,
+     "d2_drop": -0.0004316265328836444,
+     "gini_drop": 0.001108662677240635,
      "encoded": false,
-     "d2_drop_bi": -0.0006795413317259857,
-     "d2_drop_other": -0.0005239732102341188
+     "d2_drop_bi": -0.0006765256049010571,
+     "d2_drop_other": -0.0004938326076969757
+    },
+    {
+     "feature": "ncb_years_new",
+     "d2_drop": -0.0005475381545616553,
+     "gini_drop": 0.0002793574793474862,
+     "encoded": false,
+     "d2_drop_bi": 1.9704634145245592e-05,
+     "d2_drop_other": -0.0005923005238956947
     }
    ],
    "ebm_terms": [
     {
      "term": "ncb_years",
-     "importance": 0.21154068859724454
+     "importance": 0.20428149476001964
     },
     {
      "term": "cover_type",
-     "importance": 0.18529490354244893
+     "importance": 0.1856434586945081
     },
     {
      "term": "voluntary_excess",
-     "importance": 0.11497402535140565
-    },
-    {
-     "term": "annual_mileage",
-     "importance": 0.10659201670679365
+     "importance": 0.11397155827171414
     },
     {
      "term": "driver_age",
-     "importance": 0.10464434912256414
+     "importance": 0.11201846458516372
+    },
+    {
+     "term": "annual_mileage",
+     "importance": 0.10664154169365307
     },
     {
      "term": "years_licensed",
-     "importance": 0.09838943668673579
+     "importance": 0.09408517852645139
     },
     {
      "term": "vehicle_age",
-     "importance": 0.08652372268475311
+     "importance": 0.08569682336252965
     },
     {
      "term": "prior_claims_5y",
-     "importance": 0.08060064064219415
-    },
-    {
-     "term": "vehicle_value_group",
-     "importance": 0.07369915173520086
+     "importance": 0.07757976988406139
     },
     {
      "term": "channel",
-     "importance": 0.07159901432482806
+     "importance": 0.07163045761997602
+    },
+    {
+     "term": "vehicle_value_group",
+     "importance": 0.07138220928294277
     },
     {
      "term": "region",
-     "importance": 0.07089986117194944
+     "importance": 0.07042181083792899
     },
     {
      "term": "payment_method",
-     "importance": 0.04965155056041639
-    },
-    {
-     "term": "credit_band",
-     "importance": 0.048446884713335414
+     "importance": 0.05083763206286216
     },
     {
      "term": "new_business",
-     "importance": 0.04392842724839939
+     "importance": 0.04450734337028298
     },
     {
      "term": "telematics_score",
-     "importance": 0.04132800846497363
+     "importance": 0.041278763507823356
     },
     {
      "term": "urban_density",
-     "importance": 0.03661250573803268
+     "importance": 0.036591127886472966
     },
     {
-     "term": "overnight_parking",
-     "importance": 0.0294763052842735
-    },
-    {
-     "term": "missed_payments_12m",
-     "importance": 0.027584051421034844
+     "term": "credit_band",
+     "importance": 0.030744466234122938
     },
     {
      "term": "engine_size_cc",
-     "importance": 0.026879553406069148
+     "importance": 0.029734513464888448
     },
     {
-     "term": "licence_points",
-     "importance": 0.02518270986018185
+     "term": "overnight_parking",
+     "importance": 0.029313083466982266
+    },
+    {
+     "term": "missed_payments_12m",
+     "importance": 0.027410071596996537
     },
     {
      "term": "hist_n_policy",
-     "importance": 0.023579550443179664
+     "importance": 0.024872696104828226
+    },
+    {
+     "term": "licence_points",
+     "importance": 0.022561934716903535
     },
     {
      "term": "seats",
-     "importance": 0.017868304612488034
-    },
-    {
-     "term": "mean_temperature_c",
-     "importance": 0.01578569833622352
+     "importance": 0.01781000086229558
     },
     {
      "term": "named_young_driver",
-     "importance": 0.015160852082977542
-    },
-    {
-     "term": "hist_cost_policy",
-     "importance": 0.014570264439720648
+     "importance": 0.015296205022619129
     },
     {
      "term": "fuel_type",
-     "importance": 0.013769991853653771
+     "importance": 0.013720153096985512
     },
     {
-     "term": "wildfire_index",
-     "importance": 0.01345733581924388
-    },
-    {
-     "term": "make_model",
-     "importance": 0.012310976813283142
+     "term": "mean_temperature_c",
+     "importance": 0.013556759159834935
     },
     {
      "term": "ncb_years_new",
-     "importance": 0.012237843160386395
+     "importance": 0.012447945789741493
+    },
+    {
+     "term": "wildfire_index",
+     "importance": 0.012313970472756092
+    },
+    {
+     "term": "make_model",
+     "importance": 0.011048791110151559
     },
     {
      "term": "body_type",
-     "importance": 0.011998974424690476
+     "importance": 0.010891504004797683
+    },
+    {
+     "term": "hist_cost_policy",
+     "importance": 0.010851643620859969
     },
     {
      "term": "dry_summer_index",
-     "importance": 0.008653953277617364
-    },
-    {
-     "term": "distance_to_river_km",
-     "importance": 0.0085170204499673
-    },
-    {
-     "term": "vehicle_colour",
-     "importance": 0.007417512752065397
+     "importance": 0.007817190632202438
     },
     {
      "term": "freezing_days",
-     "importance": 0.007238894371104377
+     "importance": 0.007509451399215088
+    },
+    {
+     "term": "vehicle_colour",
+     "importance": 0.007284710455572374
     },
     {
      "term": "start_month",
-     "importance": 0.004267428164606831
+     "importance": 0.0038920695033148795
     }
    ],
    "components": "BI claim frequency: LightGBM Poisson (3 seeds); other perils: LightGBM Tweedie (3 seeds) averaged 50/50 with an EBM"
   },
   "buildings": {
-   "d2": 0.11607531307365448,
-   "gini": 0.38847546469573513,
-   "n_features": 31,
+   "d2": 0.11626086151915305,
+   "gini": 0.3886281618626317,
+   "n_features": 30,
    "features": [
     {
      "feature": "flood_zone",
-     "d2_drop": 0.02502523935513823,
-     "gini_drop": 0.05780163968636731,
-     "encoded": false
-    },
-    {
-     "feature": "sum_insured",
-     "d2_drop": 0.015800096376558215,
-     "gini_drop": 0.044009578001166005,
+     "d2_drop": 0.028992648770736262,
+     "gini_drop": 0.07072039024836196,
      "encoded": false
     },
     {
      "feature": "elevation_m",
-     "d2_drop": 0.013607391668822744,
-     "gini_drop": 0.024707542879524258,
+     "d2_drop": 0.015599100516690556,
+     "gini_drop": 0.03480862415014474,
+     "encoded": false
+    },
+    {
+     "feature": "sum_insured",
+     "d2_drop": 0.015097508712523577,
+     "gini_drop": 0.038173856782791615,
      "encoded": false
     },
     {
      "feature": "distance_to_river_km",
-     "d2_drop": 0.0035990550350043504,
-     "gini_drop": 0.004918869800147996,
+     "d2_drop": 0.003953089673434884,
+     "gini_drop": 0.002938960175833949,
      "encoded": false
     },
     {
      "feature": "prior_claims_5y",
-     "d2_drop": 0.0032018394082130586,
-     "gini_drop": 0.009365896959794728,
-     "encoded": false
-    },
-    {
-     "feature": "soil_type",
-     "d2_drop": 0.0026446946233767976,
-     "gini_drop": 0.009422102758900208,
-     "encoded": false
-    },
-    {
-     "feature": "energy_rating",
-     "d2_drop": 0.002448439845361583,
-     "gini_drop": 0.008087876276515193,
-     "encoded": false
-    },
-    {
-     "feature": "construction_type",
-     "d2_drop": 0.0019046685684032116,
-     "gini_drop": 0.0053555767603939985,
-     "encoded": false
-    },
-    {
-     "feature": "missed_payments_12m",
-     "d2_drop": 0.0017066414259081508,
-     "gini_drop": 0.006121687021184874,
+     "d2_drop": 0.0034698230292076193,
+     "gini_drop": 0.007676648360444793,
      "encoded": false
     },
     {
      "feature": "year_built",
-     "d2_drop": 0.0016638318482362635,
-     "gini_drop": 0.006136602030879956,
-     "encoded": false
-    },
-    {
-     "feature": "hist_n_policy",
-     "d2_drop": 0.0013249955523796375,
-     "gini_drop": 0.005076080171537822,
-     "encoded": false
-    },
-    {
-     "feature": "mean_temperature_c",
-     "d2_drop": 0.0012140919150634977,
-     "gini_drop": 0.0050392318215423115,
-     "encoded": false
-    },
-    {
-     "feature": "rainfall_mm",
-     "d2_drop": 0.0009210712999156989,
-     "gini_drop": 0.0027068395470262185,
-     "encoded": false
-    },
-    {
-     "feature": "dry_summer_index",
-     "d2_drop": 0.000895332014433925,
-     "gini_drop": 0.002464374843783812,
+     "d2_drop": 0.0022073848136615615,
+     "gini_drop": 0.008866100416959677,
      "encoded": false
     },
     {
      "feature": "property_age",
-     "d2_drop": 0.0008156812476084463,
-     "gini_drop": 0.0029255374949419544,
+     "d2_drop": 0.002177208355051863,
+     "gini_drop": 0.0062352558635278,
      "encoded": false
     },
     {
-     "feature": "payment_method",
-     "d2_drop": 0.0007454148657559667,
-     "gini_drop": 0.003043564009443056,
+     "feature": "soil_type",
+     "d2_drop": 0.0021632689956385676,
+     "gini_drop": 0.007977303792999768,
+     "encoded": false
+    },
+    {
+     "feature": "energy_rating",
+     "d2_drop": 0.0021461616757317836,
+     "gini_drop": 0.00697648754676039,
      "encoded": false
     },
     {
      "feature": "occupancy",
-     "d2_drop": 0.0006582163052899492,
-     "gini_drop": 0.0015333880694136104,
+     "d2_drop": 0.0017857749702059333,
+     "gini_drop": 0.004552165289591015,
      "encoded": false
     },
     {
-     "feature": "channel",
-     "d2_drop": 0.0006515740128508751,
-     "gini_drop": 0.0037472056268543774,
+     "feature": "missed_payments_12m",
+     "d2_drop": 0.001696748658094216,
+     "gini_drop": 0.005875117045169964,
      "encoded": false
     },
     {
-     "feature": "wind_exposure_index",
-     "d2_drop": 0.0004892972136097962,
-     "gini_drop": 0.0018894096153282414,
+     "feature": "dry_summer_index",
+     "d2_drop": 0.0016368666469008808,
+     "gini_drop": 0.0042737844256155455,
      "encoded": false
     },
     {
-     "feature": "listed_building",
-     "d2_drop": 0.00048533753898627463,
-     "gini_drop": 0.001569583837674804,
-     "encoded": false
-    },
-    {
-     "feature": "credit_band",
-     "d2_drop": 0.00042503550444839,
-     "gini_drop": 0.002285745796948513,
-     "encoded": false
-    },
-    {
-     "feature": "voluntary_excess",
-     "d2_drop": 0.00041960011890129767,
-     "gini_drop": 0.0012867230950254216,
-     "encoded": false
-    },
-    {
-     "feature": "years_at_address",
-     "d2_drop": 0.00035853785033657104,
-     "gini_drop": 0.0009196782695044536,
-     "encoded": false
-    },
-    {
-     "feature": "wildfire_index",
-     "d2_drop": 0.00035582370622755377,
-     "gini_drop": 0.0020239518932028133,
-     "encoded": false
-    },
-    {
-     "feature": "occupation",
-     "d2_drop": 0.0003311013590825418,
-     "gini_drop": 0.0010017413504609385,
-     "encoded": true
-    },
-    {
-     "feature": "accidental_damage_cover",
-     "d2_drop": 0.00017794320170827493,
-     "gini_drop": 0.0011995610632282716,
-     "encoded": false
-    },
-    {
-     "feature": "bedrooms",
-     "d2_drop": 0.0001246571309321265,
-     "gini_drop": -0.003228978091592949,
+     "feature": "construction_type",
+     "d2_drop": 0.0010329129153314742,
+     "gini_drop": 0.0037698993687000915,
      "encoded": false
     },
     {
      "feature": "renewal_count",
-     "d2_drop": 0.00010019598244281891,
-     "gini_drop": 0.0010406286350371774,
+     "d2_drop": 0.0009864065151125034,
+     "gini_drop": 0.0034344611137429037,
      "encoded": false
     },
     {
-     "feature": "hist_n_customer",
-     "d2_drop": 5.99301465808999e-05,
-     "gini_drop": 2.0020564845513178e-05,
+     "feature": "channel",
+     "d2_drop": 0.0009739335577693131,
+     "gini_drop": 0.003088343258668913,
      "encoded": false
     },
     {
-     "feature": "start_month",
-     "d2_drop": -1.1487726229608697e-05,
-     "gini_drop": -0.0007301417082179462,
+     "feature": "rainfall_mm",
+     "d2_drop": 0.0009543249959890199,
+     "gini_drop": 0.0028724772477979332,
+     "encoded": false
+    },
+    {
+     "feature": "payment_method",
+     "d2_drop": 0.0008283009095607641,
+     "gini_drop": 0.0024714708659243634,
+     "encoded": false
+    },
+    {
+     "feature": "hist_n_policy",
+     "d2_drop": 0.0006414979481370597,
+     "gini_drop": 0.002958367949520868,
+     "encoded": false
+    },
+    {
+     "feature": "wind_exposure_index",
+     "d2_drop": 0.0006331161636063953,
+     "gini_drop": 0.002366155773573131,
+     "encoded": false
+    },
+    {
+     "feature": "voluntary_excess",
+     "d2_drop": 0.0005769394921200099,
+     "gini_drop": 0.0020917504249416963,
      "encoded": false
     },
     {
      "feature": "basement",
-     "d2_drop": -0.00030977369622953166,
-     "gini_drop": -0.0013868255677342844,
+     "d2_drop": 0.0005614037140087014,
+     "gini_drop": 0.0003174777025185538,
+     "encoded": false
+    },
+    {
+     "feature": "wildfire_index",
+     "d2_drop": 0.00056009407464086,
+     "gini_drop": 0.002140798815583822,
+     "encoded": false
+    },
+    {
+     "feature": "mean_temperature_c",
+     "d2_drop": 0.0004831833533387453,
+     "gini_drop": 0.0007971735702576588,
+     "encoded": false
+    },
+    {
+     "feature": "listed_building",
+     "d2_drop": 0.000404103993283611,
+     "gini_drop": 0.0013233074592651217,
+     "encoded": false
+    },
+    {
+     "feature": "years_at_address",
+     "d2_drop": 0.000277790299201941,
+     "gini_drop": 0.0004923908254934606,
+     "encoded": false
+    },
+    {
+     "feature": "accidental_damage_cover",
+     "d2_drop": 0.00023118538803157396,
+     "gini_drop": 0.00237711334965629,
+     "encoded": false
+    },
+    {
+     "feature": "occupation",
+     "d2_drop": 0.00022596858262213804,
+     "gini_drop": 0.0006914348744579968,
+     "encoded": true
+    },
+    {
+     "feature": "start_month",
+     "d2_drop": -3.527889014165453e-05,
+     "gini_drop": -0.0004224943930278835,
+     "encoded": false
+    },
+    {
+     "feature": "credit_band",
+     "d2_drop": -0.00010554111294214241,
+     "gini_drop": 0.0003963494715046867,
+     "encoded": false
+    },
+    {
+     "feature": "bedrooms",
+     "d2_drop": -0.0002754124443995476,
+     "gini_drop": -0.007668854425810445,
      "encoded": false
     }
    ],
    "ebm_terms": [
     {
      "term": "sum_insured",
-     "importance": 0.1948604202115648
+     "importance": 0.18964249453068133
     },
     {
      "term": "flood_zone",
-     "importance": 0.16362994434780628
-    },
-    {
-     "term": "elevation_m",
-     "importance": 0.0970576955976842
+     "importance": 0.1747708905169555
     },
     {
      "term": "prior_claims_5y",
-     "importance": 0.09252213547922142
+     "importance": 0.0930062089033801
+    },
+    {
+     "term": "elevation_m",
+     "importance": 0.09228562624486437
     },
     {
      "term": "bedrooms",
-     "importance": 0.08207944805109386
+     "importance": 0.0874098859502065
     },
     {
      "term": "energy_rating",
-     "importance": 0.07433135488478525
+     "importance": 0.07254993356226114
     },
     {
      "term": "soil_type",
-     "importance": 0.06594141510571587
-    },
-    {
-     "term": "construction_type",
-     "importance": 0.06552425555244612
+     "importance": 0.06555762994206346
     },
     {
      "term": "channel",
-     "importance": 0.06236308223727822
+     "importance": 0.06293512038870991
     },
     {
      "term": "year_built",
-     "importance": 0.05643739049101644
+     "importance": 0.055713989542315566
     },
     {
      "term": "occupancy",
-     "importance": 0.05440056231930323
+     "importance": 0.054690937049829365
     },
     {
      "term": "distance_to_river_km",
-     "importance": 0.0541528226910681
+     "importance": 0.05429129528640516
     },
     {
      "term": "payment_method",
-     "importance": 0.05090056164203251
+     "importance": 0.05080326070010062
     },
     {
      "term": "property_age",
-     "importance": 0.05083495612063479
+     "importance": 0.05031473887704058
     },
     {
-     "term": "dry_summer_index",
-     "importance": 0.048685249699609856
+     "term": "construction_type",
+     "importance": 0.04904281001426642
     },
     {
      "term": "accidental_damage_cover",
-     "importance": 0.04717096743699561
+     "importance": 0.04712685865270845
     },
     {
      "term": "wildfire_index",
-     "importance": 0.042448296609650216
+     "importance": 0.04156557288580593
     },
     {
      "term": "basement",
-     "importance": 0.03839438144713091
-    },
-    {
-     "term": "rainfall_mm",
-     "importance": 0.03733373349771262
-    },
-    {
-     "term": "credit_band",
-     "importance": 0.03664294970828052
-    },
-    {
-     "term": "voluntary_excess",
-     "importance": 0.0361003343670516
-    },
-    {
-     "term": "missed_payments_12m",
-     "importance": 0.0359758771526766
-    },
-    {
-     "term": "mean_temperature_c",
-     "importance": 0.03531184479125371
+     "importance": 0.03883008786398952
     },
     {
      "term": "wind_exposure_index",
-     "importance": 0.034058650259145964
+     "importance": 0.03797208735251228
+    },
+    {
+     "term": "credit_band",
+     "importance": 0.037324984129375904
+    },
+    {
+     "term": "missed_payments_12m",
+     "importance": 0.036929182523608925
+    },
+    {
+     "term": "voluntary_excess",
+     "importance": 0.036642593923917055
+    },
+    {
+     "term": "dry_summer_index",
+     "importance": 0.036511722250947495
+    },
+    {
+     "term": "rainfall_mm",
+     "importance": 0.03541950252331643
     },
     {
      "term": "renewal_count",
-     "importance": 0.03348506387499777
-    },
-    {
-     "term": "occupation",
-     "importance": 0.026086494794540456
-    },
-    {
-     "term": "years_at_address",
-     "importance": 0.024654540787042434
+     "importance": 0.03505819474757142
     },
     {
      "term": "hist_n_policy",
-     "importance": 0.021165651340200535
+     "importance": 0.028000993931874812
+    },
+    {
+     "term": "mean_temperature_c",
+     "importance": 0.02573361220251938
+    },
+    {
+     "term": "occupation",
+     "importance": 0.02485633824604727
+    },
+    {
+     "term": "years_at_address",
+     "importance": 0.02188459581851038
     },
     {
      "term": "listed_building",
-     "importance": 0.013276765710783343
-    },
-    {
-     "term": "hist_n_customer",
-     "importance": 0.013230596987111933
+     "importance": 0.013269603486289297
     },
     {
      "term": "start_month",
-     "importance": 0.006001380658187758
+     "importance": 0.006608093772724964
     }
    ],
    "components": "LightGBM Tweedie (3 seeds, rounds by early stopping), an EBM and CatBoost Tweedie, equal weights"
@@ -764,182 +742,182 @@
    "features": [
     {
      "feature": "sum_insured",
-     "d2_drop": 0.03288570409135971,
-     "gini_drop": 0.1121322858783218,
+     "d2_drop": 0.0355417288547063,
+     "gini_drop": 0.11800996816857356,
      "encoded": false
     },
     {
      "feature": "flood_zone",
-     "d2_drop": 0.02122923324145587,
-     "gini_drop": 0.05856273329515349,
+     "d2_drop": 0.024302125613060888,
+     "gini_drop": 0.06718880703655006,
      "encoded": false
     },
     {
      "feature": "elevation_m",
-     "d2_drop": 0.009163244479865829,
-     "gini_drop": 0.021849883503875622,
-     "encoded": false
-    },
-    {
-     "feature": "voluntary_excess",
-     "d2_drop": 0.004960896325552411,
-     "gini_drop": 0.016543344132385673,
-     "encoded": false
-    },
-    {
-     "feature": "region",
-     "d2_drop": 0.0032691490967685644,
-     "gini_drop": 0.009754210902910065,
+     "d2_drop": 0.009204316328552675,
+     "gini_drop": 0.022665686830286247,
      "encoded": false
     },
     {
      "feature": "prior_claims_5y",
-     "d2_drop": 0.003061851931617232,
-     "gini_drop": 0.010513232405535256,
+     "d2_drop": 0.004771786230180375,
+     "gini_drop": 0.013820883031015141,
+     "encoded": false
+    },
+    {
+     "feature": "voluntary_excess",
+     "d2_drop": 0.003624695980549153,
+     "gini_drop": 0.013887261986034849,
      "encoded": false
     },
     {
      "feature": "urban_density",
-     "d2_drop": 0.0025727797307802946,
-     "gini_drop": 0.007937161528438708,
-     "encoded": false
-    },
-    {
-     "feature": "freezing_days",
-     "d2_drop": 0.0022709564607031885,
-     "gini_drop": 0.006411308315144915,
-     "encoded": false
-    },
-    {
-     "feature": "customer_age",
-     "d2_drop": 0.001928923698990781,
-     "gini_drop": 0.006651773671106032,
-     "encoded": false
-    },
-    {
-     "feature": "accidental_damage_cover",
-     "d2_drop": 0.0018067472248587402,
-     "gini_drop": 0.0058647172355862365,
-     "encoded": false
-    },
-    {
-     "feature": "missed_payments_12m",
-     "d2_drop": 0.0016213940960689843,
-     "gini_drop": 0.004157679454255936,
-     "encoded": false
-    },
-    {
-     "feature": "property_type",
-     "d2_drop": 0.001445669373831282,
-     "gini_drop": 0.0035070402005570323,
-     "encoded": false
-    },
-    {
-     "feature": "policyholder_age",
-     "d2_drop": 0.0013605430998880896,
-     "gini_drop": 0.005041124985007639,
-     "encoded": false
-    },
-    {
-     "feature": "payment_method",
-     "d2_drop": 0.0010878406442943467,
-     "gini_drop": 0.002538855483102509,
+     "d2_drop": 0.003089466300644661,
+     "gini_drop": 0.012188198021202634,
      "encoded": false
     },
     {
      "feature": "high_value_items",
-     "d2_drop": 0.0010114573000047367,
-     "gini_drop": 0.004742055652870891,
+     "d2_drop": 0.0027393193553091333,
+     "gini_drop": 0.009606100702683085,
      "encoded": false
     },
     {
-     "feature": "wildfire_index",
-     "d2_drop": 0.000834709415299062,
-     "gini_drop": 0.0027906932897501235,
+     "feature": "region",
+     "d2_drop": 0.002550604198173434,
+     "gini_drop": 0.005788125721292059,
      "encoded": false
     },
     {
-     "feature": "credit_band",
-     "d2_drop": 0.0006298723734845524,
-     "gini_drop": 0.0014860004023100615,
+     "feature": "accidental_damage_cover",
+     "d2_drop": 0.0025209453925677527,
+     "gini_drop": 0.006558232766820993,
+     "encoded": false
+    },
+    {
+     "feature": "customer_age",
+     "d2_drop": 0.0016903712858673536,
+     "gini_drop": 0.005658979440304912,
+     "encoded": false
+    },
+    {
+     "feature": "policyholder_age",
+     "d2_drop": 0.0015533546806552057,
+     "gini_drop": 0.005206173297345962,
+     "encoded": false
+    },
+    {
+     "feature": "freezing_days",
+     "d2_drop": 0.0013682942160657685,
+     "gini_drop": 0.0033102349916772633,
+     "encoded": false
+    },
+    {
+     "feature": "payment_method",
+     "d2_drop": 0.0011341251444518807,
+     "gini_drop": 0.0017584779373787107,
+     "encoded": false
+    },
+    {
+     "feature": "missed_payments_12m",
+     "d2_drop": 0.001119914892133811,
+     "gini_drop": 0.004019498814458178,
      "encoded": false
     },
     {
      "feature": "rainfall_mm",
-     "d2_drop": 0.0005737811497202872,
-     "gini_drop": 0.0022050601984018314,
+     "d2_drop": 0.000873865690708131,
+     "gini_drop": 0.002582607818494731,
      "encoded": false
     },
     {
-     "feature": "security_level",
-     "d2_drop": 0.0005514266373732868,
-     "gini_drop": 0.0018600025610616688,
+     "feature": "credit_band",
+     "d2_drop": 0.000872299789225317,
+     "gini_drop": 0.002613888542380538,
      "encoded": false
     },
     {
-     "feature": "discount_applied",
-     "d2_drop": 0.0004853551734835815,
-     "gini_drop": 0.000878590705942317,
+     "feature": "property_type",
+     "d2_drop": 0.0006141436313411575,
+     "gini_drop": 0.0026713265164826083,
      "encoded": false
     },
     {
-     "feature": "bedrooms",
-     "d2_drop": 0.0002628309066863288,
-     "gini_drop": 0.00028659791380825084,
-     "encoded": false
-    },
-    {
-     "feature": "works_from_home",
-     "d2_drop": 0.00013109647808251523,
-     "gini_drop": 0.00011137447030917791,
-     "encoded": false
-    },
-    {
-     "feature": "lodgers",
-     "d2_drop": 0.0001265986824490195,
-     "gini_drop": 0.0004682671425707552,
-     "encoded": false
-    },
-    {
-     "feature": "solar_panels",
-     "d2_drop": 0.0001056218819788235,
-     "gini_drop": -2.7591677829175154e-06,
-     "encoded": false
-    },
-    {
-     "feature": "tenure",
-     "d2_drop": 9.667372937038898e-05,
-     "gini_drop": 0.00034926731335105377,
-     "encoded": false
-    },
-    {
-     "feature": "bicycle_cover",
-     "d2_drop": 4.565413844770383e-05,
-     "gini_drop": 0.00014191284917319802,
-     "encoded": false
-    },
-    {
-     "feature": "energy_rating",
-     "d2_drop": 4.148443802010071e-05,
-     "gini_drop": -4.742187609607651e-05,
-     "encoded": false
-    },
-    {
-     "feature": "trees_within_5m",
-     "d2_drop": 1.4537710180562158e-05,
-     "gini_drop": -4.020110340297034e-05,
+     "feature": "wildfire_index",
+     "d2_drop": 0.00042559873655889646,
+     "gini_drop": 0.0012668990759077126,
      "encoded": false
     },
     {
      "feature": "channel",
-     "d2_drop": -2.0148027658928314e-05,
-     "gini_drop": -0.0016869330812315786,
+     "d2_drop": 0.0004216774720191552,
+     "gini_drop": -0.0011021960161096134,
+     "encoded": false
+    },
+    {
+     "feature": "security_level",
+     "d2_drop": 0.000368402371859311,
+     "gini_drop": 0.0007013655241246974,
+     "encoded": false
+    },
+    {
+     "feature": "discount_applied",
+     "d2_drop": 0.000314610798227255,
+     "gini_drop": 0.0009647174427755978,
+     "encoded": false
+    },
+    {
+     "feature": "works_from_home",
+     "d2_drop": 0.00015432805227355573,
+     "gini_drop": 0.00021397770542808114,
+     "encoded": false
+    },
+    {
+     "feature": "energy_rating",
+     "d2_drop": 0.00015270776931175511,
+     "gini_drop": 0.00013000032938315087,
+     "encoded": false
+    },
+    {
+     "feature": "solar_panels",
+     "d2_drop": 9.1503416560057e-05,
+     "gini_drop": 0.00015690829514225513,
+     "encoded": false
+    },
+    {
+     "feature": "bedrooms",
+     "d2_drop": 8.11858358168438e-05,
+     "gini_drop": 5.406375994998491e-05,
+     "encoded": false
+    },
+    {
+     "feature": "lodgers",
+     "d2_drop": 7.641456690477e-05,
+     "gini_drop": 0.00017601961410074196,
+     "encoded": false
+    },
+    {
+     "feature": "trees_within_5m",
+     "d2_drop": 6.008735109719332e-05,
+     "gini_drop": -4.9319911992529164e-05,
+     "encoded": false
+    },
+    {
+     "feature": "tenure",
+     "d2_drop": 5.741134733616704e-05,
+     "gini_drop": 0.00030756750419003165,
+     "encoded": false
+    },
+    {
+     "feature": "bicycle_cover",
+     "d2_drop": -1.7818762920840392e-05,
+     "gini_drop": 9.874186989611289e-06,
      "encoded": false
     },
     {
      "feature": "year_built",
-     "d2_drop": -0.0004935891261342862,
-     "gini_drop": -0.001716852112655487,
+     "d2_drop": -0.0004664621872378927,
+     "gini_drop": -0.0017315618586372095,
      "encoded": false
     }
    ],
@@ -1068,7 +1046,7 @@
    "components": "LightGBM Tweedie (3 seeds, rounds by early stopping), an EBM and CatBoost Tweedie, equal weights"
   }
  },
- "pooled_d2": 0.1426181123317527,
+ "pooled_d2": 0.1426134639057799,
  "unused": [
   {
    "column": "row_id",
@@ -1387,6 +1365,7 @@
   {
    "column": "distance_to_river_km",
    "lines": [
+    "motor",
     "contents"
    ],
    "reason": "Pruned 19 Oct (owner-approved): no measurable contribution on that line, or a sales/admin field"
@@ -1572,6 +1551,7 @@
    "column": "hist_n_customer",
    "lines": [
     "motor",
+    "buildings",
     "contents"
    ],
    "reason": "Pruned 19 Oct (owner-approved): no measurable contribution on that line, or a sales/admin field"
@@ -1976,6 +1956,6 @@
    "reason": "Personal identifier; never used"
   }
  ],
- "seconds": 1625,
+ "seconds": 1480,
  "dataset": "902ed0cd8066"
 }

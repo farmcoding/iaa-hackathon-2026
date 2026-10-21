@@ -183,6 +183,7 @@ def main() -> None:
     f = cfg["harness"]["folds"]["B"]
     tr, va = harness.split(df, f["train"], f["valid"], cfg)
     exp = importlib.import_module(a.module)
+    exp.FROZEN_LINES = ()  # refit every line: frozen lines reuse saved predictions and would not be captured
     rec = _Rec()
     _instrument(exp, rec)
     pred = exp.fit_predict(tr, harness.hide_target(va))
