@@ -1,0 +1,85 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index dca84d1..ff2f8b7 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,10 +106,26 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
+-# L1 (backlog tier L, agent, 25 Oct): motor gender on top of P0. The developed base has no
+-# gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+-# per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+-MOTOR_GENDER_ALPHA = 0.01
++# L3 (backlog tier L, agent, 25 Oct): motor joint GLM over the backlog's 8-candidate list,
++# each column gated independently against p0 (n_tests=8) before entering one ridge GLM;
++# supersedes L1's single-factor gender correction (kept at alpha=0.01) and L2's gender x
++# driver_age_band interaction (discarded at both pre-registered alphas, 0.01 and 0.1).
++# Setting 1 of 3 (alpha 0.001/0.01/0.1), scored for the first time: the two prior attempts
++# at this setting crashed before producing a score (`new_business` is constant -- all new
++# business -- on the fold that trains on 2023 alone, this market's first year, so gating it
++# singly built a zero-column design; `lr_gate` now returns a trivial fail in that case
++# instead of crashing the GLM fit).
++MOTOR_JOINT_CANDIDATES = [
++    "gender",
++    "driver_age_band",
++    "new_business",
++    "region",
++    "cover_type",
++    "occupation",
++    "vehicle_value_group",
++    "ncb_years",
++]
++MOTOR_JOINT_ALPHA = 0.01
+ 
+ 
+ def credibility_factors(
+@@ -214,8 +230,15 @@ def _design(tr: pd.DataFrame, va: pd.DataFrame, cols: list[str], interactions=()
+             lv = tr[c].astype("string").fillna("NA")
+             levels = sorted(lv.unique())[1:]  # first level is the reference
+             vv = va[c].astype("string").fillna("NA")
+-            parts_tr.append(pd.DataFrame({f"{c}={x}": (lv == x).astype(float) for x in levels}))
+-            parts_va.append(pd.DataFrame({f"{c}={x}": (vv == x).astype(float) for x in levels}))
++            # a dict with no levels (column constant in this fold's training rows) makes
++            # pd.DataFrame({}) collapse to shape (0, 0) instead of (n_rows, 0); pin the index
++            # so a degenerate candidate drops out of the design instead of zeroing every row.
++            parts_tr.append(
++                pd.DataFrame({f"{c}={x}": (lv == x).astype(float) for x in levels}, index=lv.index)
++            )
++            parts_va.append(
++                pd.DataFrame({f"{c}={x}": (vv == x).astype(float) for x in levels}, index=vv.index)
++            )
+     xt = pd.concat([p.reset_index(drop=True) for p in parts_tr], axis=1)
+     xv = pd.concat([p.reset_index(drop=True) for p in parts_va], axis=1)
+     return xt.to_numpy(float), xv.to_numpy(float), list(xt.columns)
+@@ -264,6 +287,11 @@ def lr_gate(
+     xt, _, names = _design(
+         tr, tr.iloc[:1], [col] if isinstance(col, str) else list(col), interactions
+     )
++    if xt.shape[1] == 0:
++        # the candidate is constant on this fold's training rows (e.g. `new_business` in
++        # the 2023-only training fold, this market's first year, when the book was 100%
++        # new business) -- zero degrees of freedom, so it trivially cannot pass the gate.
++        return False, 1.0
+     if basis == "count":
+         y = tr["n_total"].to_numpy(float)
+         fit = PoissonRegressor(alpha=0.0, solver="newton-cholesky", max_iter=300)
+@@ -329,11 +357,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                 tr_line = train[train["line"] == line].assign(
+                     p0=peril_prediction(train[train["line"] == line], line, levels)
+                 )
+-                passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
+-                if passes:
+-                    mult = offset_glm(
+-                        tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+-                    )
++                n_tests = len(MOTOR_JOINT_CANDIDATES)
++                passing = [
++                    c
++                    for c in MOTOR_JOINT_CANDIDATES
++                    if lr_gate(tr_line, c, n_tests=n_tests, offset="p0")[0]
++                ]
++                if passing:
++                    mult = offset_glm(tr_line, va, passing, alpha=MOTOR_JOINT_ALPHA, offset="p0")
+                     p0 = p0 * mult
+             pred[mask] = p0
+             continue
