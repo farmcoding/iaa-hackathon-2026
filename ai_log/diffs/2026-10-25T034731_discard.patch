@@ -1,0 +1,42 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 60b78f8..1c098b4 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -139,6 +139,18 @@ USE_COVER_FACTOR = True
+ COVER_FACTOR_K = 200.0
+ USE_ELEVATION_FACTOR = True
+ ELEVATION_FACTOR_K = 200.0
++# v5 (agent, 2026-10-25, backlog E6): sum insured credibility factor on buildings and
++# contents, untried while every other Tier 0 field (region E1, age band E2 owner-tested,
++# GLM E3, weather E4, tenure E5) has been tried or ruled out. part2_drift.md shows a
++# property-size shift in both directions -- contents sum insured averages 113k emerging
++# vs 125k developed, buildings 731k emerging vs 680k developed -- so the base's banded
++# size relativity may not carry correctly. Buildings/contents currently carry no
++# correction beyond the all-line renewal factor, unlike motor's five stacked factors, so
++# this is orthogonal to the kept champion (new lines, new field). Quintile bins, cost
++# basis (severity-driven, same precedent as the motor cover/elevation factors), k=200
++# matching those factors' shrinkage.
++USE_SUMINSURED_FACTOR = True
++SUMINSURED_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -287,6 +299,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line.assign(elev_band=tr_band), "elev_band", k=ELEVATION_FACTOR_K
+                 )
+                 out = out * apply_factors(va.assign(elev_band=va_band), "elev_band", factors)
++            if USE_SUMINSURED_FACTOR and line in ("buildings", "contents"):
++                edges = pd.qcut(tr_line["sum_insured"], 5, duplicates="drop", retbins=True)[1]
++                edges = np.asarray(edges, dtype=float)
++                edges[0], edges[-1] = -np.inf, np.inf
++                tr_band = pd.cut(tr_line["sum_insured"], edges, include_lowest=True).astype(
++                    "string"
++                )
++                va_band = pd.cut(va["sum_insured"], edges, include_lowest=True).astype("string")
++                factors = credibility_factors(
++                    tr_line.assign(si_band=tr_band), "si_band", k=SUMINSURED_FACTOR_K
++                )
++                out = out * apply_factors(va.assign(si_band=va_band), "si_band", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
