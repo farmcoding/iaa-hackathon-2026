@@ -1,0 +1,2 @@
+timestamp	commit	verdict	primary	d2_A	d2_B	min_fold	d2_motor_B	d2_buildings_B	d2_contents_B	ae_motor_B	ae_buildings_B	ae_contents_B	gini_B	seconds	description	run_id	confirm_primary	confirm_min_fold	ae_flag
+2026-10-25T01:03:20	68e71bf+dirty	keep	0.11542		0.11542	0.11542	0.08298	0.01678	0.07893	1.04359	0.60310	0.93488	0.39056	27	part2 v0: Part 1 champion spec refit natively on emerging (no changes)	20261025T010226	0.11492	0.11492	1

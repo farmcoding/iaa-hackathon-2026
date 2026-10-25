@@ -1,0 +1,58 @@
+# Market assumptions for Part 2 (emerging market). Selected with IAA_MARKET=emerging.
+# Every value here is an actuarial assumption: changes need a human decision and a
+# note in reports/assumptions_log.md. First version 2026-10-25: Part 1 assumptions carried
+# over wherever two emerging years cannot support an estimate of their own; each carried
+# value is a Part 2 test item (reports/part2_drift.md).
+market: emerging
+valuation_date: "2024-12-31"
+history_years: [2023, 2024]
+predict_year: 2025
+
+development:
+  method: report_delay_cost_chain_ladder
+  max_delay_months: 48
+  # emerging claims cover two loss years (24 months of development at most), so the
+  # report-delay patterns come from the developed market's 2021-24 claims, by the same
+  # line x peril groups. Check: emerging and developed claims at the same maturity
+  # (reports/part2_drift.md, development section).
+  pattern_market: developed
+  peril_groups:
+    motor: {bodily_injury: [bodily_injury], other: [own_damage, third_party_prop, theft, glass_hail]}
+    buildings: {weather: [storm, flood, subsidence], water: [escape_of_water], fire: [fire], ad: [accidental_damage]}
+    contents: {all: [theft, escape_of_water, accidental_damage, flood]}
+  ibner_open_factor: 1.0
+  # Part 1 projects bodily injury as count x the 2021 severity. Emerging has no mature
+  # year (2023 is the oldest) and a different severity regime (mean 10.7k vs 21.6k, max 156k
+  # vs 11.9m), so v1 develops BI cost by chain ladder like the other perils. Open item.
+  freq_sev: {}
+
+trend:
+  # carried over from the developed market (configs/market_dev.yaml): two emerging years
+  # cannot separate trend from development and weather. Open item.
+  motor: 0.030
+  buildings: 0.065
+  contents: 0.050
+
+peril_trend:
+  buildings: {weather: 0.09, water: 0.09, fire: 0.04, ad: 0.04}
+
+harness:
+  # one out-of-time fold: train 2023, score 2024 (2024 truth is itself developed with the
+  # borrowed pattern, so the fold scores the model and the development assumption together)
+  folds:
+    B: {train: [2023], valid: 2024}
+  final: {train: [2023, 2024], predict: 2025}
+  time_budget_seconds: 1800
+  primary_weights: {B: 1}
+  # measured 2026-10-25 on the Part 1 specification, five seed offsets, every line refit:
+  # fold B 0.1154 / 0.1083 / 0.1153 / 0.1168 / 0.1121, sd 0.0034 (buildings alone swings
+  # -0.006 to 0.018). Part 1's single-seed 0.0005 margin would keep noise. The values below
+  # stay placeholders pending the owner's call (seed averaging or a wider margin)
+  noise_floor: 0.002
+  fold_floor: 0.004
+  superseded: []
+  confirm_seed_offset: 100
+  use_premium: false
+
+large_loss:
+  caps: {motor_bodily_injury: null}

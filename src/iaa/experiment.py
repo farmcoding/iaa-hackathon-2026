@@ -363,7 +363,10 @@ def _anchor(rate: np.ndarray, target_lc: float, va: pd.DataFrame) -> np.ndarray:
 # predictions of the run to beat (harness.best_kept) instead of refitting; the final 2025
 # fit always refits every line. To experiment on property, set FROZEN_LINES = () in the
 # same change.
-FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")
+# Part 2 (emerging): every line refits; the book is small and property is in scope.
+FROZEN_LINES: tuple[str, ...] = (
+    ("buildings", "contents") if os.environ.get("IAA_MARKET", "developed") == "developed" else ()
+)
 
 
 def _frozen_preds(valid: pd.DataFrame) -> pd.Series | None:

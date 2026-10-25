@@ -18,7 +18,11 @@ import yaml
 
 from iaa import data
 
-CONFIG = data.ROOT / "configs" / "market_dev.yaml"
+CONFIG = (
+    data.ROOT
+    / "configs"
+    / {"developed": "market_dev.yaml", "emerging": "market_emerging.yaml"}[data.MARKET]
+)
 
 
 def load_config(path: Path = CONFIG) -> dict:
@@ -139,7 +143,9 @@ def developed_targets(rows: pd.DataFrame, cfg: dict | None = None) -> pd.DataFra
     development.freq_sev are then rescaled by year to the frequency-severity ultimate.
     """
     cfg = cfg or load_config()
-    cdfs = delay_cdfs(data.claims(), cfg)
+    # development.pattern_market borrows another market's delay patterns (emerging: two
+    # loss years cannot support a 48-month tail); default is the market's own claims
+    cdfs = delay_cdfs(data.claims(cfg["development"].get("pattern_market")), cfg)
     comp = completion_by_month(cdfs, cfg)
     adj = freq_sev_adjustment(rows, cfg)
     rows = rows.copy()

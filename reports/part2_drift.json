@@ -1,0 +1,1639 @@
+{
+ "rows": {
+  "dev_train": 2409311,
+  "emg_train": 109296,
+  "emg_test": 209063
+ },
+ "schema": {
+  "developed_only": [
+   "annual_mileage",
+   "credit_band",
+   "telematics_opt_in",
+   "telematics_score"
+  ],
+  "emerging_only": [
+   "driver_age_band",
+   "gender",
+   "policyholder_age_band",
+   "self_employed"
+  ],
+  "missing_rate_dev_vs_emg": {
+   "accidental_damage_cover": [
+    0.407,
+    0.433
+   ],
+   "body_type": [
+    0.593,
+    0.567
+   ],
+   "branch_id": [
+    0.041,
+    0.0
+   ],
+   "campaign_code": [
+    0.69,
+    0.808
+   ],
+   "construction_type": [
+    0.706,
+    0.749
+   ],
+   "cover_type": [
+    0.593,
+    0.567
+   ],
+   "customer_age": [
+    0.041,
+    0.0
+   ],
+   "customer_tenure": [
+    0.041,
+    0.0
+   ],
+   "days_unoccupied": [
+    0.714,
+    0.779
+   ],
+   "distance_to_river_km": [
+    0.025,
+    0.121
+   ],
+   "document_preference": [
+    0.041,
+    0.0
+   ],
+   "driver_age": [
+    0.593,
+    0.567
+   ],
+   "driver_assist": [
+    0.593,
+    0.567
+   ],
+   "email_domain": [
+    0.041,
+    0.0
+   ],
+   "energy_rating": [
+    0.025,
+    0.118
+   ],
+   "fuel_type": [
+    0.593,
+    0.567
+   ],
+   "hist_cost_customer": [
+    0.22,
+    0.0
+   ],
+   "hist_cost_policy": [
+    0.22,
+    0.0
+   ],
+   "hist_n_customer": [
+    0.22,
+    0.0
+   ],
+   "hist_n_policy": [
+    0.22,
+    0.0
+   ],
+   "household_size": [
+    0.064,
+    0.118
+   ],
+   "licence_points": [
+    0.041,
+    0.0
+   ],
+   "make_model": [
+    0.593,
+    0.567
+   ],
+   "marital_status": [
+    0.065,
+    0.12
+   ],
+   "marketing_consent": [
+    0.041,
+    0.0
+   ],
+   "marketing_segment": [
+    0.041,
+    0.0
+   ],
+   "mortgage": [
+    0.706,
+    0.749
+   ],
+   "named_young_driver": [
+    0.593,
+    0.567
+   ],
+   "ncb_years": [
+    0.593,
+    0.567
+   ],
+   "occupancy": [
+    0.706,
+    0.749
+   ],
+   "occupation": [
+    0.064,
+    0.12
+   ],
+   "policyholder_age": [
+    0.407,
+    0.433
+   ],
+   "previous_insurer": [
+    0.041,
+    0.0
+   ],
+   "prior_claims_5y": [
+    0.041,
+    0.0
+   ],
+   "roof_type": [
+    0.025,
+    0.12
+   ],
+   "seats": [
+    0.593,
+    0.567
+   ],
+   "smoke_alarms": [
+    0.714,
+    0.779
+   ],
+   "soil_type": [
+    0.025,
+    0.121
+   ],
+   "sum_insured": [
+    0.407,
+    0.433
+   ],
+   "transmission": [
+    0.593,
+    0.567
+   ],
+   "vehicle_colour": [
+    0.593,
+    0.567
+   ],
+   "vehicle_use": [
+    0.593,
+    0.567
+   ],
+   "vehicle_value_group": [
+    0.593,
+    0.567
+   ],
+   "years_at_address": [
+    0.065,
+    0.119
+   ],
+   "years_licensed": [
+    0.593,
+    0.567
+   ]
+  }
+ },
+ "psi": {
+  "motor": {
+   "voluntary_excess": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "channel": {
+    "dev_to_emg": 1.13,
+    "emg_to_test": 0.0
+   },
+   "payment_method": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "missed_payments_12m": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "new_business": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 2.533
+   },
+   "renewal_count": {
+    "dev_to_emg": 0.071,
+    "emg_to_test": 2.012
+   },
+   "days_quote_to_inception": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "discount_applied": {
+    "dev_to_emg": 0.17,
+    "emg_to_test": 0.083
+   },
+   "occupation": {
+    "dev_to_emg": 0.007,
+    "emg_to_test": 0.011
+   },
+   "marital_status": {
+    "dev_to_emg": 0.004,
+    "emg_to_test": 0.004
+   },
+   "household_size": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.001
+   },
+   "prior_claims_5y": {
+    "dev_to_emg": 0.017,
+    "emg_to_test": 0.0
+   },
+   "licence_points": {
+    "dev_to_emg": 0.011,
+    "emg_to_test": 0.0
+   },
+   "years_at_address": {
+    "dev_to_emg": 0.007,
+    "emg_to_test": 0.007
+   },
+   "previous_insurer": {
+    "dev_to_emg": 0.014,
+    "emg_to_test": 0.002
+   },
+   "urban_density": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "flood_zone": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "distance_to_river_km": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.0
+   },
+   "elevation_m": {
+    "dev_to_emg": 0.023,
+    "emg_to_test": 0.0
+   },
+   "soil_type": {
+    "dev_to_emg": 0.023,
+    "emg_to_test": 0.0
+   },
+   "year_built": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "property_type": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "roof_type": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.0
+   },
+   "basement": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "trees_within_5m": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "bedrooms": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "energy_rating": {
+    "dev_to_emg": 0.009,
+    "emg_to_test": 0.0
+   },
+   "hail_days": {
+    "dev_to_emg": 1.846,
+    "emg_to_test": 0.407
+   },
+   "wind_exposure_index": {
+    "dev_to_emg": 0.173,
+    "emg_to_test": 0.064
+   },
+   "freezing_days": {
+    "dev_to_emg": 2.227,
+    "emg_to_test": 0.548
+   },
+   "dry_summer_index": {
+    "dev_to_emg": 1.441,
+    "emg_to_test": 0.477
+   },
+   "wildfire_index": {
+    "dev_to_emg": 6.424,
+    "emg_to_test": 0.301
+   },
+   "rainfall_mm": {
+    "dev_to_emg": 2.978,
+    "emg_to_test": 0.417
+   },
+   "mean_temperature_c": {
+    "dev_to_emg": 2.706,
+    "emg_to_test": 0.584
+   },
+   "customer_age": {
+    "dev_to_emg": 3.541,
+    "emg_to_test": 0.06
+   },
+   "customer_tenure": {
+    "dev_to_emg": 0.079,
+    "emg_to_test": 2.012
+   },
+   "property_age": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.003
+   },
+   "hist_n_policy": {
+    "dev_to_emg": 0.08,
+    "emg_to_test": 0.026
+   },
+   "hist_n_customer": {
+    "dev_to_emg": 0.084,
+    "emg_to_test": 0.03
+   },
+   "lines_held": {
+    "dev_to_emg": 0.011,
+    "emg_to_test": 0.0
+   },
+   "written_premium": {
+    "dev_to_emg": 0.039,
+    "emg_to_test": 0.058
+   },
+   "years_licensed": {
+    "dev_to_emg": 0.047,
+    "emg_to_test": 0.065
+   },
+   "ncb_years": {
+    "dev_to_emg": 0.055,
+    "emg_to_test": 0.013
+   },
+   "vehicle_value_group": {
+    "dev_to_emg": 0.002,
+    "emg_to_test": 0.002
+   },
+   "vehicle_age": {
+    "dev_to_emg": 0.679,
+    "emg_to_test": 0.002
+   },
+   "make_model": {
+    "dev_to_emg": 0.016,
+    "emg_to_test": 0.01
+   },
+   "engine_size_cc": {
+    "dev_to_emg": 0.011,
+    "emg_to_test": 0.002
+   },
+   "body_type": {
+    "dev_to_emg": 0.004,
+    "emg_to_test": 0.012
+   },
+   "fuel_type": {
+    "dev_to_emg": 0.089,
+    "emg_to_test": 0.0
+   },
+   "driver_assist": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "cover_type": {
+    "dev_to_emg": 0.006,
+    "emg_to_test": 0.001
+   },
+   "overnight_parking": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.0
+   },
+   "vehicle_use": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "named_young_driver": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.001
+   },
+   "driver_age": {
+    "dev_to_emg": 3.565,
+    "emg_to_test": 0.06
+   }
+  },
+  "buildings": {
+   "voluntary_excess": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "channel": {
+    "dev_to_emg": 1.108,
+    "emg_to_test": 0.0
+   },
+   "payment_method": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "missed_payments_12m": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "new_business": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 2.538
+   },
+   "renewal_count": {
+    "dev_to_emg": 0.07,
+    "emg_to_test": 2.019
+   },
+   "days_quote_to_inception": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.001
+   },
+   "discount_applied": {
+    "dev_to_emg": 0.174,
+    "emg_to_test": 0.083
+   },
+   "occupation": {
+    "dev_to_emg": 0.02,
+    "emg_to_test": 0.011
+   },
+   "marital_status": {
+    "dev_to_emg": 0.015,
+    "emg_to_test": 0.004
+   },
+   "household_size": {
+    "dev_to_emg": 0.013,
+    "emg_to_test": 0.0
+   },
+   "prior_claims_5y": {
+    "dev_to_emg": 0.005,
+    "emg_to_test": 0.0
+   },
+   "licence_points": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "years_at_address": {
+    "dev_to_emg": 0.016,
+    "emg_to_test": 0.007
+   },
+   "previous_insurer": {
+    "dev_to_emg": 0.003,
+    "emg_to_test": 0.003
+   },
+   "urban_density": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.0
+   },
+   "flood_zone": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.0
+   },
+   "distance_to_river_km": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.001
+   },
+   "elevation_m": {
+    "dev_to_emg": 0.02,
+    "emg_to_test": 0.001
+   },
+   "soil_type": {
+    "dev_to_emg": 0.027,
+    "emg_to_test": 0.0
+   },
+   "year_built": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.0
+   },
+   "property_type": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "roof_type": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.0
+   },
+   "basement": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "trees_within_5m": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "bedrooms": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "energy_rating": {
+    "dev_to_emg": 0.011,
+    "emg_to_test": 0.001
+   },
+   "hail_days": {
+    "dev_to_emg": 1.883,
+    "emg_to_test": 0.409
+   },
+   "wind_exposure_index": {
+    "dev_to_emg": 0.169,
+    "emg_to_test": 0.068
+   },
+   "freezing_days": {
+    "dev_to_emg": 2.199,
+    "emg_to_test": 0.546
+   },
+   "dry_summer_index": {
+    "dev_to_emg": 1.456,
+    "emg_to_test": 0.466
+   },
+   "wildfire_index": {
+    "dev_to_emg": 6.472,
+    "emg_to_test": 0.291
+   },
+   "rainfall_mm": {
+    "dev_to_emg": 3.037,
+    "emg_to_test": 0.425
+   },
+   "mean_temperature_c": {
+    "dev_to_emg": 2.722,
+    "emg_to_test": 0.578
+   },
+   "customer_age": {
+    "dev_to_emg": 3.846,
+    "emg_to_test": 0.061
+   },
+   "customer_tenure": {
+    "dev_to_emg": 0.07,
+    "emg_to_test": 2.019
+   },
+   "property_age": {
+    "dev_to_emg": 0.002,
+    "emg_to_test": 0.003
+   },
+   "hist_n_policy": {
+    "dev_to_emg": 0.075,
+    "emg_to_test": 0.006
+   },
+   "hist_n_customer": {
+    "dev_to_emg": 0.086,
+    "emg_to_test": 0.016
+   },
+   "lines_held": {
+    "dev_to_emg": 0.005,
+    "emg_to_test": 0.0
+   },
+   "written_premium": {
+    "dev_to_emg": 0.066,
+    "emg_to_test": 0.042
+   },
+   "sum_insured": {
+    "dev_to_emg": 0.006,
+    "emg_to_test": 0.013
+   },
+   "construction_type": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "occupancy": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "days_unoccupied": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.001
+   },
+   "smoke_alarms": {
+    "dev_to_emg": 0.009,
+    "emg_to_test": 0.0
+   },
+   "accidental_damage_cover": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "mortgage": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "policyholder_age": {
+    "dev_to_emg": 3.866,
+    "emg_to_test": 0.061
+   }
+  },
+  "contents": {
+   "voluntary_excess": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.0
+   },
+   "channel": {
+    "dev_to_emg": 1.104,
+    "emg_to_test": 0.0
+   },
+   "payment_method": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "missed_payments_12m": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "new_business": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 2.561
+   },
+   "renewal_count": {
+    "dev_to_emg": 0.078,
+    "emg_to_test": 2.061
+   },
+   "days_quote_to_inception": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "discount_applied": {
+    "dev_to_emg": 0.169,
+    "emg_to_test": 0.081
+   },
+   "occupation": {
+    "dev_to_emg": 0.018,
+    "emg_to_test": 0.01
+   },
+   "marital_status": {
+    "dev_to_emg": 0.016,
+    "emg_to_test": 0.002
+   },
+   "household_size": {
+    "dev_to_emg": 0.012,
+    "emg_to_test": 0.0
+   },
+   "prior_claims_5y": {
+    "dev_to_emg": 0.004,
+    "emg_to_test": 0.0
+   },
+   "licence_points": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "years_at_address": {
+    "dev_to_emg": 0.018,
+    "emg_to_test": 0.009
+   },
+   "previous_insurer": {
+    "dev_to_emg": 0.003,
+    "emg_to_test": 0.003
+   },
+   "urban_density": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.0
+   },
+   "flood_zone": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "distance_to_river_km": {
+    "dev_to_emg": 0.011,
+    "emg_to_test": 0.001
+   },
+   "elevation_m": {
+    "dev_to_emg": 0.022,
+    "emg_to_test": 0.001
+   },
+   "soil_type": {
+    "dev_to_emg": 0.024,
+    "emg_to_test": 0.0
+   },
+   "year_built": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "property_type": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "roof_type": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.0
+   },
+   "basement": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "trees_within_5m": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "bedrooms": {
+    "dev_to_emg": 0.001,
+    "emg_to_test": 0.001
+   },
+   "energy_rating": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.0
+   },
+   "hail_days": {
+    "dev_to_emg": 1.887,
+    "emg_to_test": 0.399
+   },
+   "wind_exposure_index": {
+    "dev_to_emg": 0.173,
+    "emg_to_test": 0.07
+   },
+   "freezing_days": {
+    "dev_to_emg": 2.193,
+    "emg_to_test": 0.537
+   },
+   "dry_summer_index": {
+    "dev_to_emg": 1.454,
+    "emg_to_test": 0.472
+   },
+   "wildfire_index": {
+    "dev_to_emg": 6.406,
+    "emg_to_test": 0.306
+   },
+   "rainfall_mm": {
+    "dev_to_emg": 3.007,
+    "emg_to_test": 0.414
+   },
+   "mean_temperature_c": {
+    "dev_to_emg": 2.711,
+    "emg_to_test": 0.578
+   },
+   "customer_age": {
+    "dev_to_emg": 3.845,
+    "emg_to_test": 0.06
+   },
+   "customer_tenure": {
+    "dev_to_emg": 0.078,
+    "emg_to_test": 2.061
+   },
+   "property_age": {
+    "dev_to_emg": 0.002,
+    "emg_to_test": 0.002
+   },
+   "hist_n_policy": {
+    "dev_to_emg": 0.077,
+    "emg_to_test": 0.006
+   },
+   "hist_n_customer": {
+    "dev_to_emg": 0.088,
+    "emg_to_test": 0.017
+   },
+   "lines_held": {
+    "dev_to_emg": 0.023,
+    "emg_to_test": 0.0
+   },
+   "written_premium": {
+    "dev_to_emg": 0.026,
+    "emg_to_test": 0.029
+   },
+   "sum_insured": {
+    "dev_to_emg": 0.022,
+    "emg_to_test": 0.002
+   },
+   "tenure": {
+    "dev_to_emg": 0.074,
+    "emg_to_test": 0.0
+   },
+   "security_level": {
+    "dev_to_emg": 0.01,
+    "emg_to_test": 0.0
+   },
+   "high_value_items": {
+    "dev_to_emg": 0.009,
+    "emg_to_test": 0.0
+   },
+   "accidental_damage_cover": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "works_from_home": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "lodgers": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "bicycle_cover": {
+    "dev_to_emg": 0.0,
+    "emg_to_test": 0.0
+   },
+   "policyholder_age": {
+    "dev_to_emg": 3.564,
+    "emg_to_test": 0.06
+   }
+  }
+ },
+ "adversarial": {
+  "motor": {
+   "dev_vs_emg_train": {
+    "auc": 1.0,
+    "top": {
+     "wildfire_index": 0.473,
+     "hail_days": 0.14,
+     "customer_age": 0.134,
+     "driver_age": 0.058,
+     "mean_temperature_c": 0.047,
+     "rainfall_mm": 0.046,
+     "freezing_days": 0.031,
+     "channel": 0.026
+    }
+   },
+   "emg_train_vs_test": {
+    "auc": 0.9864,
+    "top": {
+     "new_business": 0.28,
+     "make_model": 0.126,
+     "dry_summer_index": 0.102,
+     "wildfire_index": 0.081,
+     "hail_days": 0.06,
+     "freezing_days": 0.057,
+     "rainfall_mm": 0.056,
+     "wind_exposure_index": 0.055
+    }
+   },
+   "emg_train_vs_test_no_tenure": {
+    "auc": 0.9786,
+    "top": {
+     "dry_summer_index": 0.192,
+     "make_model": 0.143,
+     "wildfire_index": 0.121,
+     "freezing_days": 0.103,
+     "wind_exposure_index": 0.096,
+     "hail_days": 0.093,
+     "rainfall_mm": 0.079,
+     "mean_temperature_c": 0.059
+    }
+   },
+   "dev_vs_emg_core": {
+    "auc": 0.9262,
+    "top": {
+     "make_model": 0.297,
+     "channel": 0.195,
+     "vehicle_age": 0.114,
+     "previous_insurer": 0.065,
+     "prior_claims_5y": 0.042,
+     "occupation": 0.041,
+     "distance_to_river_km": 0.03,
+     "engine_size_cc": 0.026
+    }
+   },
+   "emg_train_vs_test_core": {
+    "auc": 0.5939,
+    "top": {
+     "make_model": 0.532,
+     "previous_insurer": 0.163,
+     "occupation": 0.081,
+     "years_licensed": 0.063,
+     "discount_applied": 0.022,
+     "channel": 0.018,
+     "distance_to_river_km": 0.017,
+     "vehicle_age": 0.014
+    }
+   },
+   "test_renewal_vs_new": {
+    "auc": 0.7372,
+    "top": {
+     "make_model": 0.434,
+     "previous_insurer": 0.118,
+     "years_licensed": 0.11,
+     "vehicle_age": 0.085,
+     "occupation": 0.056,
+     "channel": 0.032,
+     "discount_applied": 0.026,
+     "years_at_address": 0.017
+    }
+   }
+  },
+  "buildings": {
+   "dev_vs_emg_train": {
+    "auc": 1.0,
+    "top": {
+     "wildfire_index": 0.625,
+     "hail_days": 0.101,
+     "customer_age": 0.059,
+     "rainfall_mm": 0.054,
+     "mean_temperature_c": 0.054,
+     "dry_summer_index": 0.032,
+     "policyholder_age": 0.029,
+     "channel": 0.02
+    }
+   },
+   "emg_train_vs_test": {
+    "auc": 0.9878,
+    "top": {
+     "new_business": 0.217,
+     "dry_summer_index": 0.123,
+     "renewal_count": 0.097,
+     "wildfire_index": 0.096,
+     "mean_temperature_c": 0.073,
+     "wind_exposure_index": 0.071,
+     "hail_days": 0.068,
+     "rainfall_mm": 0.065
+    }
+   },
+   "emg_train_vs_test_no_tenure": {
+    "auc": 0.9783,
+    "top": {
+     "dry_summer_index": 0.211,
+     "wildfire_index": 0.141,
+     "freezing_days": 0.11,
+     "hail_days": 0.109,
+     "wind_exposure_index": 0.092,
+     "rainfall_mm": 0.092,
+     "mean_temperature_c": 0.07,
+     "previous_insurer": 0.037
+    }
+   },
+   "dev_vs_emg_core": {
+    "auc": 0.8861,
+    "top": {
+     "channel": 0.273,
+     "previous_insurer": 0.118,
+     "occupation": 0.084,
+     "distance_to_river_km": 0.067,
+     "years_at_address": 0.057,
+     "days_unoccupied": 0.047,
+     "household_size": 0.046,
+     "soil_type": 0.041
+    }
+   },
+   "emg_train_vs_test_core": {
+    "auc": 0.568,
+    "top": {
+     "previous_insurer": 0.21,
+     "occupation": 0.124,
+     "sum_insured": 0.092,
+     "distance_to_river_km": 0.086,
+     "elevation_m": 0.056,
+     "days_unoccupied": 0.052,
+     "years_at_address": 0.048,
+     "year_built": 0.047
+    }
+   },
+   "test_renewal_vs_new": {
+    "auc": 0.6268,
+    "top": {
+     "previous_insurer": 0.18,
+     "occupation": 0.108,
+     "distance_to_river_km": 0.057,
+     "channel": 0.051,
+     "years_at_address": 0.045,
+     "elevation_m": 0.039,
+     "sum_insured": 0.039,
+     "rainfall_mm": 0.038
+    }
+   }
+  },
+  "contents": {
+   "dev_vs_emg_train": {
+    "auc": 1.0,
+    "top": {
+     "wildfire_index": 0.464,
+     "hail_days": 0.132,
+     "rainfall_mm": 0.102,
+     "customer_age": 0.097,
+     "mean_temperature_c": 0.087,
+     "channel": 0.036,
+     "policyholder_age": 0.035,
+     "dry_summer_index": 0.028
+    }
+   },
+   "emg_train_vs_test": {
+    "auc": 0.9885,
+    "top": {
+     "new_business": 0.263,
+     "dry_summer_index": 0.131,
+     "wildfire_index": 0.09,
+     "renewal_count": 0.08,
+     "hail_days": 0.067,
+     "wind_exposure_index": 0.065,
+     "freezing_days": 0.064,
+     "rainfall_mm": 0.062
+    }
+   },
+   "emg_train_vs_test_no_tenure": {
+    "auc": 0.9806,
+    "top": {
+     "dry_summer_index": 0.198,
+     "wildfire_index": 0.127,
+     "freezing_days": 0.115,
+     "hail_days": 0.112,
+     "wind_exposure_index": 0.097,
+     "rainfall_mm": 0.093,
+     "mean_temperature_c": 0.09,
+     "property_age": 0.034
+    }
+   },
+   "dev_vs_emg_core": {
+    "auc": 0.8897,
+    "top": {
+     "channel": 0.28,
+     "previous_insurer": 0.114,
+     "occupation": 0.085,
+     "distance_to_river_km": 0.067,
+     "years_at_address": 0.054,
+     "household_size": 0.045,
+     "high_value_items": 0.043,
+     "soil_type": 0.042
+    }
+   },
+   "emg_train_vs_test_core": {
+    "auc": 0.5575,
+    "top": {
+     "previous_insurer": 0.226,
+     "occupation": 0.122,
+     "distance_to_river_km": 0.085,
+     "sum_insured": 0.068,
+     "elevation_m": 0.067,
+     "year_built": 0.052,
+     "years_at_address": 0.05,
+     "discount_applied": 0.037
+    }
+   },
+   "test_renewal_vs_new": {
+    "auc": 0.6372,
+    "top": {
+     "previous_insurer": 0.173,
+     "occupation": 0.103,
+     "channel": 0.063,
+     "distance_to_river_km": 0.052,
+     "years_at_address": 0.047,
+     "customer_age": 0.045,
+     "discount_applied": 0.04,
+     "elevation_m": 0.04
+    }
+   }
+  }
+ },
+ "make_model_overlap": {
+  "emg_train_seen_in_dev": 1.0,
+  "emg_test_seen_in_emg_train": 1.0,
+  "emg_test_seen_in_dev": 1.0,
+  "levels": {
+   "dev": 300,
+   "emg_train": 300,
+   "emg_test": 300
+  }
+ },
+ "same_maturity": {
+  "('buildings', 'accidental_damage', 2023)": {
+   "('freq_per_1000', 'developed')": 6.4472,
+   "('freq_per_1000', 'emerging')": 4.8362,
+   "('freq_per_1000', 'ratio')": 0.7501,
+   "('n', 'developed')": 967,
+   "('n', 'emerging')": 55,
+   "('open', 'developed')": 0.0,
+   "('open', 'emerging')": 0.0,
+   "('rep_1m', 'developed')": 0.9504,
+   "('rep_1m', 'emerging')": 0.9091,
+   "('rep_3m', 'developed')": 0.999,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 1167.3322,
+   "('sev', 'emerging')": 847.7138,
+   "('sev', 'ratio')": 0.7262
+  },
+  "('buildings', 'accidental_damage', 2024)": {
+   "('freq_per_1000', 'developed')": 6.597,
+   "('freq_per_1000', 'emerging')": 5.5393,
+   "('freq_per_1000', 'ratio')": 0.8397,
+   "('n', 'developed')": 989,
+   "('n', 'emerging')": 67,
+   "('open', 'developed')": 0.0738,
+   "('open', 'emerging')": 0.0299,
+   "('rep_1m', 'developed')": 0.9606,
+   "('rep_1m', 'emerging')": 0.9552,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 1286.1001,
+   "('sev', 'emerging')": 941.3421,
+   "('sev', 'ratio')": 0.7319
+  },
+  "('buildings', 'escape_of_water', 2023)": {
+   "('freq_per_1000', 'developed')": 16.7614,
+   "('freq_per_1000', 'emerging')": 11.5189,
+   "('freq_per_1000', 'ratio')": 0.6872,
+   "('n', 'developed')": 2514,
+   "('n', 'emerging')": 131,
+   "('open', 'developed')": 0.006,
+   "('open', 'emerging')": 0.0153,
+   "('rep_1m', 'developed')": 0.8644,
+   "('rep_1m', 'emerging')": 0.8855,
+   "('rep_3m', 'developed')": 0.994,
+   "('rep_3m', 'emerging')": 0.9847,
+   "('sev', 'developed')": 5974.6107,
+   "('sev', 'emerging')": 3861.3695,
+   "('sev', 'ratio')": 0.6463
+  },
+  "('buildings', 'escape_of_water', 2024)": {
+   "('freq_per_1000', 'developed')": 17.0627,
+   "('freq_per_1000', 'emerging')": 11.3266,
+   "('freq_per_1000', 'ratio')": 0.6638,
+   "('n', 'developed')": 2558,
+   "('n', 'emerging')": 137,
+   "('open', 'developed')": 0.2651,
+   "('open', 'emerging')": 0.2628,
+   "('rep_1m', 'developed')": 0.887,
+   "('rep_1m', 'emerging')": 0.8394,
+   "('rep_3m', 'developed')": 0.9988,
+   "('rep_3m', 'emerging')": 0.9927,
+   "('sev', 'developed')": 6489.1353,
+   "('sev', 'emerging')": 3891.9871,
+   "('sev', 'ratio')": 0.5998
+  },
+  "('buildings', 'fire', 2023)": {
+   "('freq_per_1000', 'developed')": 1.8602,
+   "('freq_per_1000', 'emerging')": 4.3086,
+   "('freq_per_1000', 'ratio')": 2.3163,
+   "('n', 'developed')": 279,
+   "('n', 'emerging')": 49,
+   "('open', 'developed')": 0.0502,
+   "('open', 'emerging')": 0.0612,
+   "('rep_1m', 'developed')": 1.0,
+   "('rep_1m', 'emerging')": 1.0,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 50508.8438,
+   "('sev', 'emerging')": 65777.4639,
+   "('sev', 'ratio')": 1.3023
+  },
+  "('buildings', 'fire', 2024)": {
+   "('freq_per_1000', 'developed')": 2.0611,
+   "('freq_per_1000', 'emerging')": 1.7362,
+   "('freq_per_1000', 'ratio')": 0.8423,
+   "('n', 'developed')": 309,
+   "('n', 'emerging')": 21,
+   "('open', 'developed')": 0.4207,
+   "('open', 'emerging')": 0.3333,
+   "('rep_1m', 'developed')": 0.9968,
+   "('rep_1m', 'emerging')": 1.0,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 50893.6595,
+   "('sev', 'emerging')": 53584.94,
+   "('sev', 'ratio')": 1.0529
+  },
+  "('buildings', 'flood', 2023)": {
+   "('freq_per_1000', 'developed')": 3.6736,
+   "('freq_per_1000', 'emerging')": 3.6931,
+   "('freq_per_1000', 'ratio')": 1.0053,
+   "('n', 'developed')": 551,
+   "('n', 'emerging')": 42,
+   "('open', 'developed')": 0.0617,
+   "('open', 'emerging')": 0.0714,
+   "('rep_1m', 'developed')": 0.9383,
+   "('rep_1m', 'emerging')": 0.9524,
+   "('rep_3m', 'developed')": 0.9946,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 32865.5448,
+   "('sev', 'emerging')": 24802.3512,
+   "('sev', 'ratio')": 0.7547
+  },
+  "('buildings', 'flood', 2024)": {
+   "('freq_per_1000', 'developed')": 3.5353,
+   "('freq_per_1000', 'emerging')": 3.1417,
+   "('freq_per_1000', 'ratio')": 0.8887,
+   "('n', 'developed')": 530,
+   "('n', 'emerging')": 38,
+   "('open', 'developed')": 0.366,
+   "('open', 'emerging')": 0.4737,
+   "('rep_1m', 'developed')": 0.9604,
+   "('rep_1m', 'emerging')": 0.9211,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 34945.4868,
+   "('sev', 'emerging')": 28410.8903,
+   "('sev', 'ratio')": 0.813
+  },
+  "('buildings', 'storm', 2023)": {
+   "('freq_per_1000', 'developed')": 14.2145,
+   "('freq_per_1000', 'emerging')": 18.4655,
+   "('freq_per_1000', 'ratio')": 1.2991,
+   "('n', 'developed')": 2132,
+   "('n', 'emerging')": 210,
+   "('open', 'developed')": 0.0028,
+   "('open', 'emerging')": 0.0,
+   "('rep_1m', 'developed')": 0.9451,
+   "('rep_1m', 'emerging')": 0.9238,
+   "('rep_3m', 'developed')": 0.9948,
+   "('rep_3m', 'emerging')": 0.9952,
+   "('sev', 'developed')": 3620.6098,
+   "('sev', 'emerging')": 2457.5377,
+   "('sev', 'ratio')": 0.6788
+  },
+  "('buildings', 'storm', 2024)": {
+   "('freq_per_1000', 'developed')": 12.6336,
+   "('freq_per_1000', 'emerging')": 20.9997,
+   "('freq_per_1000', 'ratio')": 1.6622,
+   "('n', 'developed')": 1894,
+   "('n', 'emerging')": 254,
+   "('open', 'developed')": 0.1822,
+   "('open', 'emerging')": 0.2283,
+   "('rep_1m', 'developed')": 0.9562,
+   "('rep_1m', 'emerging')": 0.9685,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 3875.854,
+   "('sev', 'emerging')": 2730.4296,
+   "('sev', 'ratio')": 0.7045
+  },
+  "('buildings', 'subsidence', 2023)": {
+   "('freq_per_1000', 'developed')": 2.5402,
+   "('freq_per_1000', 'emerging')": 2.8138,
+   "('freq_per_1000', 'ratio')": 1.1077,
+   "('n', 'developed')": 381,
+   "('n', 'emerging')": 32,
+   "('open', 'developed')": 0.3465,
+   "('open', 'emerging')": 0.4062,
+   "('rep_1m', 'developed')": 0.2126,
+   "('rep_1m', 'emerging')": 0.2812,
+   "('rep_3m', 'developed')": 0.5013,
+   "('rep_3m', 'emerging')": 0.625,
+   "('sev', 'developed')": 23334.3266,
+   "('sev', 'emerging')": 16104.595,
+   "('sev', 'ratio')": 0.6902
+  },
+  "('buildings', 'subsidence', 2024)": {
+   "('freq_per_1000', 'developed')": 1.9411,
+   "('freq_per_1000', 'emerging')": 1.6535,
+   "('freq_per_1000', 'ratio')": 0.8519,
+   "('n', 'developed')": 291,
+   "('n', 'emerging')": 20,
+   "('open', 'developed')": 0.6873,
+   "('open', 'emerging')": 0.75,
+   "('rep_1m', 'developed')": 0.268,
+   "('rep_1m', 'emerging')": 0.45,
+   "('rep_3m', 'developed')": 0.6838,
+   "('rep_3m', 'emerging')": 0.75,
+   "('sev', 'developed')": 27129.458,
+   "('sev', 'emerging')": 10768.1185,
+   "('sev', 'ratio')": 0.3969
+  },
+  "('contents', 'accidental_damage', 2023)": {
+   "('freq_per_1000', 'developed')": 15.8093,
+   "('freq_per_1000', 'emerging')": 11.7666,
+   "('freq_per_1000', 'ratio')": 0.7443,
+   "('n', 'developed')": 2371,
+   "('n', 'emerging')": 166,
+   "('open', 'developed')": 0.0004,
+   "('open', 'emerging')": 0.0,
+   "('rep_1m', 'developed')": 0.9414,
+   "('rep_1m', 'emerging')": 0.9518,
+   "('rep_3m', 'developed')": 0.9941,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 783.4415,
+   "('sev', 'emerging')": 651.8248,
+   "('sev', 'ratio')": 0.832
+  },
+  "('contents', 'accidental_damage', 2024)": {
+   "('freq_per_1000', 'developed')": 15.2634,
+   "('freq_per_1000', 'emerging')": 11.3041,
+   "('freq_per_1000', 'ratio')": 0.7406,
+   "('n', 'developed')": 2289,
+   "('n', 'emerging')": 169,
+   "('open', 'developed')": 0.0834,
+   "('open', 'emerging')": 0.1124,
+   "('rep_1m', 'developed')": 0.948,
+   "('rep_1m', 'emerging')": 0.9527,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 823.1168,
+   "('sev', 'emerging')": 620.0372,
+   "('sev', 'ratio')": 0.7533
+  },
+  "('contents', 'escape_of_water', 2023)": {
+   "('freq_per_1000', 'developed')": 9.1549,
+   "('freq_per_1000', 'emerging')": 6.096,
+   "('freq_per_1000', 'ratio')": 0.6659,
+   "('n', 'developed')": 1373,
+   "('n', 'emerging')": 86,
+   "('open', 'developed')": 0.0007,
+   "('open', 'emerging')": 0.0,
+   "('rep_1m', 'developed')": 0.8551,
+   "('rep_1m', 'emerging')": 0.814,
+   "('rep_3m', 'developed')": 0.9898,
+   "('rep_3m', 'emerging')": 0.9884,
+   "('sev', 'developed')": 2770.0405,
+   "('sev', 'emerging')": 2247.4166,
+   "('sev', 'ratio')": 0.8113
+  },
+  "('contents', 'escape_of_water', 2024)": {
+   "('freq_per_1000', 'developed')": 9.082,
+   "('freq_per_1000', 'emerging')": 5.6855,
+   "('freq_per_1000', 'ratio')": 0.626,
+   "('n', 'developed')": 1362,
+   "('n', 'emerging')": 85,
+   "('open', 'developed')": 0.1703,
+   "('open', 'emerging')": 0.0588,
+   "('rep_1m', 'developed')": 0.8752,
+   "('rep_1m', 'emerging')": 0.9176,
+   "('rep_3m', 'developed')": 0.9985,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 2811.4755,
+   "('sev', 'emerging')": 1995.4485,
+   "('sev', 'ratio')": 0.7098
+  },
+  "('contents', 'flood', 2023)": {
+   "('freq_per_1000', 'developed')": 2.9872,
+   "('freq_per_1000', 'emerging')": 3.615,
+   "('freq_per_1000', 'ratio')": 1.2102,
+   "('n', 'developed')": 448,
+   "('n', 'emerging')": 51,
+   "('open', 'developed')": 0.0312,
+   "('open', 'emerging')": 0.0,
+   "('rep_1m', 'developed')": 0.933,
+   "('rep_1m', 'emerging')": 0.9216,
+   "('rep_3m', 'developed')": 0.9955,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 10568.6113,
+   "('sev', 'emerging')": 8474.6265,
+   "('sev', 'ratio')": 0.8019
+  },
+  "('contents', 'flood', 2024)": {
+   "('freq_per_1000', 'developed')": 2.4072,
+   "('freq_per_1000', 'emerging')": 2.3411,
+   "('freq_per_1000', 'ratio')": 0.9725,
+   "('n', 'developed')": 361,
+   "('n', 'emerging')": 35,
+   "('open', 'developed')": 0.3186,
+   "('open', 'emerging')": 0.2571,
+   "('rep_1m', 'developed')": 0.9695,
+   "('rep_1m', 'emerging')": 1.0,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 10928.2012,
+   "('sev', 'emerging')": 10181.8237,
+   "('sev', 'ratio')": 0.9317
+  },
+  "('contents', 'theft', 2023)": {
+   "('freq_per_1000', 'developed')": 13.1555,
+   "('freq_per_1000', 'emerging')": 13.3261,
+   "('freq_per_1000', 'ratio')": 1.013,
+   "('n', 'developed')": 1973,
+   "('n', 'emerging')": 188,
+   "('open', 'developed')": 0.0015,
+   "('open', 'emerging')": 0.0,
+   "('rep_1m', 'developed')": 0.9949,
+   "('rep_1m', 'emerging')": 0.9894,
+   "('rep_3m', 'developed')": 0.9954,
+   "('rep_3m', 'emerging')": 0.9894,
+   "('sev', 'developed')": 3630.1673,
+   "('sev', 'emerging')": 2935.9991,
+   "('sev', 'ratio')": 0.8088
+  },
+  "('contents', 'theft', 2024)": {
+   "('freq_per_1000', 'developed')": 13.1763,
+   "('freq_per_1000', 'emerging')": 14.5817,
+   "('freq_per_1000', 'ratio')": 1.1067,
+   "('n', 'developed')": 1976,
+   "('n', 'emerging')": 218,
+   "('open', 'developed')": 0.128,
+   "('open', 'emerging')": 0.1193,
+   "('rep_1m', 'developed')": 0.997,
+   "('rep_1m', 'emerging')": 1.0,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 3976.5235,
+   "('sev', 'emerging')": 3059.3419,
+   "('sev', 'ratio')": 0.7694
+  },
+  "('motor', 'bodily_injury', 2023)": {
+   "('freq_per_1000', 'developed')": 10.2814,
+   "('freq_per_1000', 'emerging')": 14.1006,
+   "('freq_per_1000', 'ratio')": 1.3715,
+   "('n', 'developed')": 2053,
+   "('n', 'emerging')": 266,
+   "('open', 'developed')": 0.4944,
+   "('open', 'emerging')": 0.4699,
+   "('rep_1m', 'developed')": 0.1622,
+   "('rep_1m', 'emerging')": 0.1316,
+   "('rep_3m', 'developed')": 0.4174,
+   "('rep_3m', 'emerging')": 0.3835,
+   "('sev', 'developed')": 23286.5873,
+   "('sev', 'emerging')": 10490.9673,
+   "('sev', 'ratio')": 0.4505
+  },
+  "('motor', 'bodily_injury', 2024)": {
+   "('freq_per_1000', 'developed')": 5.8963,
+   "('freq_per_1000', 'emerging')": 9.1027,
+   "('freq_per_1000', 'ratio')": 1.5438,
+   "('n', 'developed')": 1178,
+   "('n', 'emerging')": 183,
+   "('open', 'developed')": 0.798,
+   "('open', 'emerging')": 0.7377,
+   "('rep_1m', 'developed')": 0.2377,
+   "('rep_1m', 'emerging')": 0.2295,
+   "('rep_3m', 'developed')": 0.618,
+   "('rep_3m', 'emerging')": 0.5683,
+   "('sev', 'developed')": 17829.0432,
+   "('sev', 'emerging')": 11009.6301,
+   "('sev', 'ratio')": 0.6175
+  },
+  "('motor', 'glass_hail', 2023)": {
+   "('freq_per_1000', 'developed')": 20.6178,
+   "('freq_per_1000', 'emerging')": 31.8588,
+   "('freq_per_1000', 'ratio')": 1.5452,
+   "('n', 'developed')": 4117,
+   "('n', 'emerging')": 601,
+   "('open', 'developed')": 0.0,
+   "('open', 'emerging')": 0.0017,
+   "('rep_1m', 'developed')": 0.9808,
+   "('rep_1m', 'emerging')": 0.98,
+   "('rep_3m', 'developed')": 0.9951,
+   "('rep_3m', 'emerging')": 0.9967,
+   "('sev', 'developed')": 1143.0259,
+   "('sev', 'emerging')": 716.5926,
+   "('sev', 'ratio')": 0.6269
+  },
+  "('motor', 'glass_hail', 2024)": {
+   "('freq_per_1000', 'developed')": 20.1216,
+   "('freq_per_1000', 'emerging')": 37.0075,
+   "('freq_per_1000', 'ratio')": 1.8392,
+   "('n', 'developed')": 4020,
+   "('n', 'emerging')": 744,
+   "('open', 'developed')": 0.0565,
+   "('open', 'emerging')": 0.0632,
+   "('rep_1m', 'developed')": 0.9886,
+   "('rep_1m', 'emerging')": 0.9933,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 1190.7266,
+   "('sev', 'emerging')": 797.1218,
+   "('sev', 'ratio')": 0.6694
+  },
+  "('motor', 'own_damage', 2023)": {
+   "('freq_per_1000', 'developed')": 59.5097,
+   "('freq_per_1000', 'emerging')": 73.0472,
+   "('freq_per_1000', 'ratio')": 1.2275,
+   "('n', 'developed')": 11883,
+   "('n', 'emerging')": 1378,
+   "('open', 'developed')": 0.0018,
+   "('open', 'emerging')": 0.0007,
+   "('rep_1m', 'developed')": 0.9492,
+   "('rep_1m', 'emerging')": 0.9412,
+   "('rep_3m', 'developed')": 0.9968,
+   "('rep_3m', 'emerging')": 0.9956,
+   "('sev', 'developed')": 1874.6405,
+   "('sev', 'emerging')": 1084.6553,
+   "('sev', 'ratio')": 0.5786
+  },
+  "('motor', 'own_damage', 2024)": {
+   "('freq_per_1000', 'developed')": 57.7469,
+   "('freq_per_1000', 'emerging')": 64.415,
+   "('freq_per_1000', 'ratio')": 1.1155,
+   "('n', 'developed')": 11537,
+   "('n', 'emerging')": 1295,
+   "('open', 'developed')": 0.1708,
+   "('open', 'emerging')": 0.1722,
+   "('rep_1m', 'developed')": 0.9533,
+   "('rep_1m', 'emerging')": 0.9514,
+   "('rep_3m', 'developed')": 0.9999,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 2039.1609,
+   "('sev', 'emerging')": 1196.7693,
+   "('sev', 'ratio')": 0.5869
+  },
+  "('motor', 'theft', 2023)": {
+   "('freq_per_1000', 'developed')": 8.0228,
+   "('freq_per_1000', 'emerging')": 10.2839,
+   "('freq_per_1000', 'ratio')": 1.2818,
+   "('n', 'developed')": 1602,
+   "('n', 'emerging')": 194,
+   "('open', 'developed')": 0.0006,
+   "('open', 'emerging')": 0.0,
+   "('rep_1m', 'developed')": 0.9956,
+   "('rep_1m', 'emerging')": 0.9897,
+   "('rep_3m', 'developed')": 0.9969,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 6658.8849,
+   "('sev', 'emerging')": 3758.6792,
+   "('sev', 'ratio')": 0.5645
+  },
+  "('motor', 'theft', 2024)": {
+   "('freq_per_1000', 'developed')": 7.5231,
+   "('freq_per_1000', 'emerging')": 9.6996,
+   "('freq_per_1000', 'ratio')": 1.2893,
+   "('n', 'developed')": 1503,
+   "('n', 'emerging')": 195,
+   "('open', 'developed')": 0.161,
+   "('open', 'emerging')": 0.1692,
+   "('rep_1m', 'developed')": 0.9987,
+   "('rep_1m', 'emerging')": 1.0,
+   "('rep_3m', 'developed')": 1.0,
+   "('rep_3m', 'emerging')": 1.0,
+   "('sev', 'developed')": 6560.2166,
+   "('sev', 'emerging')": 4508.0159,
+   "('sev', 'ratio')": 0.6872
+  },
+  "('motor', 'third_party_prop', 2023)": {
+   "('freq_per_1000', 'developed')": 41.8916,
+   "('freq_per_1000', 'emerging')": 59.3707,
+   "('freq_per_1000', 'ratio')": 1.4172,
+   "('n', 'developed')": 8365,
+   "('n', 'emerging')": 1120,
+   "('open', 'developed')": 0.0062,
+   "('open', 'emerging')": 0.0036,
+   "('rep_1m', 'developed')": 0.7729,
+   "('rep_1m', 'emerging')": 0.775,
+   "('rep_3m', 'developed')": 0.9861,
+   "('rep_3m', 'emerging')": 0.9848,
+   "('sev', 'developed')": 3822.3694,
+   "('sev', 'emerging')": 2428.5723,
+   "('sev', 'ratio')": 0.6354
+  },
+  "('motor', 'third_party_prop', 2024)": {
+   "('freq_per_1000', 'developed')": 38.1709,
+   "('freq_per_1000', 'emerging')": 53.4221,
+   "('freq_per_1000', 'ratio')": 1.3996,
+   "('n', 'developed')": 7626,
+   "('n', 'emerging')": 1074,
+   "('open', 'developed')": 0.268,
+   "('open', 'emerging')": 0.2523,
+   "('rep_1m', 'developed')": 0.796,
+   "('rep_1m', 'emerging')": 0.7784,
+   "('rep_3m', 'developed')": 0.9924,
+   "('rep_3m', 'emerging')": 0.9944,
+   "('sev', 'developed')": 4129.5355,
+   "('sev', 'emerging')": 2473.3953,
+   "('sev', 'ratio')": 0.599
+  }
+ },
+ "climate": {
+  "developed": {
+   "2021": {
+    "hail_days": 5.638,
+    "wind_exposure_index": 4.599,
+    "freezing_days": 41.274,
+    "dry_summer_index": 0.493,
+    "wildfire_index": 0.178,
+    "rainfall_mm": 1143.816,
+    "mean_temperature_c": 12.222
+   },
+   "2022": {
+    "hail_days": 6.725,
+    "wind_exposure_index": 4.507,
+    "freezing_days": 36.978,
+    "dry_summer_index": 0.47,
+    "wildfire_index": 0.145,
+    "rainfall_mm": 1023.506,
+    "mean_temperature_c": 12.427
+   },
+   "2023": {
+    "hail_days": 6.256,
+    "wind_exposure_index": 4.39,
+    "freezing_days": 34.705,
+    "dry_summer_index": 0.549,
+    "wildfire_index": 0.132,
+    "rainfall_mm": 980.688,
+    "mean_temperature_c": 13.085
+   },
+   "2024": {
+    "hail_days": 6.768,
+    "wind_exposure_index": 4.351,
+    "freezing_days": 39.482,
+    "dry_summer_index": 0.594,
+    "wildfire_index": 0.156,
+    "rainfall_mm": 1036.392,
+    "mean_temperature_c": 12.972
+   },
+   "2025": {
+    "hail_days": 5.888,
+    "wind_exposure_index": 4.885,
+    "freezing_days": 35.891,
+    "dry_summer_index": 0.487,
+    "wildfire_index": 0.173,
+    "rainfall_mm": 1039.975,
+    "mean_temperature_c": 12.618
+   }
+  },
+  "emerging": {
+   "2023": {
+    "hail_days": 13.974,
+    "wind_exposure_index": 4.681,
+    "freezing_days": 21.018,
+    "dry_summer_index": 0.679,
+    "wildfire_index": 0.503,
+    "rainfall_mm": 1380.81,
+    "mean_temperature_c": 15.295
+   },
+   "2024": {
+    "hail_days": 17.081,
+    "wind_exposure_index": 5.413,
+    "freezing_days": 17.49,
+    "dry_summer_index": 0.712,
+    "wildfire_index": 0.549,
+    "rainfall_mm": 1375.087,
+    "mean_temperature_c": 15.777
+   },
+   "2025": {
+    "hail_days": 11.411,
+    "wind_exposure_index": 5.114,
+    "freezing_days": 28.863,
+    "dry_summer_index": 0.605,
+    "wildfire_index": 0.528,
+    "rainfall_mm": 1250.664,
+    "mean_temperature_c": 14.223
+   }
+  }
+ }
+}

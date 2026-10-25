@@ -36,3 +36,13 @@ TabM training on Metal is not bit-for-bit reproducible, so these saved files are
 Public gain +0.0039 (0.11913 to 0.12299) for a fold B gain of +0.0029 over the seeded LightGBM: validation keeps tracking the leaderboard.
 
 **Re-tag, 2026-10-18 16:10 EDT.** The dataset fingerprint changed from `6250034b1783` to `62f521c8370f` when the fingerprint was narrowed to data-building code and the cache crash (P3) was fixed. The rebuilt dataset was compared with the old cache column by column (values and dtypes): identical, 3,035,950 rows x 138 columns. The TabM files were copied to the new tag; their bytes and the sha256 values above are unchanged, and the blend re-scores at 0.13922.
+
+## Part 2: emerging market
+
+Same gate. Ten submissions a day; one final submission is selected by the human. Baseline rows check the file plumbing and set the floor; they are not candidates for the final.
+
+| Date (UTC) | Commit | File (sha256, first 16) | CV fold B (train 2023, score 2024) | Public LB | Reason | Approved by |
+|---|---|---|---|---|---|---|
+| 2026-10-25 04:55 | 68e71bf + market switch (uncommitted), `scripts/part2_baseline.py` 76e9df44 | baseline_rate.csv (a37d37d28c69133d) | n/a | 0.08396 | Baseline, not a candidate: one trended loss cost per exposure per line; checks the 209,063-row file and the scorer | Karl (asked for a dummy baseline submission, 2026-10-25) |
+| 2026-10-25 05:10 | 68e71bf + market switch (uncommitted), experiment.py d5d72c8c (Part 1 final, unchanged) | native_v0_20261025_0105.csv (d5f91231ce710938) | 0.1149 (buildings A/E 0.60) | 0.12904 | Baseline, not a candidate: the Part 1 specification refit on emerging 2023-24 with no changes; first bar for the adaptation | Karl (same request) |
+| 2026-10-25 05:55 | 68e71bf + market switch (uncommitted), `scripts/part2_transfer.py` 96bd7957 | transfer_p1.csv (dc6f0b5026a0b53d) | level-neutral 0.151 on emerging 2024 (native 0.123) | 0.14243 | Baseline, not a candidate: the Part 1 final specification fitted on developed 2021-24, emerging line levels as the other baselines; tests whether developed relativities transfer | Karl (same request) |

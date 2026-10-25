@@ -6,20 +6,28 @@ documented data-quality decision (see reports/data_quality.md).
 
 from __future__ import annotations
 
+import os
 from functools import cache
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / "data" / "raw" / "public"
+# one folder per market; tables are joined only within a market (ids repeat across them).
+# IAA_MARKET picks the market the cached loaders read; developed is the Part 1 default.
+MARKET_DIRS = {
+    "developed": ROOT / "data" / "raw" / "public",
+    "emerging": ROOT / "data" / "part2_raw" / "emerging",
+}
+MARKET = os.environ.get("IAA_MARKET", "developed")
+RAW = MARKET_DIRS[MARKET]
 LINES = ("motor", "buildings", "contents")
 ID_COLS = ("customer_id", "address_id", "policy_id", "row_id", "claim_id")
 DAYS_PER_YEAR = 365.0
 
 
-def _read(name: str, raw: Path = RAW) -> pd.DataFrame:
-    df = pd.read_parquet(raw / f"{name}.parquet")
+def _read(name: str, raw: Path | None = None) -> pd.DataFrame:
+    df = pd.read_parquet((RAW if raw is None else raw) / f"{name}.parquet")
     for col in ID_COLS:
         if col in df.columns:
             df[col] = df[col].astype("string")
@@ -42,13 +50,14 @@ def weather() -> pd.DataFrame:
 
 
 @cache
-def claims() -> pd.DataFrame:
+def claims(market: str | None = None) -> pd.DataFrame:
     """Claims with dates parsed, net cost and accident year.
 
     net = incurred_to_date - recoveries. Repudiated claims are kept here (flagged) so the
-    data-quality log can count them; target construction drops them.
+    data-quality log can count them; target construction drops them. market reads another
+    market's claims (used to borrow development patterns); default is IAA_MARKET.
     """
-    c = _read("claims")
+    c = _read("claims", None if market is None else MARKET_DIRS[market])
     c["loss_date"] = pd.to_datetime(c["loss_date"])
     c["report_date"] = pd.to_datetime(c["report_date"])
     c["recoveries"] = c["recoveries"].fillna(0.0)
@@ -59,7 +68,7 @@ def claims() -> pd.DataFrame:
 
 
 @cache
-def policies(line: str, kind: str = "train") -> pd.DataFrame:
+def policies(line: str, kind: str = "train", market: str | None = None) -> pd.DataFrame:
     """Policy-period rows for one line. kind is 'train' (2021-2024) or 'test' (2025).
 
     Exposure is recomputed from the period dates. About 0.4% of training rows carry
@@ -69,7 +78,7 @@ def policies(line: str, kind: str = "train") -> pd.DataFrame:
     if line not in LINES:
         raise ValueError(f"unknown line {line!r}")
     name = f"policies_{line}" if kind == "train" else f"test_{line}"
-    df = _read(name)
+    df = _read(name, None if market is None else MARKET_DIRS[market])
     df["period_start"] = pd.to_datetime(df["period_start"])
     df["period_end"] = pd.to_datetime(df["period_end"])
     df["exposure_raw"] = df["exposure"]

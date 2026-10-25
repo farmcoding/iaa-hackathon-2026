@@ -29,6 +29,14 @@ FORBIDDEN = {
     "customer_since_year",
 }
 ID_COLS = ["row_id", "policy_id", "customer_id", "address_id"]
+
+# Emerging-market schema mapped onto the developed vocabulary (Part 2, owner 2026-10-25).
+# Construction uses local codes, mapped to the developed labels (timber is W there, see
+# experiment._fix_construction); ages are banded, and each band takes the mean age inside
+# that band in the developed 2025 test files (identical across the three lines).
+CONSTRUCTION_CODES = {"BRK": "brick", "STN": "stone", "WOD": "W", "MIX": "non_standard"}
+AGE_BAND_MEAN = {"17-24": 21.7, "25-34": 28.8, "35-49": 42.0, "50-64": 57.0, "65+": 78.0}
+SELF_EMPLOYED = "self-employed "
 HIST_WINDOW_DAYS = 365
 _EPOCH = pd.Timestamp("2000-01-01")
 
@@ -78,23 +86,60 @@ def build(kind: str = "train") -> pd.DataFrame:
     """All three lines, one frame. Line-specific columns are NaN on other lines."""
     pol = data.all_policies(kind)
     pol = pol.drop(columns=[c for c in FORBIDDEN if c in pol.columns])
-    cust = data.customers().copy()
-    cust["date_of_birth"] = pd.to_datetime(cust["date_of_birth"])
+    cust = harmonize_customers(data.customers())
+    pol = harmonize_policies(pol)
     df = pol.merge(cust, on="customer_id", how="left", suffixes=("", "_cust"))
     df = df.merge(data.addresses(), on="address_id", how="left", suffixes=("", "_addr"))
     w = data.weather().rename(columns={"year": "year"})
     df = df.merge(w, on=["address_id", "year"], how="left", suffixes=("", "_wx"))
-    df["customer_age"] = (df["period_start"] - df["date_of_birth"]).dt.days / 365.25
+    if "date_of_birth" in df.columns:
+        df["customer_age"] = (df["period_start"] - df["date_of_birth"]).dt.days / 365.25
+    else:  # emerging: the row's own age band (driver for motor, policyholder for property)
+        df["customer_age"] = df["driver_age"].fillna(df["policyholder_age"])
     df["customer_tenure"] = df["year"] - df["customer_since_year"]
     df["property_age"] = df["year"] - df["year_built"]
     df["start_month"] = df["period_start"].dt.month
-    df = df.drop(columns=["date_of_birth", "surname"])
+    df = df.drop(columns=[c for c in ("date_of_birth", "surname") if c in df.columns])
     df = df.drop(columns=[c for c in FORBIDDEN if c in df.columns])
     df = pd.concat([df, claim_history(df)], axis=1)
     holdings = data.all_policies(kind).groupby(["customer_id", "year"])["line"].nunique()
     # no n_ prefix: the harness treats n_ columns as claim counts and hides them
     df["lines_held"] = df.set_index(["customer_id", "year"]).index.map(holdings).to_numpy()
     return df
+
+
+def harmonize_customers(cust: pd.DataFrame) -> pd.DataFrame:
+    """Customer table in the developed vocabulary. No-op on the developed market.
+
+    Emerging occupation is free text: case and spacing vary ("Retired", "retired",
+    "Retired ") and some entries carry a "Self-employed " prefix. The text is folded to the
+    developed 20 titles and the prefix becomes its own flag.
+    """
+    cust = cust.copy()
+    if "date_of_birth" in cust.columns:
+        cust["date_of_birth"] = pd.to_datetime(cust["date_of_birth"])
+    occ = cust["occupation"]
+    if occ.dropna().str.lower().str.startswith(SELF_EMPLOYED).any():
+        low = occ.str.strip().str.lower()
+        cust["self_employed"] = low.str.startswith(SELF_EMPLOYED.strip()).astype("boolean")
+        base = low.str.replace(f"^{SELF_EMPLOYED}", "", regex=True).str.strip()
+        cust["occupation"] = base.str.capitalize()
+        cust.loc[occ.isna(), "self_employed"] = pd.NA
+    return cust
+
+
+def harmonize_policies(pol: pd.DataFrame) -> pd.DataFrame:
+    """Policy rows in the developed vocabulary. No-op on the developed market."""
+    pol = pol.copy()
+    if "construction_type" in pol.columns:
+        pol["construction_type"] = pol["construction_type"].replace(CONSTRUCTION_CODES)
+    for band, age in (
+        ("driver_age_band", "driver_age"),
+        ("policyholder_age_band", "policyholder_age"),
+    ):
+        if band in pol.columns and age not in pol.columns:
+            pol[age] = pol[band].map(AGE_BAND_MEAN).astype(float)
+    return pol
 
 
 def finalize(df: pd.DataFrame) -> pd.DataFrame:

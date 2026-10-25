@@ -27,9 +27,11 @@ import pandas as pd
 from iaa import data, features, score, target, ultimate
 
 CACHE = data.ROOT / "data" / "cache"
-RESULTS = data.ROOT / "results.tsv"
+RESULTS = data.ROOT / (
+    "results.tsv" if data.MARKET == "developed" else f"results_{data.MARKET}.tsv"
+)
 PREDS = CACHE / "preds"  # per-run validation predictions for lift charts (gitignored)
-SUBMISSIONS = data.ROOT / "submissions"
+SUBMISSIONS = data.ROOT / "submissions" / ("" if data.MARKET == "developed" else "part2")
 FROZEN = ["data.py", "target.py", "ultimate.py", "features.py", "score.py", "harness.py"]
 # The dataset cache depends only on these files and on the config outside `harness:`.
 # Harness logic (folds, keep rule, logging) can change without rebuilding the dataset or
@@ -176,7 +178,9 @@ def best_kept(cfg: dict | None = None) -> dict | None:
     owner = [i for i, r in enumerate(rows) if r["verdict"] == "keep_owner"]
     rows = rows[owner[-1] :] if owner else rows
     for r in rows:
-        r["_primary"] = primary_of({"A": float(r["d2_A"]), "B": float(r["d2_B"])}, cfg)
+        r["_primary"] = primary_of(
+            {k: float(r[f"d2_{k}"]) for k in cfg["harness"]["primary_weights"]}, cfg
+        )
     return max(rows, key=lambda r: r["_primary"]) if rows else None
 
 
