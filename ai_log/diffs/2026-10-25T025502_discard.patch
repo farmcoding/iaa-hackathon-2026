@@ -1,0 +1,75 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..0562fc4 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -105,7 +105,34 @@ USE_CORRECTION = False
+ # from `base` for buildings and contents, and P0 asks whether that peril-level view of the
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+-USE_PERIL_SUM = True
++USE_PERIL_SUM = False
++# v3 (agent, 2026-10-25, backlog E7): every Tier 0 univariate credibility factor (region,
++# age band, GLM, weather, tenure, sum insured) lost on both folds -- not evidence the
++# fields carry no signal, since a credibility factor can only shift one field's levels
++# uniformly and can't net out confounding (region x new_business on a 76%-new-business
++# broker book, E3's log). E7 is the first Tier 1 item: a tiny LightGBM correction, on top
++# of kept P0 (the per-peril base sum), restricted to the five fields the drift report
++# flags as shifted (region, age band, hail_days, wildfire_index, new_business) -- never
++# previous_insurer/occupation/make_model, which took the split gain in the failed
++# free-form v1. num_leaves=3, <=50 trees, min_data_in_leaf=2000, no subsampling
++# (feature_fraction/bagging_fraction=1.0) so the fit is deterministic without seed-bagging.
++E7_FIELDS = ("region", "hail_days", "wildfire_index", "new_business")
++E7_PARAMS = {
++    "objective": "tweedie",
++    "tweedie_variance_power": 1.5,
++    "learning_rate": 0.05,
++    "num_leaves": 3,
++    "min_data_in_leaf": 2000,
++    "feature_fraction": 1.0,
++    "bagging_fraction": 1.0,
++    "bagging_freq": 0,
++    "lambda_l2": 10.0,
++    "n_estimators": 50,
++    "verbose": -1,
++    "deterministic": True,
++    "force_row_wise": True,
++}
++USE_E7 = True
+ 
+ 
+ def credibility_factors(
+@@ -189,6 +216,24 @@ def peril_prediction(va: pd.DataFrame, line: str, levels: dict[str, float]) -> n
+     return sum(va[f"base_{name}"].to_numpy() * levels[name] for name, _, _ in perils_of(line))
+ 
+ 
++def _peril_sum(df: pd.DataFrame, line: str) -> np.ndarray:
++    levels = {name: 1.0 for name, _, _ in perils_of(line)}
++    return peril_prediction(df, line, levels)
++
++
++def _fit_line_e7(tr: pd.DataFrame, va: pd.DataFrame) -> np.ndarray:
++    line = str(tr["line"].iloc[0])
++    age_col = "driver_age_band" if line == "motor" else "policyholder_age_band"
++    cols = [c for c in (age_col, *E7_FIELDS) if c in tr.columns]
++    base_tr = _peril_sum(tr, line)
++    base_va = _peril_sum(va, line)
++    off_tr = np.log(np.maximum(base_tr, 1e-3))
++    off_va = np.log(np.maximum(base_va, 1e-3))
++    m = lgb.LGBMRegressor(**E7_PARAMS, seed=SEEDS[0], monotone_constraints=[0] * len(cols))
++    m.fit(tr[cols], tr["y"], init_score=off_tr)
++    return np.exp(off_va + m.predict(va[cols], raw_score=True))
++
++
+ def _feature_cols(df: pd.DataFrame, line: str) -> list[str]:
+     drop = NON_FEATURES | INADMISSIBLE | DUPLICATES | LINE_DROP.get(line, set())
+     drop |= {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
+@@ -219,6 +264,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if USE_CORRECTION:
+             pred[mask] = _fit_line(train[train["line"] == line], va)
+             continue
++        if USE_E7:
++            pred[mask] = _fit_line_e7(train[train["line"] == line], va)
++            continue
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+             pred[mask] = peril_prediction(va, line, levels)
