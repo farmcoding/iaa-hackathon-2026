@@ -1,0 +1,37 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..6edd3e6 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,22 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): household_size alone (2026-10-25T04:29:43, discard 0.14382) was a
++# clean loss against this champion (-0.00077, not a near-miss), so there is no pairing
++# partner from the last iteration. Picking a fresh diagnostics-driven candidate instead:
++# buildings `flood_zone` is PERSISTENT with the largest unaddressed exposure x gap on that
++# line (band 3.0, 7.6% exposure, A/E 1.276 B / 1.605 R, under-predicted; band 2.0, 14.6%
++# exposure, A/E 0.770 B / 0.695 R, over-predicted -- opposite directions on an ordinal field,
++# both folds agreeing). It is untried as a structured factor (only region, E1, was tried
++# among the "base has never seen this emerging dimension" fields) and has a direct actuarial
++# mechanism distinct from every factor already stacked: flood_zone drives the buildings
++# flood/water peril, and the developed base's zone relativity (fit on the developed market's
++# narrower climate range) plausibly misprices it once the emerging market's wider
++# hail/rainfall extremes (part2_drift.md) shift the zone-to-cost relationship. Buildings
++# only, matching the diagnostics flag; same recipe as trees_within_5m/missed_payments_12m
++# (basis "cost", k=200, deterministic credibility shrinkage, no SEEDS).
++USE_FLOOD_ZONE_FACTOR = True
++FLOOD_ZONE_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -373,6 +389,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_TREES_FACTOR and line == "buildings":
+                 factors = credibility_factors(tr_line, "trees_within_5m", k=TREES_FACTOR_K)
+                 out = out * apply_factors(va, "trees_within_5m", factors)
++            if USE_FLOOD_ZONE_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "flood_zone", k=FLOOD_ZONE_FACTOR_K)
++                out = out * apply_factors(va, "flood_zone", factors)
+             if USE_OCCUPATION_FACTOR:
+                 factors = credibility_factors(tr_line, "occupation", k=OCCUPATION_FACTOR_K)
+                 out = out * apply_factors(va, "occupation", factors)
