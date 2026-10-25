@@ -1,0 +1,77 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..d9b189e 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -26,6 +26,7 @@ import os
+ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
++from sklearn.linear_model import TweedieRegressor
+ 
+ NON_FEATURES = {
+     "row_id",
+@@ -106,6 +107,50 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# E3 (agent, 2026-10-25, backlog Tier 0 E3): univariate credibility factors on region
++# (E1, both the raw first attempt and the correctly-normalised retry, discard
++# 2026-10-25T01:45:52 / T02:36:05) and on age band (owner manual check, by cost or by
++# count) both lost on both folds. Both are marginal corrections, estimated one field at a
++# time; on a book that is 76% new business from one broker, new_business and region are
++# plausibly confounded (the broker's book is concentrated in a subset of regions), so a
++# marginal region factor can absorb new_business's effect and vice versa, biasing both.
++# E3 instead fits region, age band, new_business, channel (+ cover_type on motor) jointly
++# in one ridge log-link Tweedie GLM on y / (P0 peril-sum base), weight = base ** 0.5, so
++# each factor's coefficient nets out the others. alpha=10 first (middle of the backlog's
++# {1, 10, 100}): strong enough to matter given every marginal attempt so far has overfit
++# or mis-attributed, not so strong the joint structure can't move at all.
++USE_GLM_CORRECTION = True
++GLM_ALPHA = 10.0
++GLM_FEATURES = {
++    "motor": ["region", "driver_age_band", "new_business", "channel", "cover_type"],
++    "buildings": ["region", "policyholder_age_band", "new_business", "channel"],
++    "contents": ["region", "policyholder_age_band", "new_business", "channel"],
++}
++
++
++def _glm_design(df: pd.DataFrame, line: str, columns: pd.Index | None = None) -> pd.DataFrame:
++    cat = df[GLM_FEATURES[line]].astype("string").fillna("missing")
++    dummies = pd.get_dummies(cat)
++    if columns is not None:
++        dummies = dummies.reindex(columns=columns, fill_value=0)
++    return dummies
++
++
++def glm_ratio(
++    tr: pd.DataFrame, va: pd.DataFrame, line: str, base_tr: np.ndarray, alpha: float
++) -> np.ndarray:
++    """Ridge log-link Tweedie correction ratio to a base prediction (`base_tr` on the
++    training rows): fits y / base_tr jointly on a handful of shifted factors, weight
++    base_tr ** 0.5, alpha penalising every coefficient towards 0 (ratio towards 1, i.e.
++    no change). Returns the predicted ratio for `va`; multiply by the matching valid-row
++    base to get the corrected prediction."""
++    x_tr = _glm_design(tr, line)
++    x_va = _glm_design(va, line, columns=x_tr.columns)
++    target = tr["y"].to_numpy() / np.maximum(base_tr, 1e-6)
++    weight = np.maximum(base_tr, 1e-6) ** 0.5
++    model = TweedieRegressor(power=1.5, link="log", alpha=alpha, max_iter=1000)
++    model.fit(x_tr, target, sample_weight=weight)
++    return model.predict(x_va)
+ 
+ 
+ def credibility_factors(
+@@ -221,7 +266,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             continue
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+-            pred[mask] = peril_prediction(va, line, levels)
++            base_pred = peril_prediction(va, line, levels)
++            if USE_GLM_CORRECTION:
++                tr_line = train[train["line"] == line]
++                base_tr = peril_prediction(tr_line, line, levels)
++                base_pred = base_pred * glm_ratio(tr_line, va, line, base_tr, GLM_ALPHA)
++            pred[mask] = base_pred
+             continue
+         pred[mask] = va["base"].to_numpy()
+     return pred
