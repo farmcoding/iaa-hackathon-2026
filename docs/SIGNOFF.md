@@ -46,3 +46,18 @@ Same gate. Ten submissions a day; one final submission is selected by the human.
 | 2026-10-25 04:55 | 68e71bf + market switch (uncommitted), `scripts/part2_baseline.py` 76e9df44 | baseline_rate.csv (a37d37d28c69133d) | n/a | 0.08396 | Baseline, not a candidate: one trended loss cost per exposure per line; checks the 209,063-row file and the scorer | Karl (asked for a dummy baseline submission, 2026-10-25) |
 | 2026-10-25 05:10 | 68e71bf + market switch (uncommitted), experiment.py d5d72c8c (Part 1 final, unchanged) | native_v0_20261025_0105.csv (d5f91231ce710938) | 0.1149 (buildings A/E 0.60) | 0.12904 | Baseline, not a candidate: the Part 1 specification refit on emerging 2023-24 with no changes; first bar for the adaptation | Karl (same request) |
 | 2026-10-25 05:55 | 68e71bf + market switch (uncommitted), `scripts/part2_transfer.py` 96bd7957 | transfer_p1.csv (dc6f0b5026a0b53d) | level-neutral 0.151 on emerging 2024 (native 0.123) | 0.14243 | Baseline, not a candidate: the Part 1 final specification fitted on developed 2021-24, emerging line levels as the other baselines; tests whether developed relativities transfer | Karl (same request) |
+| 2026-10-25 05:58 | aa065d1 (pre-commit state), diagnostic | transfer_p1_mixlevel.csv | n/a | 0.15079 | Diagnostic, not a candidate: transfer_p1 with each line scaled by the 2025 mix index from the developed relativities (motor 1.16, buildings 1.087, contents 1.018). Tested whether anchoring to the historical loss cost understates a riskier book: +0.0084. The method was then frozen in the harness (balance on train), not fitted to the board | Karl (asked to find what was missing, 2026-10-25) |
+
+### Part 1 late submissions (diagnostic, after the close; they do not change the Part 1 result)
+
+Part 1 accepts late submissions after its close and scores them without ranking them. Eight were used once, on 25 October, to learn what the Part 1 model missed. None is a candidate; the Part 1 final stays 710775e (private 0.13363).
+
+| File | Change to the Part 1 final | Public | Private |
+|---|---|---|---|
+| p1_all_x105 | all lines x1.05 | n/a | 0.13253 |
+| p1_motor_x0.9 / x1.1 | motor level | n/a | 0.13437 / 0.13166 |
+| p1_buildings_x0.9 / x1.1 | buildings level | n/a | 0.13329 / 0.13305 |
+| p1_contents_x0.9 / x1.1 | contents level | n/a | 0.13335 / 0.13343 |
+| p1_mixlevel | each line scaled by the model's own 2025 mix index (developed base fit: motor 0.906, buildings 0.991, contents 1.005) | 0.12639 | 0.13438 |
+
+The fitted best levels from the probes (motor 0.90, buildings 0.98, contents 1.00) match the mix index the model gives without the board. Anchoring each line to the historical loss cost put Part 1 motor about 10% high; balancing on the training rows would have scored 0.13438 instead of 0.13363. The probes stopped there.
