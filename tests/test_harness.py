@@ -163,7 +163,7 @@ def test_score_folds_sets_ae_flag_outside_band():
 
 def test_ensure_header_migrates_old_ledger_in_place(tmp_path):
     path = tmp_path / "results.tsv"
-    old_fields = [f for f in harness.FIELDS if f != "ae_flag"]
+    old_fields = harness.FIELDS[: harness.FIELDS.index("ae_flag")]  # before ae_flag was added
     _ledger(path, [])
     with path.open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=old_fields, delimiter="\t", extrasaction="ignore")
@@ -183,7 +183,7 @@ def test_ensure_header_preserves_crlf_data_rows(tmp_path):
     """A CRLF ledger must not have its data rows silently rewritten as LF: that would
     show up as a whole-file git diff on the next run after this change merges."""
     path = tmp_path / "results.tsv"
-    old_fields = [f for f in harness.FIELDS if f != "ae_flag"]
+    old_fields = harness.FIELDS[: harness.FIELDS.index("ae_flag")]  # before ae_flag was added
     header = "\t".join(old_fields)
     data_row = "t1\tkeep\t\t0.12"
     raw = (header + "\r\n" + data_row + "\r\n").encode()

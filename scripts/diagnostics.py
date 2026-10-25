@@ -17,7 +17,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from iaa import data, harness
+from iaa import data, harness, ultimate
 
 OUT = data.ROOT / "data" / "cache" / "diagnostics.md"
 SKIP = {
@@ -38,6 +38,8 @@ SKIP = {
 
 
 def _band(s: pd.Series) -> pd.Series:
+    if s.notna().sum() == 0:  # e.g. claim history in the first emerging year
+        return pd.Series("missing", index=s.index)
     if isinstance(s.dtype, pd.CategoricalDtype) or s.dtype == object or s.nunique() <= 8:
         s = s.astype("string").fillna("missing")
         top = s.value_counts().index[:10]
@@ -54,11 +56,17 @@ def main() -> None:
     p = pd.read_parquet(harness.PREDS / f"{run}.parquet")
     # one 11.9m BI claim (2023) swamps any segment it lands in; cap actuals at 1m per row here
     p["y"] = p["y"].clip(upper=1_000_000)
+    cfg = ultimate.load_config()
+    folds = list(cfg["harness"]["folds"])[:2]
+    F1, F2 = folds if len(folds) == 2 else (folds[0], folds[0])
+    if cfg["harness"].get("metric") == "level_neutral":
+        # Part 2: the keep metric is level-neutral, so show relativity misses only
+        p = pd.concat([harness.level_neutral(g) for _, g in p.groupby("fold")])
     df = harness.dataset()
     df = df[df["split"] == "train"]
     lines = [f"# Diagnostics for the run to beat: {run} (primary {float(best['primary']):.5f})", ""]
     lines += [
-        "A/E = actual (capped at 1m per row) / predicted cost. Fold A scores 2023, fold B 2024. PERSISTENT = both folds miss the same way by >5% on >=2% of the line's exposure.",
+        f"A/E = actual (capped at 1m per row) / predicted cost. Folds: {', '.join(f'{k} scores {v["valid"]}' for k, v in cfg['harness']['folds'].items())}. PERSISTENT = both folds miss the same way by >5% on >=2% of the line's exposure.",
         "",
     ]
     for line in ("motor", "buildings", "contents"):
@@ -73,9 +81,9 @@ def main() -> None:
                 and feats[c].notna().any()
             ]
         ]
-        lines += [f"## {line.title()}", "", "Decile of predicted rate: A/E fold A | fold B", ""]
+        lines += [f"## {line.title()}", "", "Decile of predicted rate: A/E by fold", ""]
         dec = []
-        for fold in ("A", "B"):
+        for fold in (F1, F2):
             g = pl[pl["fold"] == fold].copy()
             g["d"] = pd.qcut((g["pred"] / g["exposure"]).rank(method="first"), 10, labels=False) + 1
             dec.append(
@@ -83,19 +91,19 @@ def main() -> None:
             )
         lines.append("| decile | " + " | ".join(str(i) for i in range(1, 11)) + " |")
         lines.append("|---" * 11 + "|")
-        for fold, d in zip(("A", "B"), dec, strict=True):
+        for fold, d in zip((F1, F2), dec, strict=True):
             lines.append(f"| {fold} | " + " | ".join(f"{v:.2f}" for v in d) + " |")
         lines += [
             "",
             "Segments (worst persistent misses first):",
             "",
-            "| field | level | exposure share | A/E fold A | A/E fold B | flag |",
+            f"| field | level | exposure share | A/E fold {F1} | A/E fold {F2} | flag |",
             "|---|---|---|---|---|---|",
         ]
         rows = []
         for c in feats.columns:
             res = {}
-            for fold in ("A", "B"):
+            for fold in (F1, F2):
                 g = pl[pl["fold"] == fold].join(feats[[c]], on="row_id")
                 g["lvl"] = _band(g[c])
                 agg = g.groupby("lvl", observed=True).agg(
@@ -104,8 +112,8 @@ def main() -> None:
                 agg["ae"] = agg["y"] / agg["pred"]
                 agg["share"] = agg["e"] / agg["e"].sum()
                 res[fold] = agg
-            both = res["A"][["ae", "share"]].join(
-                res["B"][["ae", "share"]], lsuffix="_A", rsuffix="_B", how="inner"
+            both = res[F1][["ae", "share"]].join(
+                res[F2][["ae", "share"]], lsuffix="_A", rsuffix="_B", how="inner"
             )
             for lvl, r in both.iterrows():
                 share = min(r["share_A"], r["share_B"])

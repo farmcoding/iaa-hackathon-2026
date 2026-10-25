@@ -5,6 +5,7 @@
 # runs, and never starts a batch in that window.
 #
 # Usage: scripts/run_batches.sh [max_batches] [iterations_per_batch]
+#        (LOOP_MARKET=emerging passes through to loop.sh; the Part 1 dashboard is skipped)
 set -u
 ROOT="${0:A:h:h}"
 cd "$ROOT" || exit 1
@@ -23,7 +24,7 @@ for b in $(seq "$START" $(( START + MAX - 1 ))); do
   echo "== batch $b ($(date +%H:%M))"
   scripts/loop.sh "$PER"
   rc=$?
-  if [[ -f scripts/dashboard.py ]]; then
+  if [[ "${LOOP_MARKET:-developed}" == "developed" && -f scripts/dashboard.py ]]; then
     .venv/bin/python -I scripts/dashboard.py --batch "$b" && \
       git add reports/dashboard && \
       git -c core.hooksPath=/dev/null commit -q -m "dashboard: after batch $b" || true

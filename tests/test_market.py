@@ -55,3 +55,49 @@ def test_emerging_test_rows_match_sample_submission():
     )
     sample = pd.read_parquet(data.MARKET_DIRS["emerging"] / "sample_submission.parquet")
     assert rows.is_unique and set(rows) == set(sample["row_id"].astype("string"))
+
+
+def _toy():
+    tr = pd.DataFrame(
+        {
+            "line": ["motor", "motor", "contents"],
+            "exposure": [1.0, 1.0, 1.0],
+            "y": [100.0, 300.0, 50.0],
+            "row_id": ["a", "b", "c"],
+            "x": [1.0, 3.0, 2.0],
+        }
+    )
+    va = pd.DataFrame(
+        {
+            "line": ["motor", "contents"],
+            "exposure": [1.0, 1.0],
+            "row_id": ["d", "e"],
+            "x": [2.0, 4.0],
+        }
+    )
+    return tr, va
+
+
+class _Stub:
+    @staticmethod
+    def fit_predict(train, valid):
+        return valid["x"].to_numpy() * 7.0  # arbitrary level, relativities from x
+
+
+def test_balance_on_train_sets_line_level_from_training_rows():
+    from iaa import harness
+
+    tr, va = _toy()
+    cfg = {"harness": {"level": "balance_on_train"}}
+    p = harness.predict(_Stub, tr, va, cfg)
+    # motor: train preds 7 and 21 (sum 28) must scale to actual 400 -> factor 400/28
+    assert p[0] == pytest.approx(2 * 7 * 400 / 28)
+    assert p[1] == pytest.approx(4 * 7 * 50 / 14)
+
+
+def test_level_neutral_rescales_each_line_to_its_actual():
+    from iaa import harness
+
+    va = pd.DataFrame({"line": ["m", "m", "c"], "y": [10.0, 30.0, 5.0], "pred": [1.0, 3.0, 9.0]})
+    out = harness.level_neutral(va)
+    assert out.groupby("line")["pred"].sum().to_dict() == pytest.approx({"m": 40.0, "c": 5.0})

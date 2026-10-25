@@ -39,18 +39,34 @@ peril_trend:
 harness:
   # one out-of-time fold: train 2023, score 2024 (2024 truth is itself developed with the
   # borrowed pattern, so the fold scores the model and the development assumption together)
+  # R (owner 2026-10-25) reverses it: train 2024, score 2023. Not out of time, but a
+  # second read on the same small book, and its truth (2023) is the more developed year.
+  # Both folds use the developed 2021-23 base
   folds:
     B: {train: [2023], valid: 2024}
+    R: {train: [2024], valid: 2023}
   final: {train: [2023, 2024], predict: 2025}
   time_budget_seconds: 1800
-  primary_weights: {B: 1}
-  # measured 2026-10-25 on the Part 1 specification, five seed offsets, every line refit:
-  # fold B 0.1154 / 0.1083 / 0.1153 / 0.1168 / 0.1121, sd 0.0034 (buildings alone swings
-  # -0.006 to 0.018). Part 1's single-seed 0.0005 margin would keep noise. The values below
-  # stay placeholders pending the owner's call (seed averaging or a wider margin)
-  noise_floor: 0.002
-  fold_floor: 0.004
-  superseded: []
+  primary_weights: {B: 1, R: 1}
+  # 2026-10-25: on the anchored-level metric the Part 1 specification swung sd 0.0034
+  # (buildings level, one fire year). On the level-neutral metric, base plus a light
+  # correction over five seed offsets: primary sd 0.00038 (B 0.00025, R 0.00055). Margin
+  # 0.001 (about 2.5 sd; the fresh-seed confirmation stays), worse fold may fall 0.002
+  noise_floor: 0.001
+  fold_floor: 0.002
+  # the v0 row (2026-10-25T01:03:20) was scored at the anchored level, before the
+  # level-neutral metric; not comparable
+  superseded: ["2026-10-25T01:03:20"]
+  # developed-market base prediction per row, by validation year (scripts/part2_base.py):
+  # developed 2021-23 fit when scoring 2024, 2021-24 fit for 2025. Attached by harness.split
+  base: {2023: part2_base_B.parquet, 2024: part2_base_B.parquet, 2025: part2_base_final.parquet}
+  # level (owner, 2026-10-25): each line balanced so its training predictions sum to the
+  # trended training actuals; the 2025 mix then moves the level. Board check on the
+  # transfer file: history-anchored 0.14243, mix-adjusted 0.15079
+  level: balance_on_train
+  # keep metric: D2 with each line rescaled to its actual total (ranking only). The level
+  # is frozen above, and fold B's level swings with one fire-heavy year
+  metric: level_neutral
   confirm_seed_offset: 100
   use_premium: false
 

@@ -19,6 +19,7 @@ import os
 import subprocess
 import time
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -61,6 +62,11 @@ FIELDS = [
     # owner (3.23): 1 when any line's fold-B A/E falls outside the 0.97-1.03 band set
     # in program.md, else 0. A ledger flag, not a gate: it does not change the verdict.
     "ae_flag",
+    # Part 2: D2 at the frozen level when the keep metric is level-neutral
+    "d2_actual_B",
+    # Part 2 reverse fold (train 2024, score 2023)
+    "d2_R",
+    "d2_actual_R",
 ]
 AE_BAND = (0.97, 1.03)
 
@@ -116,7 +122,57 @@ def split(df: pd.DataFrame, train_years, valid_year, cfg) -> tuple[pd.DataFrame,
         va = df[df["split"] == "test"].copy()
     else:
         va = df[(df["split"] == "train") & (df["year"] == valid_year)].copy()
-    return tr, va
+    return _attach_base(tr, valid_year, cfg), _attach_base(va, valid_year, cfg)
+
+
+@lru_cache(maxsize=4)
+def _base_table(name: str, market: str) -> pd.Series:
+    b = pd.read_parquet(CACHE / name, columns=["market", "row_id", "base"])
+    b = b[b["market"] == market]
+    return b.set_index(b["row_id"].astype(str))["base"]
+
+
+def _attach_base(df: pd.DataFrame, valid_year: int, cfg: dict) -> pd.DataFrame:
+    """Part 2: the developed-market base prediction for each row (config harness.base,
+    one file per validation year). Attached here, in frozen code, so an experiment always
+    sees the base fitted without its own validation year (developed 2021-23 when scoring
+    2024, developed 2021-24 for 2025) and cannot pick another one."""
+    files = cfg.get("harness", {}).get("base") or {}
+    if valid_year not in files:
+        return df
+    base = df["row_id"].astype(str).map(_base_table(files[valid_year], data.MARKET))
+    if base.isna().any():
+        raise ValueError(f"{int(base.isna().sum())} rows have no base prediction")
+    return df.assign(base=base.to_numpy())
+
+
+def predict(exp, tr: pd.DataFrame, va: pd.DataFrame, cfg: dict) -> np.ndarray:
+    """Experiment predictions for va, with the line level set by the config.
+
+    level: balance_on_train (Part 2) asks the experiment for the training rows as well and
+    scales each line so its training predictions sum to the trended training actuals. The
+    model's relativities then carry the 2025 mix into the level, where anchoring the
+    valid rows to the historical loss cost (Part 1, inside experiment.py) cannot: the
+    emerging 2025 book is 76% new business. Frozen here so no experiment can move the level.
+    """
+    if cfg["harness"].get("level") != "balance_on_train":
+        return check_predictions(exp.fit_predict(tr, hide_target(va)), len(va))
+    both = pd.concat([hide_target(va), hide_target(tr)], ignore_index=True)
+    p = check_predictions(exp.fit_predict(tr, both), len(both))
+    pv, pt = p[: len(va)], p[len(va) :]
+    out = pv.copy()
+    for line in va["line"].unique():
+        mv, mt = (va["line"] == line).to_numpy(), (tr["line"] == line).to_numpy()
+        out[mv] = pv[mv] * tr.loc[mt, "y"].sum() / pt[mt].sum()
+    return np.maximum(out, score.FLOOR)
+
+
+def level_neutral(va: pd.DataFrame) -> pd.DataFrame:
+    """Each line rescaled to its actual total: scores ranking and spread, not level."""
+    va = va.copy()
+    for _, g in va.groupby("line"):
+        va.loc[g.index, "pred"] = g["pred"] * g["y"].sum() / g["pred"].sum()
+    return va
 
 
 def hide_target(va: pd.DataFrame) -> pd.DataFrame:
@@ -291,14 +347,23 @@ def _score_folds(exp, df: pd.DataFrame, cfg: dict) -> tuple[dict, list]:
     saved = []
     for name, fold in cfg["harness"]["folds"].items():
         tr, va = split(df, fold["train"], fold["valid"], cfg)
-        pred = check_predictions(exp.fit_predict(tr, hide_target(va)), len(va))
+        pred = predict(exp, tr, va, cfg)
         va = va.assign(pred=pred, y=va["y_ult"])
         saved.append(va[["row_id", "line", "exposure", "y", "pred"]].assign(fold=name))
         card = score.scorecard(va)
-        res[f"d2_{name}"] = card["d2"]
+        # metric: level_neutral (Part 2) keeps on ranking only: the level is frozen
+        # (balance on train) and fold B's level is dominated by one fire-heavy year. The
+        # D2 at the frozen level is logged as d2_actual_<fold>; A/E stays at that level.
+        rank = (
+            score.scorecard(level_neutral(va))
+            if cfg["harness"].get("metric") == "level_neutral"
+            else card
+        )
+        res[f"d2_{name}"] = rank["d2"]
+        res[f"d2_actual_{name}"] = card["d2"]
         if name == "B":
             for k in ("motor", "buildings", "contents"):
-                res[f"d2_{k}_B"] = card[f"d2_{k}"]
+                res[f"d2_{k}_B"] = rank[f"d2_{k}"]
                 res[f"ae_{k}_B"] = card[f"ae_{k}"]
             res["gini_B"] = card["gini"]
         print(f"fold {name}: " + "  ".join(f"{k}={v:.5f}" for k, v in card.items()), flush=True)
@@ -320,7 +385,7 @@ def smoke(module: str = "iaa.experiment", rows_per_line: int = 50_000) -> None:
     exp = importlib.import_module(module)
     for name, fold in cfg["harness"]["folds"].items():
         tr, va = split(df, fold["train"], fold["valid"], cfg)
-        check_predictions(exp.fit_predict(tr, hide_target(va)), len(va))
+        predict(exp, tr, va, cfg)
         print(f"smoke fold {name}: ok ({len(tr)} train rows, {len(va)} valid rows)")
 
 
@@ -329,12 +394,12 @@ def final(description: str, module: str = "iaa.experiment") -> Path:
     df = dataset()
     exp = importlib.import_module(module)
     tr, te = split(df, cfg["harness"]["final"]["train"], cfg["predict_year"], cfg)
-    pred = check_predictions(exp.fit_predict(tr, hide_target(te)), len(te))
+    pred = predict(exp, tr, te, cfg)
     sub = pd.DataFrame({"row_id": te["row_id"].astype(str), "prediction": pred})
     sample = pd.read_parquet(data.RAW / "sample_submission.parquet")
     if set(sub["row_id"]) != set(sample["row_id"].astype(str)) or len(sub) != len(sample):
         raise ValueError("submission rows do not match sample_submission")
-    SUBMISSIONS.mkdir(exist_ok=True)
+    SUBMISSIONS.mkdir(parents=True, exist_ok=True)
     path = SUBMISSIONS / f"{_commit()}_{datetime.now():%Y%m%d_%H%M}.csv"
     sub.to_csv(path, index=False)
     by_line = te.assign(p=pred).groupby("line").apply(lambda g: g.p.sum() / g.exposure.sum())

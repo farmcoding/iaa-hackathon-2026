@@ -1,2 +1,3 @@
-timestamp	commit	verdict	primary	d2_A	d2_B	min_fold	d2_motor_B	d2_buildings_B	d2_contents_B	ae_motor_B	ae_buildings_B	ae_contents_B	gini_B	seconds	description	run_id	confirm_primary	confirm_min_fold	ae_flag
+timestamp	commit	verdict	primary	d2_A	d2_B	min_fold	d2_motor_B	d2_buildings_B	d2_contents_B	ae_motor_B	ae_buildings_B	ae_contents_B	gini_B	seconds	description	run_id	confirm_primary	confirm_min_fold	ae_flag	d2_actual_B	d2_R	d2_actual_R
 2026-10-25T01:03:20	68e71bf+dirty	keep	0.11542		0.11542	0.11542	0.08298	0.01678	0.07893	1.04359	0.60310	0.93488	0.39056	27	part2 v0: Part 1 champion spec refit natively on emerging (no changes)	20261025T010226	0.11492	0.11492	1
+2026-10-25T01:37:06	8072dc5+dirty	keep_owner	0.13663		0.15199	0.12128	0.09132	0.11927	0.10069	1.00611	0.61514	0.94876	0.44430	0	part2 bar: developed base alone (Part 1 spec fit on developed 2021-23), level balanced on train, level-neutral metric, folds B+R	20261025T013705			1	0.14213	0.12128	0.10978

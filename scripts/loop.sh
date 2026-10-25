@@ -10,6 +10,8 @@
 # The agent never runs code, never writes the ledger and never submits to Kaggle.
 #
 # Usage: scripts/loop.sh [iterations]   (default 5)
+#        LOOP_MARKET=emerging scripts/loop.sh [iterations]   (Part 2: experiment_emerging.py,
+#        program_emerging.md, results_emerging.tsv)
 set -u
 ROOT="${0:A:h:h}"
 cd "$ROOT" || exit 1
@@ -22,7 +24,15 @@ LOG_DIR="$ROOT/ai_log"
 HARNESS_TIMEOUT=4200  # two full runs when a keep is confirmed
 mkdir -p "$LOG_DIR"
 DAYLOG="$LOG_DIR/loop_$(date +%Y-%m-%d).md"
-EXP="src/iaa/experiment.py"
+MARKET="${LOOP_MARKET:-developed}"
+if [[ "$MARKET" == "emerging" ]]; then
+  EXP="src/iaa/experiment_emerging.py"; PROGRAM="program_emerging.md"
+  RESULTS="results_emerging.tsv"; MODULE="iaa.experiment_emerging"
+else
+  EXP="src/iaa/experiment.py"; PROGRAM="program.md"; RESULTS="results.tsv"; MODULE="iaa.experiment"
+fi
+# harness commands only: the test suite runs on the developed default
+HARNESS=(env IAA_MARKET="$MARKET" .venv/bin/python -I -m iaa.harness --module "$MODULE")
 
 if ! mkdir "$LOCK" 2>/dev/null; then
   if [[ -f "$LOCK/pid" ]] && kill -0 "$(cat "$LOCK/pid")" 2>/dev/null; then
@@ -46,8 +56,8 @@ for i in $(seq 1 "$ITER"); do
   fi
   ts=$(date +%Y-%m-%dT%H:%M:%S)
   # where the model to beat misses (data/cache/diagnostics.md, gitignored); step 1 of program.md
-  .venv/bin/python -I scripts/diagnostics.py >/dev/null 2>&1 || echo "diagnostics failed" > data/cache/diagnostics.md
-  out=$(claude -p "$(cat program.md)" "${PROFILE_ARGS[@]}" \
+  IAA_MARKET="$MARKET" .venv/bin/python -I scripts/diagnostics.py >/dev/null 2>&1 || echo "diagnostics failed" > data/cache/diagnostics.md
+  out=$(claude -p "$(cat "$PROGRAM")" "${PROFILE_ARGS[@]}" \
           --permission-mode acceptEdits --allowedTools "${ALLOWED[@]}" \
           --max-turns 30 --output-format text 2>&1)
 
@@ -86,7 +96,7 @@ Fix only these (usually a missing import at the top of the file). Change nothing
       if (( $? != 0 )); then
         verdict="crash"
         desc="UNDEFINED NAME ($(echo "$lint" | grep -m1 F821 | sed 's/.*F821 //' | cut -c1-120)): $desc"
-        printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv
+        printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> "$RESULTS"
       fi
     fi
   fi
@@ -94,7 +104,7 @@ Fix only these (usually a missing import at the top of the file). Change nothing
   if [[ "$verdict" == "pending" ]]; then
     # 20-second crash check on a subsample before spending a full run
     perl -e 'alarm shift; exec @ARGV' 300 \
-      .venv/bin/python -I -m iaa.harness --smoke x > "$LOG_DIR/last_run.txt" 2>&1
+      "${HARNESS[@]}" --smoke x > "$LOG_DIR/last_run.txt" 2>&1
     smoke_rc=$?
   fi
   if (( smoke_rc != 0 )); then
@@ -111,21 +121,21 @@ Fix only these (usually a missing import at the top of the file). Change nothing
     fi
     verdict="crash"
     desc="SMOKE CRASH ($err): $desc"
-    printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv
+    printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> "$RESULTS"
   elif [[ "$verdict" == "pending" ]]; then
     # The driver, not the agent, runs the harness and writes the ledger.
     if perl -e 'alarm shift; exec @ARGV' "$HARNESS_TIMEOUT" \
-         .venv/bin/python -I -m iaa.harness "$desc" > "$LOG_DIR/last_run.txt" 2>&1; then
-      verdict=$(tail -1 results.tsv | cut -f3)
+         "${HARNESS[@]}" "$desc" > "$LOG_DIR/last_run.txt" 2>&1; then
+      verdict=$(tail -1 "$RESULTS" | cut -f3)
     else
       verdict="crash"
-      printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> results.tsv
+      printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> "$RESULTS"
     fi
   fi
 
-  row=$(tail -1 results.tsv)
+  row=$(tail -1 "$RESULTS")
   if [[ "$verdict" == "keep" ]]; then
-    git add "$EXP" results.tsv
+    git add "$EXP" "$RESULTS"
     git -c core.hooksPath=/dev/null commit -q -m "exp(keep): $desc" \
       -m "loop iteration $i, $ts; primary $(echo "$row" | cut -f4), min_fold $(echo "$row" | cut -f7)"
     action="committed $(git rev-parse --short HEAD)"
@@ -133,7 +143,7 @@ Fix only these (usually a missing import at the top of the file). Change nothing
     # (19-20 Oct: left inverted, it turned 25 motor experiments into no-ops). The keep's saved
     # predictions cover every line, so the next run's frozen lines are this keep's.
     default='FROZEN_LINES: tuple[str, ...] = ("buildings", "contents")'
-    if ! grep -qxF "$default" "$EXP"; then
+    if [[ "$MARKET" == "developed" ]] && ! grep -qxF "$default" "$EXP"; then
       sed -i '' -E "s/^FROZEN_LINES: tuple\[str, \.\.\.\] = .*/$default/" "$EXP"
       git add "$EXP"; git -c core.hooksPath=/dev/null commit -q -m "loop: restore FROZEN_LINES motor-focus default after keep"
       action="$action; FROZEN_LINES restored"
@@ -167,7 +177,7 @@ Fix only these (usually a missing import at the top of the file). Change nothing
   } >> "$DAYLOG"
   rm -f "$LOG_DIR/last_run.txt"
   if [[ "$verdict" != "keep" ]]; then
-    git add results.tsv "$DAYLOG"
+    git add "$RESULTS" "$DAYLOG"
     [[ -d "$LOG_DIR/diffs" ]] && git add "$LOG_DIR/diffs"
   else
     git add "$DAYLOG"
