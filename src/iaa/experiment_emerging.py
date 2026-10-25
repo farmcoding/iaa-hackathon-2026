@@ -106,6 +106,10 @@ USE_CORRECTION = False
 # same developed information is already a better shape than the single total-cost fit,
 # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
 USE_PERIL_SUM = True
+# L1 (backlog tier L, agent, 25 Oct): motor gender on top of P0. The developed base has no
+# gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+# per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+MOTOR_GENDER_ALPHA = 0.01
 
 
 def credibility_factors(
@@ -320,7 +324,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             continue
         if USE_PERIL_SUM:
             levels = {name: 1.0 for name, _, _ in perils_of(line)}
-            pred[mask] = peril_prediction(va, line, levels)
+            p0 = peril_prediction(va, line, levels)
+            if line == "motor":
+                tr_line = train[train["line"] == line].assign(
+                    p0=peril_prediction(train[train["line"] == line], line, levels)
+                )
+                passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
+                if passes:
+                    mult = offset_glm(
+                        tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                    )
+                    p0 = p0 * mult
+            pred[mask] = p0
             continue
         pred[mask] = va["base"].to_numpy()
     return pred
