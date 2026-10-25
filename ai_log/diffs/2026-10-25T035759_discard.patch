@@ -1,0 +1,32 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 6af20c5..eee4487 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -167,6 +167,17 @@ USE_ENERGY_FACTOR = True
+ ENERGY_FACTOR_K = 200.0
+ USE_PREV_INSURER_FACTOR = True
+ PREV_INSURER_FACTOR_K = 200.0
++# v6 (agent, 2026-10-25): one more diagnostic-driven field, same recipe as the five near-
++# miss factors already stacked today. diagnostics.md's buildings PERSISTENT list (run
++# e9e329e, kept champion 0.14061) ranks construction_type (non_standard, 10.2% exposure,
++# A/E 1.464 B / 1.380 R -- both folds the same direction and size, the largest
++# exposure-weighted buildings miss not yet touched by any kept or tried factor). It is
++# admissible, untried in the ledger, and distinct from every factor already in the
++# champion (peril mix, renewal tenure, previous_insurer, energy_rating all act on other
++# fields or other lines' levels). Deterministic credibility shrinkage (no SEEDS), so a
++# fresh-seed rerun reproduces exactly.
++USE_CONSTRUCTION_FACTOR = True
++CONSTRUCTION_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -321,6 +332,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
+                 factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
+                 out = out * apply_factors(va, "energy_rating", factors)
++            if USE_CONSTRUCTION_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "construction_type", k=CONSTRUCTION_FACTOR_K)
++                out = out * apply_factors(va, "construction_type", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
