@@ -1,0 +1,41 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..501efee 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,23 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): pair the one confirmed near-miss left in the ledger with a fresh
++# diagnostics-driven candidate -- the same two-near-miss stacking pattern behind every keep
++# this session (fuel-on-E12 03:29, cover+elevation 03:44, energy+prev_insurer 03:57).
++# `flood_zone` on buildings was tested alone against this exact champion (2026-10-25T04:31:55,
++# discard 0.14497, +0.00038 both folds: a confirmed near-miss, just under the 0.001 margin).
++# The first attempt to pair it, `marital_status` on all three lines (2026-10-25T04:34:22,
++# discard 0.14461), was net negative and is not a candidate to retry. `basement` on buildings
++# is untried, admissible, PERSISTENT in diagnostics.md (14.5% exposure, A/E 0.746 B / 0.675 R,
++# both folds over-predicted by the same ~27-33%) and has a distinct actuarial mechanism from
++# flood_zone: basement presence drives water/subsidence severity directly, whereas flood_zone
++# is a geographic band -- related risk, different rating dimension, so only partly
++# overlapping. Same recipe as every factor this session (basis "cost", k=200, deterministic
++# credibility shrinkage, no SEEDS, so a fresh-seed rerun reproduces exactly).
++USE_FLOOD_ZONE_FACTOR = True
++FLOOD_ZONE_FACTOR_K = 200.0
++USE_BASEMENT_FACTOR = True
++BASEMENT_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +398,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_FLOOD_ZONE_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "flood_zone", k=FLOOD_ZONE_FACTOR_K)
++                out = out * apply_factors(va, "flood_zone", factors)
++            if USE_BASEMENT_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "basement", k=BASEMENT_FACTOR_K)
++                out = out * apply_factors(va, "basement", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
