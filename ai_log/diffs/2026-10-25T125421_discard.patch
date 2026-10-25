@@ -1,0 +1,42 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..a1c66ca 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -110,6 +110,10 @@ USE_PERIL_SUM = True
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# M4 (backlog tier M, agent, 25 Oct): contents tenure on top of L1+P0. tenure passed the
++# owner's claim-count gate in both years; gated again here with n_tests=1. alpha setting
++# 2 of 2 (0.01 discarded at 2026-10-25T12:53:46, primary 0.11912, +0.00002 over the L1 bar).
++CONTENTS_TENURE_ALPHA = 0.1
+ 
+ 
+ def credibility_factors(
+@@ -332,16 +336,23 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+             p0 = peril_prediction(va, line, levels)
++            tr_line = train[train["line"] == line].assign(
++                p0=peril_prediction(train[train["line"] == line], line, levels)
++            )
+             if line == "motor":
+-                tr_line = train[train["line"] == line].assign(
+-                    p0=peril_prediction(train[train["line"] == line], line, levels)
+-                )
+                 passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
+                 if passes:
+                     mult = offset_glm(
+                         tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                     )
+                     p0 = p0 * mult
++            elif line == "contents":
++                passes, _ = lr_gate(tr_line, "tenure", n_tests=1, offset="p0")
++                if passes:
++                    mult = offset_glm(
++                        tr_line, va, ["tenure"], alpha=CONTENTS_TENURE_ALPHA, offset="p0"
++                    )
++                    p0 = p0 * mult
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
