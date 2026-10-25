@@ -68,6 +68,12 @@ harness:
     2023: part2_base_perils_fine_B.parquet
     2024: part2_base_perils_fine_B.parquet
     2025: part2_base_perils_fine_final.parquet
+  # pooled two-market base, Part 1 pruning off, emerging rows weight 1 (scripts/part2_pooled.py);
+  # one fit per scored year so a fold never trains on its own rows
+  base_pooled:
+    2023: part2_pooled_R.parquet
+    2024: part2_pooled_B.parquet
+    2025: part2_pooled_final.parquet
   # level (owner, 2026-10-25): each line balanced so its training predictions sum to the
   # trended training actuals; the 2025 mix then moves the level. Board check on the
   # transfer file: history-anchored 0.14243, mix-adjusted 0.15079

@@ -319,6 +319,33 @@ def _fit_line(tr: pd.DataFrame, va: pd.DataFrame) -> np.ndarray:
     return out / len(SEEDS)
 
 
+# Owner combination O4 (25 Oct, pre-registered before scoring; one run, normal keep rule):
+# the near misses of the day, each sub-margin alone, combined once. Per-peril emerging
+# levels (L6, +0.00097), contents geometric 50:50 with the pooled two-market base (better
+# on contents in both folds), and a new-business claim-count credibility factor on motor
+# and contents (+0.0012). Motor gender (L1, kept) stays.
+USE_PERIL_LEVELS = True
+PERIL_LEVEL_K = 100.0
+USE_POOLED_CONTENTS = True
+USE_NB_FACTOR = True
+NB_FACTOR_K = 200.0
+NB_LINES = ("motor", "contents")
+
+
+def _line_base(tr_line: pd.DataFrame, frame: pd.DataFrame, line: str) -> np.ndarray:
+    """Pre-factor prediction for one line: per-peril bases at their emerging levels, and
+    for contents the geometric blend with the pooled base when configured."""
+    if USE_PERIL_LEVELS:
+        levels = peril_levels(tr_line, line, k=PERIL_LEVEL_K)
+    else:
+        levels = {name: 1.0 for name, _, _ in perils_of(line)}
+    out = peril_prediction(frame, line, levels)
+    if USE_POOLED_CONTENTS and line == "contents" and "base_pooled" in frame.columns:
+        pooled = np.maximum(frame["base_pooled"].to_numpy(float), 1e-3)
+        out = np.sqrt(np.maximum(out, 1e-3) * pooled)
+    return out
+
+
 def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
     pred = np.zeros(len(valid))
     for line in ("motor", "buildings", "contents"):
@@ -330,18 +357,24 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             pred[mask] = _fit_line(train[train["line"] == line], va)
             continue
         if USE_PERIL_SUM:
-            levels = {name: 1.0 for name, _, _ in perils_of(line)}
-            p0 = peril_prediction(va, line, levels)
+            tr_line = train[train["line"] == line]
+            p0 = _line_base(tr_line, va, line)
+            p0_tr = _line_base(tr_line, tr_line, line)
             if line == "motor":
-                tr_line = train[train["line"] == line].assign(
-                    p0=peril_prediction(train[train["line"] == line], line, levels)
-                )
-                passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
+                tr_g = tr_line.assign(p0=p0_tr)
+                passes, _ = lr_gate(tr_g, "gender", n_tests=1, offset="p0")
                 if passes:
-                    mult = offset_glm(
-                        tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                    p0 = p0 * offset_glm(
+                        tr_g, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
                     )
-                    p0 = p0 * mult
+                    p0_tr = p0_tr * offset_glm(
+                        tr_g, tr_line, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                    )
+            if USE_NB_FACTOR and line in NB_LINES:
+                f = credibility_factors(
+                    tr_line.assign(base=p0_tr), "new_business", NB_FACTOR_K, "count"
+                )
+                p0 = p0 * apply_factors(va, "new_business", f)
             pred[mask] = p0
             continue
         pred[mask] = va["base"].to_numpy()
