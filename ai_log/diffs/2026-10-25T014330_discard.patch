@@ -1,0 +1,44 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index d5dbfd6..130df1a 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -96,7 +96,13 @@ PARAMS = {
+ # without the high-cardinality categoricals) lowered level-neutral D2 on both folds;
+ # previous_insurer and occupation took most of the split gain (overfitting ~350 claims a
+ # year on contents). Corrections need structure: few factors, strong shrinkage.
+-USE_CORRECTION = False
++# v1 (agent, 2026-10-25, backlog E1): the developed base has never seen E01-E06 and treats
++# region as missing (diagnostics.md flags region E04 PERSISTENT on contents, A/E 1.17/1.91,
++# 4.2% exposure). Correction here is a single credibility-weighted factor per region, no
++# learner: n = claims (y > 0 rows) in the region on train, z = n / (n + REGION_K), factor =
++# 1 + z * (region A/E - 1). z -> 0 shrinks untested regions back to the base (factor 1).
++USE_CORRECTION = True
++REGION_K = 200.0  # follow-ups per backlog: 100, 400
+ 
+ 
+ def _feature_cols(df: pd.DataFrame, line: str) -> list[str]:
+@@ -119,6 +125,15 @@ def _fit_line(tr: pd.DataFrame, va: pd.DataFrame) -> np.ndarray:
+     return out / len(SEEDS)
+ 
+ 
++def _region_factor(tr: pd.DataFrame) -> pd.Series:
++    """Credibility-weighted A/E factor per region, shrunk towards 1 (no correction)."""
++    g = tr.groupby("region", observed=True)
++    n_claims = g["y"].apply(lambda s: (s > 0).sum())
++    ae = g["y"].sum() / g["base"].sum().clip(lower=1e-6)
++    z = n_claims / (n_claims + REGION_K)
++    return 1 + z * (ae - 1)
++
++
+ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+     pred = np.zeros(len(valid))
+     for line in ("motor", "buildings", "contents"):
+@@ -129,5 +144,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if not USE_CORRECTION:
+             pred[mask] = va["base"].to_numpy()
+             continue
+-        pred[mask] = _fit_line(train[train["line"] == line], va)
++        tr_line = train[train["line"] == line]
++        factor = va["region"].map(_region_factor(tr_line)).fillna(1.0).to_numpy()
++        pred[mask] = va["base"].to_numpy() * factor
+     return pred
