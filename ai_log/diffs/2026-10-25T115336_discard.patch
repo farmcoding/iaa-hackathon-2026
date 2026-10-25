@@ -1,0 +1,50 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..b053460 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -110,6 +110,17 @@ USE_PERIL_SUM = True
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# L7 (backlog tier L, agent, 25 Oct): the per-peril motor/buildings bases were fitted
++# without hail_days (Part 1 pruning), so this adds an elasticity the base lacks. Gated with
++# n_tests=1 per line/peril. e setting 1 of 2 (0.3/0.6).
++HAIL_PERIL = {"motor": "glass_hail", "buildings": "storm"}
++HAIL_ELASTICITY_E = 0.3
++
++
++def hail_elasticity(df: pd.DataFrame, mean_hail_days: float, e: float) -> np.ndarray:
++    """(hail_days / training-row mean hail_days) ** e: multiplier for one peril's base."""
++    hd = np.maximum(df["hail_days"].to_numpy(float), 0.0)
++    return (hd / mean_hail_days) ** e
+ 
+ 
+ def credibility_factors(
+@@ -332,16 +343,20 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+             p0 = peril_prediction(va, line, levels)
++            tr_line = train[train["line"] == line]
+             if line == "motor":
+-                tr_line = train[train["line"] == line].assign(
+-                    p0=peril_prediction(train[train["line"] == line], line, levels)
+-                )
+-                passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
++                tr_p0 = tr_line.assign(p0=peril_prediction(tr_line, line, levels))
++                passes, _ = lr_gate(tr_p0, "gender", n_tests=1, offset="p0")
+                 if passes:
+-                    mult = offset_glm(
+-                        tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+-                    )
++                    mult = offset_glm(tr_p0, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0")
+                     p0 = p0 * mult
++            peril_name = HAIL_PERIL.get(line)
++            if peril_name:
++                mean_hd = float(tr_line["hail_days"].mean())
++                passes, _ = lr_gate(tr_line, "hail_days", n_tests=1, offset=f"base_{peril_name}")
++                if passes:
++                    hmult = hail_elasticity(va, mean_hd, HAIL_ELASTICITY_E)
++                    p0 = p0 + va[f"base_{peril_name}"].to_numpy() * (hmult - 1)
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
