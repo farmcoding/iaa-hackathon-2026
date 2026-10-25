@@ -1,0 +1,27 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..5e367a4 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,6 +106,13 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# v3 (agent, 2026-10-25, backlog P1): P0 kept (0.13778 > owner bar 0.13663) with every
++# peril level frozen at 1.0, i.e. no emerging information at all beyond the per-peril
++# base shape. P1 asks whether letting each peril's own emerging/base cost ratio move --
++# credibility-shrunk towards its line's overall ratio by claim count, z = n_peril /
++# (n_peril + k) -- improves on that flat sum. k=100 per the backlog spec. Deterministic:
++# no SEEDS involved.
++PERIL_LEVEL_K = 100.0
+ 
+ 
+ def credibility_factors(
+@@ -220,7 +227,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             pred[mask] = _fit_line(train[train["line"] == line], va)
+             continue
+         if USE_PERIL_SUM:
+-            levels = {name: 1.0 for name, _, _ in perils_of(line)}
++            levels = peril_levels(train[train["line"] == line], line, k=PERIL_LEVEL_K)
+             pred[mask] = peril_prediction(va, line, levels)
+             continue
+         pred[mask] = va["base"].to_numpy()
