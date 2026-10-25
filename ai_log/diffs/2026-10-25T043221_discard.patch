@@ -1,0 +1,42 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..4f5615d 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,24 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): pair the one confirmed near-miss left in the ledger with a fresh
++# diagnostics-driven candidate -- the same two-near-miss stacking pattern that produced
++# every keep this session (fuel-on-E12 03:29, cover+elevation 03:44, energy+prev_insurer
++# 03:57). `flood_zone` on buildings was tested alone against this exact champion
++# (2026-10-25T04:31:55, discard 0.14497, +0.00038 both folds: primary and min_fold both
++# rose, just under the 0.001 margin) -- a confirmed near-miss, not a loss (the intervening
++# household_size try at 04:29:43, discard 0.14382, was a clean loss and is not a pairing
++# candidate). `marital_status` is PERSISTENT on all three lines in diagnostics.md against
++# the current champion (motor: married, 39.3% exposure -- the single largest exposure share
++# of any untried field in the table; buildings: divorced, 7.3%; contents: missing, 12.0%),
++# untried as a structured factor, and is the same multi-line signature that made occupation
++# (v7) a kept winner -- so apply it on all three lines with the same recipe. Both factors
++# are deterministic credibility shrinkage (basis "cost", k=200), no SEEDS, so a fresh-seed
++# rerun reproduces exactly.
++USE_FLOOD_ZONE_FACTOR = True
++FLOOD_ZONE_FACTOR_K = 200.0
++USE_MARITAL_STATUS_FACTOR = True
++MARITAL_STATUS_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +399,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_FLOOD_ZONE_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "flood_zone", k=FLOOD_ZONE_FACTOR_K)
++                out = out * apply_factors(va, "flood_zone", factors)
++            if USE_MARITAL_STATUS_FACTOR:
++                factors = credibility_factors(tr_line, "marital_status", k=MARITAL_STATUS_FACTOR_K)
++                out = out * apply_factors(va, "marital_status", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
