@@ -1,0 +1,66 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..3157fed 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,10 +106,33 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
+-# L1 (backlog tier L, agent, 25 Oct): motor gender on top of P0. The developed base has no
+-# gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
++# L1 (backlog tier L, agent, 25 Oct, KEPT): motor gender on top of P0. The developed base has
++# no gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# L4 (backlog tier L, agent, 25 Oct): property joint GLMs on top of P0, stacked alongside the
++# kept L1 motor factor (L2 and L3 both discarded at every setting). Each line's candidate list
++# is gated as a block (n_tests=6 per line) against p0; if the block passes, one ridge GLM per
++# line enters. Setting 2 of 3 (alpha 0.01/0.1/1) — 0.01 (setting 1) discarded (primary 0.11278,
++# below the L1 bar of 0.11910), so this tries a stronger ridge penalty on the same candidate
++# lists before giving up on the mechanism.
++PROPERTY_ALPHA = 0.1
++BUILDINGS_COLS = [
++    "gender",
++    "policyholder_age_band",
++    "new_business",
++    "region",
++    "construction_type",
++    "energy_rating",
++]
++CONTENTS_COLS = [
++    "gender",
++    "policyholder_age_band",
++    "new_business",
++    "region",
++    "tenure",
++    "works_from_home",
++]
+ 
+ 
+ def credibility_factors(
+@@ -332,16 +355,22 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+             p0 = peril_prediction(va, line, levels)
++            tr_line = train[train["line"] == line].assign(
++                p0=peril_prediction(train[train["line"] == line], line, levels)
++            )
+             if line == "motor":
+-                tr_line = train[train["line"] == line].assign(
+-                    p0=peril_prediction(train[train["line"] == line], line, levels)
+-                )
+                 passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
+                 if passes:
+                     mult = offset_glm(
+                         tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                     )
+                     p0 = p0 * mult
++            elif line in ("buildings", "contents"):
++                cols = BUILDINGS_COLS if line == "buildings" else CONTENTS_COLS
++                passes, _ = lr_gate(tr_line, cols, n_tests=len(cols), offset="p0")
++                if passes:
++                    mult = offset_glm(tr_line, va, cols, alpha=PROPERTY_ALPHA, offset="p0")
++                    p0 = p0 * mult
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
