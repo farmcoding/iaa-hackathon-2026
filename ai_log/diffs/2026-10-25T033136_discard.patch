@@ -1,0 +1,33 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index e6a0b76..2a054f2 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -124,6 +124,18 @@ USE_RENEWAL_FACTOR = True
+ RENEWAL_FACTOR_K = 200.0
+ USE_FUEL_FACTOR = True
+ FUEL_FACTOR_K = 200.0
++# v4 (agent, 2026-10-25): stack a fourth factor onto the kept champion (E12 + fuel,
++# 2026-10-25T03:29:33, primary 0.13948). diagnostics.md's motor segment table, read
++# against that champion's own predictions, flags cover_type=third_party_fire_theft as
++# PERSISTENT with a wider both-fold gap (A/E 0.857 B / 0.874 R, 10.7% exposure) than the
++# fuel_type miss that already passed (1.13/1.11, 29.5% exposure). cover_type is admissible,
++# has only three levels (so little room to overfit, unlike region/occupation which lost),
++# and cover scope is a direct actuarial driver of own-damage/theft/TPP cost -- unlike
++# region (lost twice) or age band (owner-checked, lost). Only tried before inside the E3
++# ridge GLM alongside region/age/new_business/channel (discard), never as a standalone
++# stacked credibility factor, which is a material change from that attempt.
++USE_COVER_FACTOR = True
++COVER_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -257,6 +269,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_FUEL_FACTOR and line == "motor":
+                 factors = credibility_factors(tr_line, "fuel_type", k=FUEL_FACTOR_K)
+                 out = out * apply_factors(va, "fuel_type", factors)
++            if USE_COVER_FACTOR and line == "motor":
++                factors = credibility_factors(tr_line, "cover_type", k=COVER_FACTOR_K)
++                out = out * apply_factors(va, "cover_type", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
