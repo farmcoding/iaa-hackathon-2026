@@ -1,0 +1,29 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..dabd05b 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,6 +106,15 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# v3 (agent, 2026-10-25, backlog E10): P0's per-line fold-B D2 split motor 0.09155 vs bar
++# 0.09132 (peril-sum helps), buildings 0.11584 vs 0.11927 (hurts), contents 0.09705 vs
++# 0.10069 (hurts) -- P0 was kept only because fold R rose overall. The property
++# base_<peril> columns are each an independent refit on a thin developed peril slice
++# (P0's own comment), so for buildings/contents they add estimation noise to a total fit
++# that already pools across perils; motor's fine split is anchored to `base` at the
++# bodily_injury/other level and adds real structure. Nothing estimated on emerging data,
++# so no shrinkage parameter applies -- this is a fixed choice between two developed bases.
++PERIL_SUM_LINES = {"motor"}
+ 
+ 
+ def credibility_factors(
+@@ -219,7 +228,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if USE_CORRECTION:
+             pred[mask] = _fit_line(train[train["line"] == line], va)
+             continue
+-        if USE_PERIL_SUM:
++        if USE_PERIL_SUM and line in PERIL_SUM_LINES:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+             pred[mask] = peril_prediction(va, line, levels)
+             continue
