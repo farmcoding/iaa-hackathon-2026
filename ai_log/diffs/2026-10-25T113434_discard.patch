@@ -1,0 +1,50 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..912495f 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,10 +106,23 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
+-# L1 (backlog tier L, agent, 25 Oct): motor gender on top of P0. The developed base has no
+-# gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+-# per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+-MOTOR_GENDER_ALPHA = 0.01
++# L3 (backlog tier L, agent, 25 Oct): motor joint ridge GLM on P0. Each of 8 candidates is
++# gated individually (n_tests=8); passing ones enter one joint model. Setting 2 of 3
++# (0.001/0.01/0.1) -- alpha=0.01 (setting 1, run 11:29:52) discarded badly, primary 0.11048,
++# below even the bar, from several gated categoricals (occupation 20 levels, region,
++# vehicle_value_group) sharing one weakly-penalised ridge; this setting applies 10x the
++# shrinkage instead of the smaller setting (0.001), which would only overfit harder.
++MOTOR_L3_CANDIDATES = [
++    "gender",
++    "driver_age_band",
++    "new_business",
++    "region",
++    "cover_type",
++    "occupation",
++    "vehicle_value_group",
++    "ncb_years",
++]
++MOTOR_L3_ALPHA = 0.1
+ 
+ 
+ def credibility_factors(
+@@ -336,11 +349,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                 tr_line = train[train["line"] == line].assign(
+                     p0=peril_prediction(train[train["line"] == line], line, levels)
+                 )
+-                passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
+-                if passes:
+-                    mult = offset_glm(
+-                        tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+-                    )
++                n = len(MOTOR_L3_CANDIDATES)
++                passing = [
++                    c for c in MOTOR_L3_CANDIDATES if lr_gate(tr_line, c, n_tests=n, offset="p0")[0]
++                ]
++                if passing:
++                    mult = offset_glm(tr_line, va, passing, alpha=MOTOR_L3_ALPHA, offset="p0")
+                     p0 = p0 * mult
+             pred[mask] = p0
+             continue
