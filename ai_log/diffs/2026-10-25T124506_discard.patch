@@ -1,0 +1,32 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..840122f 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -110,6 +110,9 @@ USE_PERIL_SUM = True
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# M2 (backlog tier M, agent, 25 Oct): motor cover_type on top of the kept L1 prediction.
++# cover_type passed the owner's claim-count gate in both years. Setting 1 of 2 (0.01/0.1).
++MOTOR_COVER_TYPE_ALPHA = 0.01
+ 
+ 
+ def credibility_factors(
+@@ -341,7 +344,17 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     mult = offset_glm(
+                         tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                     )
++                    mult_tr = offset_glm(
++                        tr_line, tr_line, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
++                    )
+                     p0 = p0 * mult
++                    tr_line = tr_line.assign(p1=tr_line["p0"].to_numpy() * mult_tr)
++                    passes_ct, _ = lr_gate(tr_line, "cover_type", n_tests=1, offset="p1")
++                    if passes_ct:
++                        mult_ct = offset_glm(
++                            tr_line, va, ["cover_type"], alpha=MOTOR_COVER_TYPE_ALPHA, offset="p1"
++                        )
++                        p0 = p0 * mult_ct
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
