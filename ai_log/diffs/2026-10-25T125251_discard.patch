@@ -1,0 +1,33 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..1ea1640 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -110,6 +110,11 @@ USE_PERIL_SUM = True
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# M4 (backlog tier M, agent, 25 Oct): contents tenure on top of P0, stacked under the kept
++# L1 motor gender factor. tenure passed the owner's claim-count gate in both years; gated
++# here too (n_tests=1) per the backlog's pre-registered single-factor item. alpha setting
++# 1 of 2 (0.01/0.1).
++CONTENTS_TENURE_ALPHA = 0.01
+ 
+ 
+ def credibility_factors(
+@@ -342,6 +347,16 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                         tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                     )
+                     p0 = p0 * mult
++            elif line == "contents":
++                tr_line = train[train["line"] == line].assign(
++                    p0=peril_prediction(train[train["line"] == line], line, levels)
++                )
++                passes, _ = lr_gate(tr_line, "tenure", n_tests=1, offset="p0")
++                if passes:
++                    mult = offset_glm(
++                        tr_line, va, ["tenure"], alpha=CONTENTS_TENURE_ALPHA, offset="p0"
++                    )
++                    p0 = p0 * mult
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
