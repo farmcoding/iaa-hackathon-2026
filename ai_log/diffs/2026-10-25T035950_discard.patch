@@ -1,0 +1,36 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 6af20c5..7ac33ff 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -167,6 +167,19 @@ USE_ENERGY_FACTOR = True
+ ENERGY_FACTOR_K = 200.0
+ USE_PREV_INSURER_FACTOR = True
+ PREV_INSURER_FACTOR_K = 200.0
++# v6 (agent, 2026-10-25): a fresh field, not yet tried in any run -- missed_payments_12m.
++# diagnostics.md (run against the kept champion, 7ceedca, primary 0.14204) flags it
++# PERSISTENT with a large both-fold miss on two lines: motor (6.2% exposure, A/E 1.232 B /
++# 1.178 R) and buildings (6.3% exposure, A/E 1.347 B / 2.065 R, the single largest A/E gap
++# in the whole buildings table). It is admissible (not on the INADMISSIBLE list) and no
++# backlog Tier 0/1/2 item names it, but every named Tier 0 item is tried or owner-only, so
++# this follows program_emerging.md's fallback -- "a follow-up a past result clearly
++# suggests" -- here, the diagnostics table itself, read fresh after the last keep. Same
++# recipe as every other stacked factor (credibility_factors/apply_factors, k=200, cost
++# basis), restricted to the two lines where it is flagged PERSISTENT (not contents, where
++# it doesn't appear in the table).
++USE_MISSED_PAYMENTS_FACTOR = True
++MISSED_PAYMENTS_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -321,6 +334,11 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
+                 factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
+                 out = out * apply_factors(va, "energy_rating", factors)
++            if USE_MISSED_PAYMENTS_FACTOR and line in ("motor", "buildings"):
++                factors = credibility_factors(
++                    tr_line, "missed_payments_12m", k=MISSED_PAYMENTS_FACTOR_K
++                )
++                out = out * apply_factors(va, "missed_payments_12m", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
