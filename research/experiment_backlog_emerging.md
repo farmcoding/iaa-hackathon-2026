@@ -66,6 +66,12 @@ of L1, the single factors that passed the claim-count gate in both years.
 - O3 Level method: balance-on-train kept (actuarial balance property, board-checked);
   Tweedie-MLE scalar scored 0.11538 vs 0.11554, inside the margin (25 Oct).
 - O4 Combining kept tier-L mechanisms: once, by the owner, then confirmed on the board.
+- O6 (owner runs, 25 Oct ~12:35, on top of L1, not logged) New-business count-basis
+  credibility factor, k=200: motor+contents primary 0.12034 (+0.0012, boot q10 +0.0002),
+  all lines 0.11985; under the 0.002 margin, not adopted. Motor NB count A/E 1.20 (2023) /
+  1.07 (2024), contents 1.18 / 1.43, buildings 1.06 / 0.69. Schema-compatible base: 0.11622
+  (alone) / 0.11792 (50:50 with P0) vs 0.11910, not adopted. Pooled base w5: 0.09981 alone,
+  0.11477 blended, not adopted (duplicated emerging rows let the trees memorise claims).
 - O5 Target sensitivity: bodily-injury tail, recoveries on open own-damage claims (~1.5% of
   2024 motor), completion as offset.
 
