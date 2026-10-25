@@ -1,0 +1,38 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index dca84d1..6aaa123 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -109,7 +109,13 @@ USE_PERIL_SUM = True
+ # L1 (backlog tier L, agent, 25 Oct): motor gender on top of P0. The developed base has no
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
++# Kept (2026-10-25T11:16:18, primary 0.11910).
+ MOTOR_GENDER_ALPHA = 0.01
++# L2 (backlog tier L, agent, 25 Oct): motor gender x driver_age_band, mains plus the
++# interaction, gated as one block (n_tests=1) against the same p0 offset as L1. Backlog
++# alpha settings: best-of-L1 (0.01, tried and discarded at 2026-10-25T11:18:27) and 10x it.
++# This run: 10x setting (0.1), the second and last of the two named values.
++MOTOR_GENDER_AGE_ALPHA = 0.1
+ 
+ 
+ def credibility_factors(
+@@ -329,10 +335,17 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                 tr_line = train[train["line"] == line].assign(
+                     p0=peril_prediction(train[train["line"] == line], line, levels)
+                 )
+-                passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
++                block = ["gender", "driver_age_band"]
++                inter = [("gender", "driver_age_band")]
++                passes, _ = lr_gate(tr_line, block, n_tests=1, offset="p0", interactions=inter)
+                 if passes:
+                     mult = offset_glm(
+-                        tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
++                        tr_line,
++                        va,
++                        block,
++                        alpha=MOTOR_GENDER_AGE_ALPHA,
++                        offset="p0",
++                        interactions=inter,
+                     )
+                     p0 = p0 * mult
+             pred[mask] = p0
