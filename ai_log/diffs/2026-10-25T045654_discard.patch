@@ -1,0 +1,42 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..8ae7147 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,22 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): pair the confirmed near-miss buildings `flood_zone` factor
++# (discard 2026-10-25T04:31:55, primary 0.14497, +0.00038 both folds alone vs. this
++# champion) with a fresh diagnostics-driven candidate on a different line, contents
++# `document_preference` (14.8% exposure, A/E 0.753 B / 0.713 R, both folds the same
++# direction, untried in the ledger) -- the same two-signal stacking pattern that produced
++# today's four keeps (fuel-on-E12, cover+elevation, energy+prev_insurer,
++# missed_payments+trees). flood_zone's own prior pairings with marital_status, basement,
++# soil_type and security_level all stacked to only +0.00041-0.00072, still short of the
++# 0.001 margin -- document_preference is a larger, untried exposure share on contents
++# (orthogonal to buildings) rather than another small buildings field. Both factors are
++# deterministic credibility shrinkage (basis "cost", k=200), no SEEDS, so a fresh-seed
++# rerun reproduces exactly.
++USE_FLOOD_ZONE_FACTOR = True
++FLOOD_ZONE_FACTOR_K = 200.0
++USE_DOCUMENT_PREF_FACTOR = True
++DOCUMENT_PREF_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +397,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_FLOOD_ZONE_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "flood_zone", k=FLOOD_ZONE_FACTOR_K)
++                out = out * apply_factors(va, "flood_zone", factors)
++            if USE_DOCUMENT_PREF_FACTOR and line == "contents":
++                factors = credibility_factors(
++                    tr_line, "document_preference", k=DOCUMENT_PREF_FACTOR_K
++                )
++                out = out * apply_factors(va, "document_preference", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
