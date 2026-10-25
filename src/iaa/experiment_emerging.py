@@ -45,8 +45,9 @@ NON_FEATURES = {
 }
 # owner decisions carried over from Part 1 (admissibility, not score; reports/assumptions_log.md):
 # no premium, email domain, sales/admin fields or customer-level claim history on any line;
-# no licence points on property. gender: owner decision pending (Part 2 plan, decision 1),
-# excluded until then; the agent may not add it.
+# no licence points on property. gender: admissible in the emerging market (brief; owner
+# decision, Karl, 25 Oct). The developed market has no gender field, so the base cannot
+# carry it: any gender effect has to be estimated on emerging rows.
 INADMISSIBLE = {
     "written_premium",
     "email_domain",
@@ -57,7 +58,6 @@ INADMISSIBLE = {
     "marketing_consent",
     "hist_n_customer",
     "hist_cost_customer",
-    "gender",
 }
 LINE_DROP = {"buildings": {"licence_points"}, "contents": {"licence_points"}}
 # banded in this market: the band is the information; the mapped mean age (features.py)
@@ -106,111 +106,6 @@ USE_CORRECTION = False
 # same developed information is already a better shape than the single total-cost fit,
 # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
 USE_PERIL_SUM = True
-# v3 (agent, 2026-10-25): stack a third factor onto the kept E12 pair instead of
-# discarding it. E12 (2026-10-25T03:16:40, discard 0.13852) stacks P3's motor
-# peril_levels(k=30) and E5's renewal_count-capped-at-3 count-basis credibility factor on
-# orthogonal fields (motor's glass/hail peril mix; tenure shift across all lines, PSI
-# 2.0-2.1 in part2_drift.md) -- each alone gained on both folds vs. plain P0, and stacking
-# them was ~additive (P3 +0.00052, E5 +0.00027, E12 +0.00074 over P0's 0.13778). The
-# closest single miss in the whole ledger is the motor-only fuel_type factor
-# (2026-10-25T03:21:06, discard 0.13877, k=200 cost-basis on diesel's 29.5%-exposure
-# PERSISTENT A/E miss, both folds up): it fell short of the 0.001 keep margin over kept
-# P0 by only 0.00001. Adding it as a third orthogonal motor-only multiplier on top of E12
-# projects past the margin if the stacking stays additive. All three factors are
-# deterministic credibility shrinkage (no SEEDS), so a fresh-seed rerun reproduces exactly.
-USE_PERIL_LEVELS_MOTOR = True
-PERIL_LEVEL_MOTOR_K = 30.0
-USE_RENEWAL_FACTOR = True
-RENEWAL_FACTOR_K = 200.0
-USE_FUEL_FACTOR = True
-FUEL_FACTOR_K = 200.0
-# v4 (agent, 2026-10-25): stack two more orthogonal motor-only factors onto the kept
-# champion (E12 + fuel, 2026-10-25T03:29:33, primary 0.13948) -- five multiplicative
-# factors on motor from one training year (peril levels, renewal, fuel, cover, elevation).
-# Both were tried individually on top of this same champion and discarded for falling
-# short of the 0.001 keep margin despite moving both folds the right way: cover_type
-# (2026-10-25T03:35:36, +0.00027) and elevation_m quintile (2026-10-25T03:40:44, +0.00088).
-# Stacking in this run has been near-additive (E12's P3+E5 stack: 0.00074 vs 0.00079 summed
-# individually; fuel on E12: +0.00096 vs +0.00099 alone), so the projected combined gain
-# (~0.00015 net of the ~0.00005 sub-additivity seen before) should clear the margin. Both
-# factors act on different fields from each other and from the existing three, and both are
-# deterministic credibility shrinkage (no SEEDS), so a fresh-seed rerun reproduces exactly.
-USE_COVER_FACTOR = True
-COVER_FACTOR_K = 200.0
-USE_ELEVATION_FACTOR = True
-ELEVATION_FACTOR_K = 200.0
-# v5 (agent, 2026-10-25): stack the two near-miss factors from the last two discarded runs
-# instead of a fresh field. Both beat the kept champion (v4, 2026-10-25T03:44:51, primary
-# 0.14061) on both folds but individually fell short of the 0.001 keep margin -- exactly the
-# pattern that produced today's two earlier keeps (fuel-on-E12 at 03:29:33, cover+elevation
-# at 03:44:51):
-#   energy_rating, buildings+contents (2026-10-25T03:47:04, discard 0.14132, +0.00071):
-#     diagnostics flags it PERSISTENT on buildings (level E, 10.0% exposure, A/E 1.509 B /
-#     1.839 R) and three contents levels (A/B/C, 14.5-17.4% exposure each) -- one field
-#     mis-ranking two lines the same way. Both lines' component D2 rose (buildings
-#     0.11544->0.11647, contents 0.09727->0.09853); motor untouched (energy_rating is a
-#     property field).
-#   previous_insurer (2026-10-25T03:51:40, discard 0.14127, +0.00066): PERSISTENT on 5 motor
-#     levels and 3 buildings levels; part2_drift.md's adversarial-validation table shows it's
-#     one of the strongest real signals on every line (gain share 0.16-0.23), which is why an
-#     unshrunk tree split overfit it (program_emerging.md) rather than evidence against the
-#     field as a shrunk factor. Restricted here to motor+buildings, dropping contents: that
-#     run's own component D2 shows motor (0.09539->0.09726) and buildings (0.11544->0.11574)
-#     rose but contents fell (0.09727->0.09664), and the agent's own EXPECTED line at the time
-#     noted no previous_insurer level showed in contents' PERSISTENT list -- there is no
-#     diagnostic reason for it to help there.
-# Summed individually (+0.00071 and +0.00066, on disjoint line/field combinations) projects
-# ~+0.0013-0.0014 before the ~0.00005-0.0003 sub-additivity seen in today's two stacks, still
-# clearing 0.001. Both factors are deterministic credibility shrinkage (no SEEDS), so a
-# fresh-seed rerun reproduces exactly.
-USE_ENERGY_FACTOR = True
-ENERGY_FACTOR_K = 200.0
-USE_PREV_INSURER_FACTOR = True
-PREV_INSURER_FACTOR_K = 200.0
-# v6 (agent, 2026-10-25): pair the one confirmed near-miss left in the ledger with a fresh
-# diagnostics-driven candidate, the same two-near-miss stacking pattern that produced
-# today's three keeps (fuel-on-E12 at 03:29, cover+elevation at 03:44, energy+prev_insurer
-# at 03:57). missed_payments_12m (motor+buildings, cost basis, k=200) was tested alone
-# against this exact champion twice -- raw basis (2026-10-25T04:01:17, discard 0.14279,
-# +0.00075 both folds) and residual basis against the champion's own output (2026-10-25
-# T04:08:33, discard 0.14285, +0.00081) -- both short of the 0.001 margin by the same
-# ~0.0002-0.0003 pattern as the other paired near-misses. Using the raw-basis recipe here
-# (the 0.00006 gap to residual basis isn't worth the extra code to rebuild the champion's
-# own stacked prediction on training rows). The two intervening single-field tries
-# (construction_type buildings 03:59, years_at_address buildings 04:04) were both losses,
-# not near-misses, so they are not candidates to pair. trees_within_5m (buildings) is the
-# largest untouched PERSISTENT buildings miss by exposure x gap not yet tried (11.7%
-# exposure, A/E 1.316 B / 1.641 R, both folds the same direction) and has a clear
-# actuarial mechanism distinct from payment history: root subsidence, storm and
-# blocked-gutter escape-of-water risk, which the developed base's tree relativity
-# transfers imperfectly given the emerging market's wider climate range. Orthogonal field
-# from missed_payments_12m. Both factors are deterministic credibility shrinkage (basis
-# "cost", k=200, z = n/(n+k)), no SEEDS, so a fresh-seed rerun reproduces exactly.
-USE_MISSED_PAYMENTS_FACTOR = True
-MISSED_PAYMENTS_FACTOR_K = 200.0
-USE_TREES_FACTOR = True
-TREES_FACTOR_K = 200.0
-# v7 (agent, 2026-10-25): the last three iterations paired contents `works_from_home`
-# (confirmed near-miss alone, discard 0.14378 at 04:15:49, +0.00036 both folds vs. this
-# champion) with small single-line contents fields (years_licensed motor -- a net loss;
-# voluntary_excess and high_value_items contents -- both near-misses but contributed only
-# ~+0.00008 net on top of works_from_home, well short of 0.001 even combined). None of
-# those partners showed up as PERSISTENT on more than one line. `occupation` does: it is
-# PERSISTENT on all three lines in diagnostics.md (motor: Retail assistant 3.6%, Doctor
-# 3.8%, Hairdresser 3.9%, Retired 15.9%; buildings: Nurse 3.8%, Sales representative 3.8%,
-# Doctor 3.8%; contents: occupation missing 11.9%) and is untried as a structured factor --
-# program_emerging.md flags occupation as a field that overfit in free-form boosting, but
-# that was an unshrunk tree split, not a credibility factor; previous_insurer carried the
-# same warning and still gained on both folds (kept, 03:57:33) once shrunk by count. Apply
-# it on all three lines (basis "cost", k=200, same recipe as previous_insurer) and keep
-# pairing it with the one still-open near-miss, works_from_home on contents, since the
-# pattern that produced three keeps today was pairing a confirmed near-miss with a fresh,
-# larger diagnostic signal, not with another small one. Both factors are deterministic
-# credibility shrinkage, no SEEDS, so a fresh-seed rerun reproduces exactly.
-USE_OCCUPATION_FACTOR = True
-OCCUPATION_FACTOR_K = 200.0
-USE_WORKS_FROM_HOME_FACTOR = True
-WORKS_FROM_HOME_FACTOR_K = 200.0
 
 
 def credibility_factors(
@@ -294,6 +189,105 @@ def peril_prediction(va: pd.DataFrame, line: str, levels: dict[str, float]) -> n
     return sum(va[f"base_{name}"].to_numpy() * levels[name] for name, _, _ in perils_of(line))
 
 
+def _design(tr: pd.DataFrame, va: pd.DataFrame, cols: list[str], interactions=()):
+    """One-hot categoricals (missing as its own level) and standardised numerics, built on
+    the training rows; interactions are (a, b) pairs of categoricals crossed into one."""
+    tr, va = tr.copy(), va.copy()
+    for a, b in interactions:
+        for f in (tr, va):
+            f[f"{a}*{b}"] = (
+                f[a].astype("string").fillna("NA") + "|" + f[b].astype("string").fillna("NA")
+            )
+    cols = list(cols) + [f"{a}*{b}" for a, b in interactions]
+    parts_tr, parts_va = [], []
+    for c in cols:
+        num = pd.api.types.is_numeric_dtype(tr[c]) and not pd.api.types.is_bool_dtype(tr[c])
+        if num and tr[c].nunique() > 12:
+            mu, sd = tr[c].mean(), tr[c].std() or 1.0
+            parts_tr.append(((tr[c].fillna(mu) - mu) / sd).rename(c).to_frame())
+            parts_va.append(((va[c].fillna(mu) - mu) / sd).rename(c).to_frame())
+        else:
+            lv = tr[c].astype("string").fillna("NA")
+            levels = sorted(lv.unique())[1:]  # first level is the reference
+            vv = va[c].astype("string").fillna("NA")
+            parts_tr.append(pd.DataFrame({f"{c}={x}": (lv == x).astype(float) for x in levels}))
+            parts_va.append(pd.DataFrame({f"{c}={x}": (vv == x).astype(float) for x in levels}))
+    xt = pd.concat([p.reset_index(drop=True) for p in parts_tr], axis=1)
+    xv = pd.concat([p.reset_index(drop=True) for p in parts_va], axis=1)
+    return xt.to_numpy(float), xv.to_numpy(float), list(xt.columns)
+
+
+def offset_glm(tr, va, cols, alpha=0.01, interactions=(), offset="base"):
+    """Ridge log-link Tweedie (p=1.5) GLM correction on top of an offset (default `base`).
+
+    For p=1.5 the deviance of y against b*m equals sqrt(b) times the deviance of y/b against
+    m, so fitting y/b with sample weight sqrt(b) is an exact offset GLM. The ridge penalty
+    (alpha, scikit-learn scale: mean weighted deviance / 2 + alpha/2 * |coef|^2) shrinks every
+    coefficient towards 0, i.e. towards the base. Returns the multiplier for va rows
+    (the harness rebalances each line's level afterwards).
+    """
+    from sklearn.linear_model import TweedieRegressor
+
+    b_tr = np.maximum(tr[offset].to_numpy(float), 1e-3)
+    xt, xv, _ = _design(tr, va, cols, interactions)
+    m = TweedieRegressor(power=1.5, link="log", alpha=alpha, solver="newton-cholesky", max_iter=300)
+    m.fit(xt, tr["y"].to_numpy(float) / b_tr, sample_weight=np.sqrt(b_tr))
+    return m.predict(xv) / np.exp(m.intercept_)
+
+
+def lr_gate(
+    tr, col, n_tests=1, level=0.05, offset="base", interactions=(), basis="count"
+) -> tuple[bool, float]:
+    """Likelihood-ratio test of one candidate factor against the offset alone, on training rows.
+
+    Null: y ~ offset (intercept only). Alternative: + the factor (unpenalised). Deviance drop
+    over the null's Pearson dispersion is compared with chi-square(df), at level / n_tests
+    (Bonferroni over the pre-registered list). Returns (passes, p_value). A factor that does
+    not pass must not enter a model: with ~350-3,500 claims a year, an untested factor is
+    more likely noise than signal (the 25 Oct factor stack).
+
+    basis "count" (default): claim counts n_total with the base as exposure measure
+    (assumes the base's severity relativities hold); quasi-Poisson. Cost ("cost") has almost
+    no power here: its dispersion is set by a few large bodily-injury and fire claims (on
+    2023 motor, gender gave p = 0.21 on cost).
+    """
+    from scipy.stats import chi2
+    from sklearn.linear_model import PoissonRegressor, TweedieRegressor
+
+    from iaa import score
+
+    b = np.maximum(tr[offset].to_numpy(float), 1e-3)
+    xt, _, names = _design(
+        tr, tr.iloc[:1], [col] if isinstance(col, str) else list(col), interactions
+    )
+    if basis == "count":
+        y = tr["n_total"].to_numpy(float)
+        fit = PoissonRegressor(alpha=0.0, solver="newton-cholesky", max_iter=300)
+        fit.fit(xt, y / b, sample_weight=b)
+        mu1 = b * fit.predict(xt)
+        mu0 = b * y.sum() / b.sum()
+        pos = y > 0
+        safe = np.where(pos, y, 1.0)
+
+        def dev(mu):
+            return 2 * (np.where(pos, y * np.log(safe / mu), 0.0) - (y - mu)).sum()
+
+        d0, d1 = dev(mu0), dev(mu1)
+        phi = max(((y - mu0) ** 2 / mu0).sum() / (len(y) - 1), 1.0)
+    else:
+        y = tr["y"].to_numpy(float)
+        fit = TweedieRegressor(
+            power=1.5, link="log", alpha=0.0, solver="newton-cholesky", max_iter=300
+        )
+        fit.fit(xt, y / b, sample_weight=np.sqrt(b))
+        mu1 = b * fit.predict(xt)
+        mu0 = b * (y.sum() / b.sum()) * np.ones_like(y)
+        d0, d1 = score.tweedie_deviance(y, mu0).sum(), score.tweedie_deviance(y, mu1).sum()
+        phi = ((y - mu0) ** 2 / mu0**1.5).sum() / (len(y) - 1)
+    p = float(chi2.sf(max(d0 - d1, 0.0) / phi, df=max(len(names), 1)))
+    return p < level / n_tests, p
+
+
 def _feature_cols(df: pd.DataFrame, line: str) -> list[str]:
     drop = NON_FEATURES | INADMISSIBLE | DUPLICATES | LINE_DROP.get(line, set())
     drop |= {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
@@ -325,63 +319,8 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             pred[mask] = _fit_line(train[train["line"] == line], va)
             continue
         if USE_PERIL_SUM:
-            tr_line = train[train["line"] == line]
-            if USE_PERIL_LEVELS_MOTOR and line == "motor":
-                levels = peril_levels(tr_line, line, k=PERIL_LEVEL_MOTOR_K)
-            else:
-                levels = {name: 1.0 for name, _, _ in perils_of(line)}
-            out = peril_prediction(va, line, levels)
-            if USE_RENEWAL_FACTOR:
-                tr_cap = tr_line["renewal_count"].clip(upper=3)
-                va_cap = va["renewal_count"].clip(upper=3)
-                factors = credibility_factors(
-                    tr_line.assign(renewal_count=tr_cap),
-                    "renewal_count",
-                    k=RENEWAL_FACTOR_K,
-                    basis="count",
-                )
-                out = out * apply_factors(va.assign(renewal_count=va_cap), "renewal_count", factors)
-            if USE_PREV_INSURER_FACTOR and line in ("motor", "buildings"):
-                factors = credibility_factors(tr_line, "previous_insurer", k=PREV_INSURER_FACTOR_K)
-                out = out * apply_factors(va, "previous_insurer", factors)
-            if USE_FUEL_FACTOR and line == "motor":
-                factors = credibility_factors(tr_line, "fuel_type", k=FUEL_FACTOR_K)
-                out = out * apply_factors(va, "fuel_type", factors)
-            if USE_COVER_FACTOR and line == "motor":
-                factors = credibility_factors(tr_line, "cover_type", k=COVER_FACTOR_K)
-                out = out * apply_factors(va, "cover_type", factors)
-            if USE_ELEVATION_FACTOR and line == "motor":
-                edges = pd.qcut(tr_line["elevation_m"], 5, duplicates="drop", retbins=True)[1]
-                edges = np.asarray(edges, dtype=float)
-                edges[0], edges[-1] = -np.inf, np.inf
-                tr_band = pd.cut(tr_line["elevation_m"], edges, include_lowest=True).astype(
-                    "string"
-                )
-                va_band = pd.cut(va["elevation_m"], edges, include_lowest=True).astype("string")
-                factors = credibility_factors(
-                    tr_line.assign(elev_band=tr_band), "elev_band", k=ELEVATION_FACTOR_K
-                )
-                out = out * apply_factors(va.assign(elev_band=va_band), "elev_band", factors)
-            if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
-                factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
-                out = out * apply_factors(va, "energy_rating", factors)
-            if USE_MISSED_PAYMENTS_FACTOR and line in ("motor", "buildings"):
-                factors = credibility_factors(
-                    tr_line, "missed_payments_12m", k=MISSED_PAYMENTS_FACTOR_K
-                )
-                out = out * apply_factors(va, "missed_payments_12m", factors)
-            if USE_TREES_FACTOR and line == "buildings":
-                factors = credibility_factors(tr_line, "trees_within_5m", k=TREES_FACTOR_K)
-                out = out * apply_factors(va, "trees_within_5m", factors)
-            if USE_OCCUPATION_FACTOR:
-                factors = credibility_factors(tr_line, "occupation", k=OCCUPATION_FACTOR_K)
-                out = out * apply_factors(va, "occupation", factors)
-            if USE_WORKS_FROM_HOME_FACTOR and line == "contents":
-                factors = credibility_factors(
-                    tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
-                )
-                out = out * apply_factors(va, "works_from_home", factors)
-            pred[mask] = out
+            levels = {name: 1.0 for name, _, _ in perils_of(line)}
+            pred[mask] = peril_prediction(va, line, levels)
             continue
         pred[mask] = va["base"].to_numpy()
     return pred

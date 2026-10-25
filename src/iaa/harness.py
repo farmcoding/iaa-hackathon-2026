@@ -67,6 +67,12 @@ FIELDS = [
     # Part 2 reverse fold (train 2024, score 2023)
     "d2_R",
     "d2_actual_R",
+    # Part 2 deploy metric: test-mix weighted D2 at the frozen level, and level-neutral D2
+    "d2_w_B",
+    "d2_ln_B",
+    "d2_w_R",
+    "d2_ln_R",
+    "boot_q10",
 ]
 AE_BAND = (0.97, 1.03)
 
@@ -140,18 +146,28 @@ def _attach_base(df: pd.DataFrame, valid_year: int, cfg: dict) -> pd.DataFrame:
     2024, developed 2021-24 for 2025) and cannot pick another one."""
     h = cfg.get("harness", {})
     out = df
-    # base: total prediction; base_perils (scripts/part2_base_perils.py --fine): one
-    # base_<peril> column per peril, NaN on other lines' perils
-    for key in ("base", "base_perils"):
-        files = h.get(key) or {}
-        if valid_year not in files:
+    # base: total prediction (column base); base_perils: base_<peril> columns. Any other key
+    # starting with "base" adds a family under its own prefix, so two families can be
+    # blended: a total file's prediction becomes <key>; a per-peril file (key ending in
+    # _perils) gives <key minus _perils>_<peril>.
+    for key, files in h.items():
+        if not key.startswith("base") or not isinstance(files, dict) or valid_year not in files:
             continue
         table = _base_table(files[valid_year], data.MARKET)
         got = table.reindex(out["row_id"].astype(str))
+        if len(got) != len(out):
+            raise ValueError(f"{key}: row mismatch")
+        if key not in ("base", "base_perils"):
+            stem = key[: -len("_perils")] if key.endswith("_perils") else key
+            ren = {}
+            for c in got.columns:
+                if c in ("base", "base_pooled"):
+                    ren[c] = stem
+                else:
+                    ren[c] = f"{stem}_{c[len('base_') :]}"
+            got = got.rename(columns=ren)
         if key == "base" and got["base"].isna().any():
             raise ValueError(f"{int(got['base'].isna().sum())} rows have no base prediction")
-        if got.index.isna().any() or len(got) != len(out):
-            raise ValueError(f"{key}: row mismatch")
         out = out.assign(**{c: got[c].to_numpy() for c in got.columns})
     return out
 
@@ -165,7 +181,8 @@ def predict(exp, tr: pd.DataFrame, va: pd.DataFrame, cfg: dict) -> np.ndarray:
     valid rows to the historical loss cost (Part 1, inside experiment.py) cannot: the
     emerging 2025 book is 76% new business. Frozen here so no experiment can move the level.
     """
-    if cfg["harness"].get("level") != "balance_on_train":
+    level = cfg["harness"].get("level")
+    if level not in ("balance_on_train", "tweedie_scalar"):
         return check_predictions(exp.fit_predict(tr, hide_target(va)), len(va))
     both = pd.concat([hide_target(va), hide_target(tr)], ignore_index=True)
     p = check_predictions(exp.fit_predict(tr, both), len(both))
@@ -173,8 +190,28 @@ def predict(exp, tr: pd.DataFrame, va: pd.DataFrame, cfg: dict) -> np.ndarray:
     out = pv.copy()
     for line in va["line"].unique():
         mv, mt = (va["line"] == line).to_numpy(), (tr["line"] == line).to_numpy()
-        out[mv] = pv[mv] * tr.loc[mt, "y"].sum() / pt[mt].sum()
+        y, b = tr.loc[mt, "y"].to_numpy(), np.maximum(pt[mt], score.FLOOR)
+        if level == "tweedie_scalar":
+            # one-parameter Tweedie (p=1.5) maximum-likelihood scale on the training rows:
+            # sum(y / sqrt(b)) / sum(sqrt(b)) (both reviews and the research, 25 Oct)
+            out[mv] = pv[mv] * (y / np.sqrt(b)).sum() / np.sqrt(b).sum()
+        else:
+            out[mv] = pv[mv] * y.sum() / b.sum()
     return np.maximum(out, score.FLOOR)
+
+
+@lru_cache(maxsize=2)
+def _testmix_weights(name: str) -> pd.Series:
+    w = pd.read_parquet(CACHE / name, columns=["row_id", "w"])
+    return w.set_index(w["row_id"].astype(str))["w"]
+
+
+def weighted_d2(va: pd.DataFrame, w: np.ndarray) -> float:
+    """Tweedie D2 with row weights against the weighted constant baseline."""
+    y, p = va["y"].to_numpy(), va["pred"].to_numpy()
+    base = np.full_like(y, np.average(y, weights=w))
+    num = (w * score.tweedie_deviance(y, p)).sum()
+    return float(1 - num / (w * score.tweedie_deviance(y, base)).sum())
 
 
 def level_neutral(va: pd.DataFrame) -> pd.DataFrame:
@@ -250,7 +287,7 @@ def best_kept(cfg: dict | None = None) -> dict | None:
     return max(rows, key=lambda r: r["_primary"]) if rows else None
 
 
-def verdict(res: dict, cfg: dict) -> str:
+def verdict(res: dict, cfg: dict, saved: list | None = None) -> str:
     floor = cfg["harness"]["noise_floor"] or 0.0
     best = best_kept(cfg)
     if best is None:
@@ -258,7 +295,47 @@ def verdict(res: dict, cfg: dict) -> str:
     fold_floor = cfg["harness"].get("fold_floor", floor)
     better = res["primary"] > best["_primary"] + floor
     stable = res["min_fold"] >= float(best["min_fold"]) - fold_floor
+    # Part 2 guards (config): level-neutral fold B may not fall more than ln_floor (a level
+    # error can reorder shape candidates); and a paired bootstrap of the fold-B gain over the
+    # bar must have its 10th percentile above zero (adapts to how different the run is)
+    ln_floor = cfg["harness"].get("ln_floor")
+    if ln_floor is not None and best.get("d2_ln_B") not in (None, ""):
+        stable = stable and res.get("d2_ln_B", 1.0) >= float(best["d2_ln_B"]) - ln_floor
+    if better and stable and cfg["harness"].get("bootstrap") and saved is not None:
+        q = paired_bootstrap(saved, best, cfg)
+        res["boot_q10"] = q
+        better = q is None or q > 0
     return "keep" if better and stable else "discard"
+
+
+def paired_bootstrap(saved: list, best: dict, cfg: dict, draws: int = 200) -> float | None:
+    """10th percentile of the primary's gain over the bar (every fold in the primary, same
+    natural/weighted mix), resampling rows with Poisson(1) weights; the baseline deviance is
+    held at its full-sample value."""
+    path = PREDS / f"{best.get('run_id', '')}.parquet"
+    if not path.exists():
+        return None
+    cand, bar_all = pd.concat(saved), pd.read_parquet(path)
+    nat = cfg["harness"].get("natural_share", 0.5)
+    fw = cfg["harness"]["primary_weights"]
+    rng = np.random.default_rng(0)
+    total = np.zeros(draws)
+    for fold, fwt in fw.items():
+        c = cand[cand["fold"] == fold]
+        b = bar_all[bar_all["fold"] == fold][["row_id", "pred"]]
+        if c.empty or b.empty:
+            return None
+        m = c.merge(b, on="row_id", suffixes=("", "_bar"))
+        y = m["y"].to_numpy()
+        gain = score.tweedie_deviance(y, m["pred_bar"]) - score.tweedie_deviance(y, m["pred"])
+        w = m["row_id"].astype(str).map(_testmix_weights(cfg["harness"]["testmix_weights"]))
+        w = w.to_numpy()
+        d0 = score.tweedie_deviance(y, np.full_like(y, y.mean())).sum()
+        d0w = (w * score.tweedie_deviance(y, np.full_like(y, np.average(y, weights=w)))).sum()
+        k = rng.poisson(1.0, (draws, len(y)))
+        g = nat * (k @ gain) / d0 + (1 - nat) * (k @ (gain * w)) / d0w
+        total += fwt * g / sum(fw.values())
+    return float(np.quantile(total, 0.10))
 
 
 def _ensure_header(path: Path, fields: list[str]) -> None:
@@ -300,7 +377,7 @@ def validate(
     elif owner_keep:
         res["verdict"] = "keep_owner"  # human decision, recorded in assumptions_log.md
     else:
-        res["verdict"] = verdict(res, cfg)
+        res["verdict"] = verdict(res, cfg, saved)
         offset = cfg["harness"].get("confirm_seed_offset")
         if res["verdict"] == "keep" and offset:
             _confirm(res, saved, module, df, cfg, offset)
@@ -347,7 +424,7 @@ def _confirm(res: dict, saved: list, module: str, df: pd.DataFrame, cfg: dict, o
     # confirmed. Part 2 (config harness.deterministic_ok): credibility factors, peril levels
     # and blends of fixed bases have no randomness; for them there is no luck to guard against
     deterministic_ok = cfg["harness"].get("deterministic_ok", False)
-    ok = (not same or deterministic_ok) and verdict(res2, cfg) == "keep"
+    ok = (not same or deterministic_ok) and verdict(res2, cfg, saved2) == "keep"
     print(
         f"confirmation (seed offset {offset}): primary={res2['primary']:.5f} "
         f"min_fold={res2['min_fold']:.5f} -> {'confirmed' if ok else 'not confirmed'}"
@@ -365,16 +442,22 @@ def _score_folds(exp, df: pd.DataFrame, cfg: dict) -> tuple[dict, list]:
         va = va.assign(pred=pred, y=va["y_ult"])
         saved.append(va[["row_id", "line", "exposure", "y", "pred"]].assign(fold=name))
         card = score.scorecard(va)
-        # metric: level_neutral (Part 2) keeps on ranking only: the level is frozen
-        # (balance on train) and fold B's level is dominated by one fire-heavy year. The
-        # D2 at the frozen level is logged as d2_actual_<fold>; A/E stays at that level.
-        rank = (
-            score.scorecard(level_neutral(va))
-            if cfg["harness"].get("metric") == "level_neutral"
-            else card
-        )
-        res[f"d2_{name}"] = rank["d2"]
+        metric = cfg["harness"].get("metric")
+        # metric: level_neutral (Part 2, night of 25 Oct) scored ranking only. Replaced by
+        # deploy (owner, 25 Oct, after the board showed fold gains not transferring): D2 at
+        # the production level, half on the natural book and half reweighted to the 2025
+        # book mix (scripts/part2_weights.py). Level-neutral is still logged as d2_ln_<fold>.
+        ln = score.scorecard(level_neutral(va)) if metric in ("level_neutral", "deploy") else card
+        rank = ln if metric == "level_neutral" else card
         res[f"d2_actual_{name}"] = card["d2"]
+        res[f"d2_ln_{name}"] = ln["d2"]
+        if metric == "deploy":
+            w = va["row_id"].astype(str).map(_testmix_weights(cfg["harness"]["testmix_weights"]))
+            res[f"d2_w_{name}"] = weighted_d2(va, w.to_numpy())
+            nat = cfg["harness"].get("natural_share", 0.5)
+            res[f"d2_{name}"] = nat * card["d2"] + (1 - nat) * res[f"d2_w_{name}"]
+        else:
+            res[f"d2_{name}"] = rank["d2"]
         if name == "B":
             for k in ("motor", "buildings", "contents"):
                 res[f"d2_{k}_B"] = rank[f"d2_{k}"]
@@ -414,7 +497,8 @@ def final(description: str, module: str = "iaa.experiment") -> Path:
     if set(sub["row_id"]) != set(sample["row_id"].astype(str)) or len(sub) != len(sample):
         raise ValueError("submission rows do not match sample_submission")
     SUBMISSIONS.mkdir(parents=True, exist_ok=True)
-    path = SUBMISSIONS / f"{_commit()}_{datetime.now():%Y%m%d_%H%M}.csv"
+    tag = "" if module == "iaa.experiment" else f"{module.rsplit('.', 1)[-1]}_"
+    path = SUBMISSIONS / f"{tag}{_commit()}_{datetime.now():%Y%m%d_%H%M%S}.csv"
     sub.to_csv(path, index=False)
     by_line = te.assign(p=pred).groupby("line").apply(lambda g: g.p.sum() / g.exposure.sum())
     print(f"wrote {path}  rate per exposure by line: {by_line.round(1).to_dict()}  ({description})")

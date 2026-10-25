@@ -1,85 +1,57 @@
 # Experiment backlog: Part 2 (emerging market)
 
-Ranked. The agent takes the highest open item; OWNER items are human-only. Bar: the
-developed base alone (primary 0.13663, level-neutral, folds B + R). Background:
-reports/part2_drift.md and the Part 2 section of reports/assumptions_log.md.
+Pre-registered 25 Oct midday (owner), after two GPT-6.1 Sol reviews, a research report
+(market transfer best practice) and an advisor check. Bar: P0, the sum of the per-peril
+developed bases (owner keep under the deploy metric, primary 0.11554; board 0.15195).
+Rules in program_emerging.md: one item and one setting per run, at most the settings listed,
+no stacking, every factor gated with `lr_gate` inside the fit. The agent works down tier L
+in order; OWNER items are human-only.
 
-## Tier P (first): peril mix
+Gate evidence (owner check, claim counts against P0, Bonferroni over 30 tests): passes in
+both years: motor gender, cover_type, occupation; contents tenure. One year only: motor
+driver_age_band (2024), new_business and region (2023). Placebos (vehicle_colour,
+email_domain, payment_method, channel) fail in both years.
 
-The frames carry one developed base prediction per peril, `base_<name>`, NaN on other
-lines (motor: bodily_injury, own_damage, third_party_prop, theft, glass_hail; buildings:
-storm, flood, subsidence, water, fire, ad; contents: theft, escape_of_water,
-accidental_damage, flood). Helpers in experiment_emerging.py: `perils_of(line)`,
-`peril_levels(tr, line, k)` (each peril's emerging/base ratio, credibility-shrunk towards
-the line's ratio) and `peril_prediction(va, line, levels)`. Owner manual checks (not
-logged) on correction factors: region and age-band factors, by cost or by claim count,
-lost on both folds; new_business by count +0.0003 (noise). `credibility_factors(...,
-basis="count")` corrects frequency only.
+## Tier L (agent, in order)
 
-- **P0** Sum of the per-peril bases, every level 1: is the per-peril base at least as
-  good as the total base?
-- **P1** `peril_levels(k=100)` on every line.
-- **P2** P1 on motor only (glass/hail is the shifted peril; buildings fire is noisy).
-- **P3** k in {30, 300} on the better of P1/P2.
-- **P4** Geometric blend of the total base and the P1/P2 prediction, weights 0.5.
+- **L1 Motor gender.** `offset_glm` on P0 (offset column `p0`) with cols ["gender"], gated
+  (n_tests=1). Settings: alpha 0.001, 0.01, 0.1. Other lines unchanged.
+- **L2 Motor gender x age band.** Mains gender and driver_age_band plus the interaction
+  (gender, driver_age_band), gated as one block (n_tests=1). Alpha: the best of L1 (or 0.01
+  if L1 was discarded at every setting), and 10x it.
+- **L3 Motor joint GLM.** Candidate list (n_tests=8): gender, driver_age_band,
+  new_business, region, cover_type, occupation, vehicle_value_group, ncb_years. Each gated
+  in the fit; passing ones enter one ridge GLM on P0. Alpha 0.001, 0.01, 0.1.
+- **L4 Property joint GLMs.** Buildings list (n_tests=6): gender, policyholder_age_band,
+  new_business, region, construction_type, energy_rating. Contents list (n_tests=6):
+  gender, policyholder_age_band, new_business, region, tenure, works_from_home. Gated; one
+  ridge GLM per line on P0. Alpha 0.01, 0.1, 1.
+- **L5 New business x age band (motor).** Interaction (new_business, driver_age_band) with
+  mains, gated as one block; alpha 0.01 and 0.1. The 2025 book is 76% new business and
+  younger: does new business behave differently by age here?
+- **L6 Per-peril emerging levels.** `peril_levels(tr, line, k)` on every line with P0;
+  k 100 and 300.
+- **L7 Hail elasticity on hail perils.** The per-peril motor bases were fitted without
+  hail_days (Part 1 pruning), so this adds an effect the base lacks: multiply
+  base_glass_hail (motor) and base_storm (buildings) by (hail_days / training-row mean
+  hail_days) ** e, e in {0.3, 0.6}.
+- **L8 Total vs per-peril base.** Geometric blend sqrt(P0 x base); one setting.
+- **L9 Base families** (only once the owner has added `base_compat*` or `base_pooled*`
+  columns to the config): fixed blends of P0 with each family, weights 0.25 / 0.5 / 0.75
+  on the family; and the family alone.
 
-## Tier 0: structured corrections on shifted fields (credibility or ridge)
+## OWNER
 
-Use `credibility_factors(tr, col, k)` and `apply_factors(va, col, f)` in
-experiment_emerging.py for every Tier 0 factor: they take each level's A/E relative to
-the line's own A/E before shrinking. The first E1 attempt (2026-10-25T01:45:52, discard
-0.13515) used raw y / base, which mixes the developed-to-emerging level gap into every
-region's factor in proportion to its credibility: an implementation error, not evidence
-against region. Re-test it first.
+- O1 Schema-compatible developed bases (running): total and per-peril, compared with P0
+  under the frozen metric; re-base if they win by the margin.
+- O2 Pooled two-market bases (running): emerging weight 1 / 5 / 20, Part 1 pruning off.
+- O3 Level method: balance-on-train kept (actuarial balance property, board-checked);
+  Tweedie-MLE scalar scored 0.11538 vs 0.11554, inside the margin (25 Oct).
+- O4 Combining kept tier-L mechanisms: once, by the owner, then confirmed on the board.
+- O5 Target sensitivity: bodily-injury tail, recoveries on open own-damage claims (~1.5% of
+  2024 motor), completion as offset.
 
-- **E1 Region.** The base has never seen E01-E06 and treats region as missing. Per line,
-  `credibility_factors(tr, "region", k=200)`. Follow-ups: k in {100, 400}; region
-  within urban_density.
-- **E2 Age band.** The base used the mean age of each band (features.AGE_BAND_MEAN).
-  Credibility factor per driver_age_band (motor) / policyholder_age_band (property),
-  same method as E1.
-- **E3 GLM correction.** Ridge log-link Tweedie GLM on y / base (weights base ** 0.5, see
-  program_emerging.md) with one-hot region, age band, new_business, channel and
-  cover_type (motor); alpha in {1, 10, 100} (one per run).
-- **E4 Weather beyond the developed range.** Emerging hail, wildfire and rainfall exceed
-  the developed range, so the base's trees extrapolate flat. Credibility factors by
-  quintile of hail_days (motor, buildings) and wildfire_index (buildings, contents), or
-  add them to the E3 GLM as standardised numerics.
-- **E5 Tenure for a new-business book.** Credibility factor on new_business, and on
-  renewal_count capped at 3.
-- **E6 Property sums insured.** Contents sum insured averages 113k vs 125k developed, and
-  2025 buildings sum insured 731k vs 680k in training. Credibility factors by sum_insured
-  quintile per property line.
+## Parked (evidence against, 25 Oct)
 
-## Tier 1: constrained learners on top of the base
-
-- **E7** LightGBM correction on a whitelist of at most five shifted fields (region, age
-  band, hail_days, wildfire_index, new_business), num_leaves 3, at most 50 trees,
-  min_data_in_leaf 2000, init_score log(base). Never previous_insurer, occupation or
-  make_model as free categoricals: they took the split gain in the failed v1.
-- **E8** EBM correction (interpret, `init_score` = log(base)), interactions=0, few
-  features (as E7), strong smoothing (`smoothing_rounds`, `max_bins` 16).
-- **E9** Combine the kept Tier 0 factors multiplicatively (product of credibility
-  factors), in one model.
-- **E10** Per-line switch: keep a correction only on the lines where it helped in both
-  folds (read the per-line D2 in the ledger).
-
-## Tier 2: blends
-
-- **E11** Geometric blend base^(1-w) x native^w, where native is a heavily regularised
-  emerging-only LightGBM (the Part 1 specification lost to the base); w in {0.1, 0.2}.
-- **E12** Seed-bag or average the two best correction forms.
-
-## OWNER (human only; the agent skips these)
-
-- **O1 gender**: admissible by the brief. Owner decision pending (plan, decision 1).
-  Diagnostics show men under-predicted 12-17% by the base in both folds.
-- **O2 Schema-compatible base**: refit the developed model without the fields emerging
-  lacks (credit band, mileage, telematics) and with banded ages, so the base stops
-  applying developed "missing" relativities to every emerging row (scripts/part2_base.py).
-- **O3 Pooled two-market model** (developed + emerging rows with a market indicator).
-- **O4 Level**: peril-group levels, fire credibility complement, 2025 weather in the level.
-- **O5 Target**: bodily injury count x severity; reported cost with completion as an
-  offset instead of dividing by it; recoveries on open own-damage claims (~1.5% of motor 2024).
-- **O6 Peril-level frequency x severity** (glass/hail 1.6-1.8x developed frequency,
-  water 0.6x): needs per-peril base predictions.
+Free boosted corrections on the base; one-way credibility factor stacks; emerging-only
+refit; region/age credibility factors on cost.

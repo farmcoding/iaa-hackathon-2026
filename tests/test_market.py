@@ -4,6 +4,7 @@ skips when either is absent."""
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -101,3 +102,35 @@ def test_level_neutral_rescales_each_line_to_its_actual():
     va = pd.DataFrame({"line": ["m", "m", "c"], "y": [10.0, 30.0, 5.0], "pred": [1.0, 3.0, 9.0]})
     out = harness.level_neutral(va)
     assert out.groupby("line")["pred"].sum().to_dict() == pytest.approx({"m": 40.0, "c": 5.0})
+
+
+def _synthetic(effect: float, n: int = 40_000, seed: int = 0) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    base = rng.gamma(2.0, 50.0, n)  # expected cost per row
+    g = rng.choice(["F", "M"], n)
+    noise = rng.choice(["a", "b", "c"], n)
+    lam = 0.08 * base / 100 * np.where(g == "M", effect, 1.0)
+    n_claims = rng.poisson(lam)
+    y = n_claims * rng.gamma(2.0, 600.0, n)
+    return pd.DataFrame({"base": base, "gender": g, "noise": noise, "n_total": n_claims, "y": y})
+
+
+def test_lr_gate_passes_a_real_effect_and_rejects_noise():
+    from iaa import experiment_emerging as e
+
+    df = _synthetic(effect=1.3)
+    assert e.lr_gate(df, "gender", n_tests=10)[0]
+    assert not e.lr_gate(df, "noise", n_tests=10)[0]
+
+
+def test_offset_glm_recovers_the_effect_direction_and_shrinks_with_alpha():
+    from iaa import experiment_emerging as e
+
+    df = _synthetic(effect=1.3, n=60_000)
+    m = df["gender"] == "M"
+    weak = e.offset_glm(df, df, ["gender"], alpha=1e-6)
+    strong = e.offset_glm(df, df, ["gender"], alpha=10.0)
+    ratio_weak = weak[m.to_numpy()].mean() / weak[~m.to_numpy()].mean()
+    ratio_strong = strong[m.to_numpy()].mean() / strong[~m.to_numpy()].mean()
+    assert 1.15 < ratio_weak < 1.45
+    assert 1.0 <= ratio_strong < ratio_weak

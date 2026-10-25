@@ -52,8 +52,10 @@ harness:
   # (buildings level, one fire year). On the level-neutral metric, base plus a light
   # correction over five seed offsets: primary sd 0.00038 (B 0.00025, R 0.00055). Margin
   # 0.001 (about 2.5 sd; the fresh-seed confirmation stays), worse fold may fall 0.002
-  noise_floor: 0.001
-  fold_floor: 0.002
+  # 25 Oct midday: margin 0.002 (about 2x the paired sd of the 2:1 deploy metric, 0.0011);
+  # either fold may fall 0.003 at most
+  noise_floor: 0.002
+  fold_floor: 0.003
   # the v0 row (2026-10-25T01:03:20) was scored at the anchored level, before the
   # level-neutral metric; not comparable
   superseded: ["2026-10-25T01:03:20"]
@@ -70,9 +72,19 @@ harness:
   # trended training actuals; the 2025 mix then moves the level. Board check on the
   # transfer file: history-anchored 0.14243, mix-adjusted 0.15079
   level: balance_on_train
-  # keep metric: D2 with each line rescaled to its actual total (ranking only). The level
-  # is frozen above, and fold B's level swings with one fire-heavy year
-  metric: level_neutral
+  # keep metric (owner, 25 Oct midday, declared before the re-base run; GPT-6.1 Sol reviews,
+  # research and advisor): "deploy" = end-to-end D2 at the production level, per fold
+  # natural_share x natural + (1 - natural_share) x test-mix weighted (rows reweighted to
+  # the 2025 book, scripts/part2_weights.py); primary = mean of folds B and R. 2:1 because
+  # the weighted half is twice as noisy (paired bootstrap sd 0.0021 vs 0.00095 on fold B).
+  # The level-neutral metric of 25 Oct night let 11 stacked factors gain +0.0068 on the folds
+  # and lose 0.0029 on the board; it stays as a guard (ln_floor) and is logged (d2_ln_<fold>)
+  metric: deploy
+  natural_share: 0.6667
+  testmix_weights: part2_testmix_weights.parquet
+  ln_floor: 0.002
+  # paired bootstrap of the primary gain over the bar: 10th percentile must be above zero
+  bootstrap: true
   confirm_seed_offset: 100
   # structured corrections on fixed bases are deterministic; an exact reproduction on the
   # fresh-seed rerun then confirms instead of failing (Part 1 rule: it meant a fixed seed)

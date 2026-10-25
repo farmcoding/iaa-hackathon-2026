@@ -59,7 +59,7 @@ def main() -> None:
     cfg = ultimate.load_config()
     folds = list(cfg["harness"]["folds"])[:2]
     F1, F2 = folds if len(folds) == 2 else (folds[0], folds[0])
-    if cfg["harness"].get("metric") == "level_neutral":
+    if cfg["harness"].get("metric") in ("level_neutral", "deploy"):
         # Part 2: the keep metric is level-neutral, so show relativity misses only
         p = pd.concat([harness.level_neutral(g) for _, g in p.groupby("fold")])
     df = harness.dataset()

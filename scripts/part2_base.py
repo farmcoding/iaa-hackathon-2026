@@ -29,6 +29,7 @@ import pandas as pd
 from iaa import data, experiment, harness, ultimate
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from part2_compat import compat  # noqa: E402
 from part2_transfer import align  # noqa: E402
 
 assert data.MARKET == "developed", "run with the developed market"
@@ -39,10 +40,14 @@ def main() -> None:
     ap.add_argument("emerging_cache")
     ap.add_argument("--tag", required=True)
     ap.add_argument("--train-years", type=int, nargs="+", required=True)
+    ap.add_argument("--compat", action="store_true", help="fit on the emerging schema (O2)")
     a = ap.parse_args()
 
     cfg = ultimate.load_config()
     dev = harness.dataset()
+    if a.compat:
+        dev = compat(dev)
+        a.tag = "compat_" + a.tag
     # train on the chosen developed years, trended to 2025 (level is irrelevant downstream)
     tr, _ = harness.split(dev, a.train_years, cfg["predict_year"], cfg)
     emg = pd.read_parquet(a.emerging_cache)

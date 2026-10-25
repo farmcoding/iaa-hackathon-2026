@@ -7,106 +7,94 @@ approves every leaderboard submission. You propose and test; you never submit.
 ## The task
 
 Predict expected ultimate net claim cost per 2025 policy row for motor, buildings and
-contents in the **emerging market**. The insurer has written there for two years (2023
-and 2024); the 2025 book is 76% new business from a broker. Score: Tweedie D² with power
-1.5, pooled across lines.
+contents in the **emerging market**. The insurer wrote there in 2023 and 2024; the 2025 book
+is a broker transfer, 76% new business (14% in history), younger. Score: Tweedie D² with
+power 1.5, pooled across lines.
 
-What is already known (reports/part2_drift.md, reports/assumptions_log.md, Part 2
-section):
-
-- The Part 1 model fitted on the developed market ranks emerging policies better than a
-  refit on emerging data (level-neutral D² on 2024: 0.151 vs 0.123). Its prediction is
-  attached to every row as the column `base` (CU for the row).
-- The model to beat is that base alone (owner keep, primary 0.13663).
-- Free-form boosted corrections on top of the base made things worse on both folds,
-  whatever the regularisation (25-300 trees, leaves of 300-3000 rows). They fit noise:
-  contents has about 350 claims a year, buildings about 500. previous_insurer and
-  occupation took most of the split gain. **Corrections need structure: few factors,
-  strong shrinkage, each one with an actuarial reason.**
-- The emerging market differs in level (lower severity, higher motor frequency), climate
-  (hail, wildfire and rainfall beyond the developed range), regions (E01-E06, which the
-  base has never seen; it treats them as missing) and book (age bands, more new business).
+What is known (reports/part2_drift.md; Part 2 section of reports/assumptions_log.md):
+- The developed-market model, refitted per peril, is the best emerging model so far: the
+  frames carry one developed prediction per peril, `base_<peril>`, and their sum (`P0`) is
+  the bar (board 0.15195). `base` is the total-cost version.
+- **What failed, so don't repeat it:** free boosted corrections on top of the base; one-way
+  credibility factors; and especially *stacking* several small factors that each missed the
+  margin: on 25 Oct night eleven stacked factors gained +0.0068 on the folds and lost 0.0029
+  on the leaderboard (they were all chosen on the same claims they were scored on).
+- Owner decision (25 Oct): **gender is admissible** in this market. The developed base has no
+  gender, so any gender effect must come from emerging rows. Diagnostics show the base
+  misprices men/women by 12-17% on motor in both years.
 
 ## What you may change
 
-Only `src/iaa/experiment_emerging.py`. Its contract is in its docstring:
-`fit_predict(train, valid) -> np.ndarray`. Everything else is frozen: data loading,
-target, development, trend, folds, the base predictions, the level step, scoring, the
-harness, the tests and the config. The driver reverts the run and logs a violation if any
-other file changes.
+Only `src/iaa/experiment_emerging.py`. Contract in its docstring:
+`fit_predict(train, valid) -> np.ndarray`. Everything else is frozen (data, target,
+development, trend, folds, base predictions, the level step, scoring, harness, tests,
+config); any other edited file is reverted and logged as a violation.
 
-**The level is not yours.** After `fit_predict` returns, the harness rescales each line
-so that its predictions on the training rows sum to the trended training actuals
-(`valid` may therefore contain the training rows as well). So a constant factor per line
-does nothing. Only relativities within a line count.
+**The level is not yours.** After `fit_predict` returns, the harness rescales each line so
+its training-row predictions sum to the trended training actuals (`valid` may therefore
+contain training rows). A constant factor per line does nothing.
 
-## The keep metric
+## The keep rule (frozen; declared 25 Oct midday)
 
-Level-neutral D²: each line's validation predictions are rescaled to the line's actual
-total before scoring, so the metric measures ranking and spread only. Two folds:
+Per fold, end-to-end D² at the production level: 2/3 on the natural book + 1/3 on the book
+reweighted to look like the 2025 broker book. Primary = mean of fold B (train 2023, score
+2024) and fold R (train 2024, score 2023). Keep only if ALL hold:
+- primary beats the bar by more than **0.002**;
+- neither fold falls by more than 0.003; level-neutral fold B (`d2_ln_B`) falls by no more
+  than 0.002;
+- a paired bootstrap of the gain over the bar has its 10th percentile above zero;
+- a rerun with shifted seeds passes again (deterministic methods pass on exact reproduction).
 
-- B: train 2023, score 2024 (out of time);
-- R: train 2024, score 2023 (the reverse: a second read on the same book; its truth is the
-  better-developed year).
+## Discipline (new; these are why the rule changed)
 
-Primary = mean of B and R. A run is kept when the primary beats the best kept run by more
-than 0.001 (measured seed sd 0.0004), the worse fold falls by no more than 0.002, and a
-rerun on fresh seeds (`IAA_SEED_OFFSET`) passes again. So every random choice must derive
-from `SEED_OFFSET` or `SEEDS`. A method with no randomness at all (credibility factors,
-peril levels, blends of the fixed bases) reproduces exactly on the rerun and passes; don't
-add randomness to it.
+1. **Pre-registered list only**: take the highest open item in
+   `research/experiment_backlog_emerging.md` (tier L). Do not invent new factors.
+2. **One mechanism per run, at most three settings per mechanism** (e.g. alpha 0.001 / 0.01
+   / 0.1). Do not re-run a mechanism with a fourth setting.
+3. **No stacking.** Never combine two discarded runs to clear the margin. Combining kept
+   mechanisms is the owner's job.
+4. **Gate every factor.** Before a factor enters a model, it must pass
+   `lr_gate(train_line, col, n_tests=N)` on the training rows inside `fit_predict` (N = the
+   number of factors in the item's pre-registered list); a factor that fails is left out
+   *in that fit*. Use the helpers, don't re-implement them:
+   - `offset_glm(tr, va, cols, alpha, interactions=())`: ridge log-link Tweedie GLM on top
+     of an offset column (default `base`; pass `offset=` for another), exact for p=1.5.
+     Returns the multiplier for `va` rows.
+   - `lr_gate(tr, col, n_tests)`: claim-count likelihood-ratio test against the offset.
+   - `peril_levels`, `peril_prediction`, `perils_of`: per-peril bases.
+   - To use P0 as the offset, put it in a column first:
+     `tr = tr.assign(p0=peril_prediction(tr, line, ones))` and pass `offset="p0"`.
+5. Say in the HYPOTHESIS line which backlog item and which setting you are running.
 
 ## One iteration
 
-1. Read `data/cache/diagnostics.md` first. It shows A/E by segment for the model to beat,
-   level-neutral, fold B and fold R side by side. Misses flagged PERSISTENT (both folds,
-   same direction, >5%, >=2% of exposure) are your best hypotheses. Ignore misses on
-   inadmissible fields (list below); they are not yours to fix.
-   Then read `results_emerging.tsv` (all Part 2 runs and verdicts),
-   `research/experiment_backlog_emerging.md` (ranked ideas; OWNER items are human-only,
-   skip them) and the current `src/iaa/experiment_emerging.py`.
-2. Pick ONE hypothesis: the highest-ranked backlog item not yet tried, or a follow-up a
-   past result clearly suggests. Do not repeat a discarded idea unless you change
-   something material, and say what.
-3. Edit `src/iaa/experiment_emerging.py`. Keep the diff small enough to review in two
-   minutes. When re-testing a saved diff from `ai_log/diffs/`, copy it exactly, imports
-   included.
-4. Do not run anything. You have no shell; the driver runs the harness, logs the result
-   in `results_emerging.tsv` and commits or reverts. A crash costs an iteration, so check
-   column names against `src/iaa/features.py` and the dataset columns listed below.
+1. Read `data/cache/diagnostics.md` (segment A/E of the bar, level-neutral, folds B and R),
+   `results_emerging.tsv` (all runs; rows before the 25 Oct midday owner keep used other
+   metrics and are not comparable), the backlog, and the current experiment file.
+2. Pick the next item and setting per the discipline above.
+3. Edit `src/iaa/experiment_emerging.py` (small, readable diff).
+4. Do not run anything; the driver runs the harness and commits or reverts.
 5. Finish with a final message whose first line is exactly:
-   HYPOTHESIS: <what you are testing and why, one line, cite the backlog item or run>
+   HYPOTHESIS: <item, setting, why>
    then:
    CHANGE: <what you edited>
-   EXPECTED: <which fold or line you expect to move, and why>
+   EXPECTED: <which fold/line should move, and why>
 
 ## Rules
 
-- **Inadmissible, never as a feature** (owner decisions): written_premium, email_domain,
-  campaign_code, marketing_segment, branch_id, days_quote_to_inception,
-  marketing_consent, hist_n_customer, hist_cost_customer; licence_points on buildings and
-  contents. **gender** is an owner decision still pending: do not use it, even to test.
+- **Inadmissible, never as a feature or factor** (owner): written_premium, email_domain,
+  campaign_code, marketing_segment, branch_id, days_quote_to_inception, marketing_consent,
+  hist_n_customer, hist_cost_customer; licence_points on buildings and contents.
 - **Leakage**: never renewal_decision, customer_service_contacts, any target column
-  (cost_*, n_*, ult_*, comp_*, y, y_ult), trend_factor or the row's year.
-- **The base is fixed.** Use `base` as an offset, a feature or a blend member, but don't
-  rebuild it: it was fitted on the developed market, outside this module.
-- **Shrinkage first.** Any factor estimated on emerging data must be credibility-weighted
-  or penalised towards no change (factor 1, coefficient 0). State the shrinkage in the
-  HYPOTHESIS line. Prefer a correction on a field the drift report shows has shifted, or
-  a persistent diagnostic miss, over a generic model upgrade.
-- **Offsets in a GLM**: scikit-learn has no offset argument. For a log-link Tweedie
-  correction, fit `TweedieRegressor(power=1.5, link="log", alpha=...)` on `y / base` with
-  `sample_weight = base ** 0.5` (the Tweedie deviance scales as mu^(2-p)); predict
-  `base * model.predict(X)`. One-hot encode a handful of factors; standardise numerics.
-- Time budget: 1800 s per run; the current model takes seconds. There is room for
-  seed-bagging and small ensembles, not for refitting the developed market.
-- Never import glum or tabmat (OpenMP clash: segfault, exit 139). Use scikit-learn GLMs.
-- CatBoost: `allow_writing_files=False`, and categorical NaN as a string ("missing").
-- Use only installed open-source libraries: lightgbm, catboost, xgboost, interpret (EBM),
-  scikit-learn, numpy, pandas. No installs, no network.
-- Predictions must be finite and non-negative for every valid row.
-- When every backlog item is tried, parked or owner-only and the ledger suggests no
-  follow-up, finish with exactly `HYPOTHESIS: NONE` and make no edit. The loop stops.
+  (cost_*, n_*, ult_*, comp_*, y, y_ult), trend_factor or the row's year. Counts n_* may be
+  used on *training rows* (the gate does), never read from valid.
+- **The bases are fixed**: use them as offsets or blend members; never refit the developed
+  market here.
+- Never import glum or tabmat (OpenMP clash, exit 139). scikit-learn GLMs only.
+- CatBoost: `allow_writing_files=False`; categorical NaN as a string.
+- Installed open-source libraries only; no installs, no network.
+- Predictions finite and non-negative for every valid row.
+- When every tier L item is done, finish with exactly `HYPOTHESIS: NONE` and make no edit.
 
 ## Dataset columns (emerging)
 
