@@ -1,0 +1,40 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..3ad8ed6 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,23 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): single-factor test against the v7 champion (6da0d19, primary
++# 0.14459). diagnostics.md's contents table (computed against this exact champion) flags
++# voluntary_excess (level 250, 29.8% exposure -- the largest untried PERSISTENT contents
++# signal in the whole table) under-predicted on both folds (A/E 1.155 B / 1.258 R). The
++# mechanism is a standard actuarial one, not a diagnostic artefact: a customer who
++# self-selects a higher voluntary excess is choosing to carry more of their own small
++# claims, so a higher excess predicts lower claim frequency -- this is a frequency effect,
++# so basis="count" per credibility_factors' own docstring ("far less noisy on a small
++# book"), matching the recipe already used for E5's renewal_count factor. Tested alone,
++# not paired: every near-miss this session (flood_zone, soil_type) was established alone
++# first before pairing, and contents' last few paired attempts (high_value_items,
++# security_level) show pairing a strong new signal with a weak confirmed one nets close to
++# the strong signal's own marginal contribution, so an alone read is the cleaner test here.
++# Deterministic credibility shrinkage (k=200, no SEEDS), reproduces exactly on a fresh-seed
++# rerun.
++USE_VOLUNTARY_EXCESS_FACTOR = True
++VOLUNTARY_EXCESS_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +398,11 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_VOLUNTARY_EXCESS_FACTOR and line == "contents":
++                factors = credibility_factors(
++                    tr_line, "voluntary_excess", k=VOLUNTARY_EXCESS_FACTOR_K, basis="count"
++                )
++                out = out * apply_factors(va, "voluntary_excess", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
