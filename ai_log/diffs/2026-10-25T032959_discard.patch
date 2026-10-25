@@ -1,0 +1,20 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index e6a0b76..46302c6 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -118,8 +118,14 @@ USE_PERIL_SUM = True
+ # P0 by only 0.00001. Adding it as a third orthogonal motor-only multiplier on top of E12
+ # projects past the margin if the stacking stays additive. All three factors are
+ # deterministic credibility shrinkage (no SEEDS), so a fresh-seed rerun reproduces exactly.
++# v4 (agent, 2026-10-25, backlog P3 second k): P3 only ever tested k=30 (the "less
++# shrinkage" alternative to P1/P2's k=100); the backlog's other named value, k=300 (more
++# shrinkage), is still untried. Raising k here only pulls the motor peril_levels factor
++# closer to 1 (the line's overall ratio) wherever a peril has few claims, without touching
++# the two other stacked factors, so it isolates whether k=30's extra credibility on
++# low-count perils (bodily_injury, theft) was adding signal or noise to the kept champion.
+ USE_PERIL_LEVELS_MOTOR = True
+-PERIL_LEVEL_MOTOR_K = 30.0
++PERIL_LEVEL_MOTOR_K = 300.0
+ USE_RENEWAL_FACTOR = True
+ RENEWAL_FACTOR_K = 200.0
+ USE_FUEL_FACTOR = True
