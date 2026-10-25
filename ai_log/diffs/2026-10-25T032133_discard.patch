@@ -1,0 +1,81 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..5e6b718 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -26,6 +26,7 @@ import os
+ import lightgbm as lgb
+ import numpy as np
+ import pandas as pd
++from sklearn.linear_model import TweedieRegressor
+ 
+ NON_FEATURES = {
+     "row_id",
+@@ -106,6 +107,54 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# v3 (agent, 2026-10-25, backlog E3+E4): the univariate region factor (E1, discard
++# 2026-10-25T01:45:52 / T02:36:05) and the plain E3 joint GLM on region/age_band/
++# new_business/channel/cover_type alone (discard 2026-10-25T02:47:19, primary 0.13771,
++# only 0.0007 under kept P0) both came close without beating it; separately, the E4
++# weather credibility factor (discard 2026-10-25T02:49:36, primary 0.13666) moved the
++# metric the wrong way on its own. Backlog E4 explicitly suggests folding the weather
++# fields into the E3 GLM "as standardised numerics" instead of a separate factor, so the
++# joint fit can net weather's effect out against region/new_business the way E3 already
++# nets region out against new_business on a 76%-new-business broker book. Untried.
++USE_GLM_CORRECTION = True
++GLM_ALPHA = 10.0
++GLM_FEATURES = {
++    "motor": ["region", "driver_age_band", "new_business", "channel", "cover_type"],
++    "buildings": ["region", "policyholder_age_band", "new_business", "channel"],
++    "contents": ["region", "policyholder_age_band", "new_business", "channel"],
++}
++GLM_NUMERIC = {
++    "motor": ["hail_days"],
++    "buildings": ["hail_days", "wildfire_index"],
++    "contents": ["wildfire_index"],
++}
++
++
++def glm_ratio(
++    tr: pd.DataFrame, va: pd.DataFrame, line: str, base_tr: np.ndarray, alpha: float
++) -> np.ndarray:
++    """Ridge log-link Tweedie correction ratio to a base prediction (`base_tr` on the
++    training rows): fits y / base_tr jointly on a handful of shifted categorical factors
++    (one-hot) plus standardised weather numerics (mean/std from training only), weight
++    base_tr ** 0.5, alpha penalising every coefficient towards 0 (ratio towards 1, i.e. no
++    change). Returns the predicted ratio for `va`; multiply by the matching valid-row base
++    to get the corrected prediction."""
++    cat_tr = tr[GLM_FEATURES[line]].astype("string").fillna("missing")
++    x_tr = pd.get_dummies(cat_tr).reset_index(drop=True)
++    cat_va = va[GLM_FEATURES[line]].astype("string").fillna("missing")
++    x_va = pd.get_dummies(cat_va).reindex(columns=x_tr.columns, fill_value=0).reset_index(drop=True)
++    num_cols = GLM_NUMERIC.get(line, [])
++    if num_cols:
++        num_tr = tr[num_cols].astype(float).reset_index(drop=True)
++        mean, std = num_tr.mean(), num_tr.std().replace(0, 1.0)
++        x_tr = pd.concat([x_tr, (num_tr - mean) / std], axis=1)
++        num_va = va[num_cols].astype(float).reset_index(drop=True)
++        x_va = pd.concat([x_va, (num_va - mean) / std], axis=1)
++    target = tr["y"].to_numpy() / np.maximum(base_tr, 1e-6)
++    weight = np.maximum(base_tr, 1e-6) ** 0.5
++    model = TweedieRegressor(power=1.5, link="log", alpha=alpha, max_iter=1000)
++    model.fit(x_tr, target, sample_weight=weight)
++    return model.predict(x_va)
+ 
+ 
+ def credibility_factors(
+@@ -221,7 +270,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             continue
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+-            pred[mask] = peril_prediction(va, line, levels)
++            base_pred = peril_prediction(va, line, levels)
++            if USE_GLM_CORRECTION:
++                tr_line = train[train["line"] == line]
++                base_tr = peril_prediction(tr_line, line, levels)
++                base_pred = base_pred * glm_ratio(tr_line, va, line, base_tr, GLM_ALPHA)
++            pred[mask] = base_pred
+             continue
+         pred[mask] = va["base"].to_numpy()
+     return pred
