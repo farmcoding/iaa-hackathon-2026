@@ -1,0 +1,56 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..cdad14b 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,6 +106,41 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# v3 (agent, 2026-10-25, backlog E8): E7's LightGBM correction on the same five-field
++# whitelist (region, age band, hail_days, wildfire_index, new_business) collapsed on both
++# folds (0.12431 vs kept P0 0.13778) even at num_leaves=3/min_data_in_leaf=2000 -- a
++# multi-way-split tree can still carve out noisy category combinations from ~350-500
++# claims a year. EBM is additive by construction (interactions=0: one independent shape
++# function per feature, no interaction terms) and bins every feature into few wide bins
++# (max_bins=16), so it structurally can't recreate that failure mode. Same five fields,
++# same init_score = log(kept P0's peril-sum base). Smoothing well above EBM's already-high
++# default (500) and a raised min_samples_leaf so the thin claim counts can't drive sharp
++# bin edges. random_state fixed (no SEEDS): nothing here derives from a seed.
++E8_FIELDS = ("region", "hail_days", "wildfire_index", "new_business")
++USE_E8 = True
++
++
++def _fit_line_e8(tr: pd.DataFrame, va: pd.DataFrame) -> np.ndarray:
++    from interpret.glassbox import ExplainableBoostingRegressor
++
++    line = str(tr["line"].iloc[0])
++    age_col = "driver_age_band" if line == "motor" else "policyholder_age_band"
++    cols = [c for c in (age_col, *E8_FIELDS) if c in tr.columns]
++    levels = {name: 1.0 for name, _, _ in perils_of(line)}
++    base_tr = peril_prediction(tr, line, levels)
++    base_va = peril_prediction(va, line, levels)
++    off_tr = np.log(np.maximum(base_tr, 1e-3))
++    off_va = np.log(np.maximum(base_va, 1e-3))
++    m = ExplainableBoostingRegressor(
++        max_bins=16,
++        interactions=0,
++        smoothing_rounds=2000,
++        min_samples_leaf=1000,
++        objective="tweedie_deviance:variance_power=1.5",
++        random_state=0,
++    )
++    m.fit(tr[cols], tr["y"].to_numpy(), init_score=off_tr)
++    return m.predict(va[cols], init_score=off_va)
+ 
+ 
+ def credibility_factors(
+@@ -219,6 +254,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if USE_CORRECTION:
+             pred[mask] = _fit_line(train[train["line"] == line], va)
+             continue
++        if USE_E8:
++            pred[mask] = _fit_line_e8(train[train["line"] == line], va)
++            continue
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+             pred[mask] = peril_prediction(va, line, levels)
