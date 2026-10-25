@@ -1,0 +1,32 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..e177013 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,17 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): soil_type is PERSISTENT against the current champion
++# (6da0d19, 0.14459) on two lines at once -- motor loam (13.9% exposure, A/E 0.743 B /
++# 0.885 R) and contents clay/missing (31.2% + 12.3% exposure) -- the same multi-line
++# signature that made occupation a keep, and it is untried as a structured factor.
++# Clay/loam soils carry a well-known subsidence and ground-movement risk that the
++# developed base's relativity (fitted on a different soil mix) transfers imperfectly;
++# the motor signal likely proxies the same regional ground/terrain risk. Deterministic
++# credibility shrinkage (basis "cost", k=200, same recipe as occupation/previous_insurer),
++# no SEEDS, so a fresh-seed rerun reproduces exactly.
++USE_SOIL_FACTOR = True
++SOIL_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +392,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_SOIL_FACTOR and line in ("motor", "contents"):
++                factors = credibility_factors(tr_line, "soil_type", k=SOIL_FACTOR_K)
++                out = out * apply_factors(va, "soil_type", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
