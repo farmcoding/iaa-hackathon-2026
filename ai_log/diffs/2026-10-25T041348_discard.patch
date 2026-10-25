@@ -1,0 +1,35 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index d3eb647..43fe2a0 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -190,6 +190,20 @@ USE_MISSED_PAYMENTS_FACTOR = True
+ MISSED_PAYMENTS_FACTOR_K = 200.0
+ USE_TREES_FACTOR = True
+ TREES_FACTOR_K = 200.0
++# v7 (agent, 2026-10-25): with both of the last session's confirmed near-misses now
++# stacked into the champion (missed_payments_12m + trees_within_5m, 2026-10-25T04:13:21,
++# keep 0.14342), there is no known near-miss left unpaired, so this run tries one fresh
++# diagnostics-driven candidate alone. contents `works_from_home` is PERSISTENT against
++# the current champion at 25.0% exposure -- the single largest exposure share of any
++# untried admissible field in the whole diagnostics table -- with a consistent
++# under-prediction both folds (A/E 1.198 B / 1.247 R). Binary (True/False/missing), so
++# shrinkage has only three levels to estimate and little room to overfit, unlike the
++# high-cardinality fields (occupation, soil_type) that caused the original free-form
++# correction to fail. Orthogonal to contents' two existing factors (renewal_count,
++# energy_rating): no shared field. Cost basis, k=200 (this session's default recipe).
++# Deterministic credibility shrinkage, no SEEDS, so a fresh-seed rerun reproduces exactly.
++USE_WFH_FACTOR = True
++WFH_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -352,6 +366,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_TREES_FACTOR and line == "buildings":
+                 factors = credibility_factors(tr_line, "trees_within_5m", k=TREES_FACTOR_K)
+                 out = out * apply_factors(va, "trees_within_5m", factors)
++            if USE_WFH_FACTOR and line == "contents":
++                factors = credibility_factors(tr_line, "works_from_home", k=WFH_FACTOR_K)
++                out = out * apply_factors(va, "works_from_home", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
