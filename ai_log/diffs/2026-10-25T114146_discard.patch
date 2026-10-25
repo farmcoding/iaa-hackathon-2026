@@ -1,0 +1,67 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..09022a5 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -110,6 +110,28 @@ USE_PERIL_SUM = True
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# L4 (backlog tier L, agent, 25 Oct): property joint GLMs on top of P0, alongside the kept
++# L1 motor factor. Each line's pre-registered candidate block is gated as one unit
++# (n_tests = block size) before fitting. alpha=1 is the third and last pre-registered
++# setting: 0.01 and 0.1 both discarded (primaries 0.11278 and 0.11492, below the L1 bar of
++# 0.11910), so this closes out L4.
++PROPERTY_ALPHA = 1.0
++BUILDINGS_COLS = [
++    "gender",
++    "policyholder_age_band",
++    "new_business",
++    "region",
++    "construction_type",
++    "energy_rating",
++]
++CONTENTS_COLS = [
++    "gender",
++    "policyholder_age_band",
++    "new_business",
++    "region",
++    "tenure",
++    "works_from_home",
++]
+ 
+ 
+ def credibility_factors(
+@@ -332,16 +354,30 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+             p0 = peril_prediction(va, line, levels)
++            tr_line = train[train["line"] == line].assign(
++                p0=peril_prediction(train[train["line"] == line], line, levels)
++            )
+             if line == "motor":
+-                tr_line = train[train["line"] == line].assign(
+-                    p0=peril_prediction(train[train["line"] == line], line, levels)
+-                )
+                 passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
+                 if passes:
+                     mult = offset_glm(
+                         tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                     )
+                     p0 = p0 * mult
++            elif line == "buildings":
++                passes, _ = lr_gate(
++                    tr_line, BUILDINGS_COLS, n_tests=len(BUILDINGS_COLS), offset="p0"
++                )
++                if passes:
++                    mult = offset_glm(
++                        tr_line, va, BUILDINGS_COLS, alpha=PROPERTY_ALPHA, offset="p0"
++                    )
++                    p0 = p0 * mult
++            elif line == "contents":
++                passes, _ = lr_gate(tr_line, CONTENTS_COLS, n_tests=len(CONTENTS_COLS), offset="p0")
++                if passes:
++                    mult = offset_glm(tr_line, va, CONTENTS_COLS, alpha=PROPERTY_ALPHA, offset="p0")
++                    p0 = p0 * mult
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
