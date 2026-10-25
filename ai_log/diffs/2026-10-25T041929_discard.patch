@@ -1,0 +1,41 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index d3eb647..3509954 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -190,6 +190,23 @@ USE_MISSED_PAYMENTS_FACTOR = True
+ MISSED_PAYMENTS_FACTOR_K = 200.0
+ USE_TREES_FACTOR = True
+ TREES_FACTOR_K = 200.0
++# v7 (agent, 2026-10-25): pair the one confirmed near-miss left in the ledger with a fresh
++# diagnostics-driven candidate on the same line, since the last pairing attempt
++# (works_from_home + motor years_licensed, 2026-10-25T04:19:02, discard 0.14291) made
++# things worse than the champion -- years_licensed was the wrong partner, not evidence
++# against the pattern itself (the ledger's three kept runs all paired same-pattern
++# near-misses). works_from_home (contents, 2026-10-25T04:15:49, discard 0.14378, +0.00036
++# both folds alone against this exact champion) stays. New partner: contents
++# voluntary_excess (29.8% exposure, the single largest-exposure untried PERSISTENT
++# contents miss in diagnostics.md, A/E 1.153 B / 1.258 R, both folds the same direction),
++# on the actuarial logic that excess choice proxies self-selected risk retention on a
++# mostly-new-business book. Orthogonal to works_from_home (a lifestyle flag) and to every
++# factor already in the champion. Both deterministic credibility shrinkage (basis "cost",
++# k=200), no SEEDS, so a fresh-seed rerun reproduces exactly.
++USE_WFH_FACTOR = True
++WFH_FACTOR_K = 200.0
++USE_VOL_EXCESS_FACTOR = True
++VOL_EXCESS_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -352,6 +369,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_TREES_FACTOR and line == "buildings":
+                 factors = credibility_factors(tr_line, "trees_within_5m", k=TREES_FACTOR_K)
+                 out = out * apply_factors(va, "trees_within_5m", factors)
++            if USE_WFH_FACTOR and line == "contents":
++                factors = credibility_factors(tr_line, "works_from_home", k=WFH_FACTOR_K)
++                out = out * apply_factors(va, "works_from_home", factors)
++            if USE_VOL_EXCESS_FACTOR and line == "contents":
++                factors = credibility_factors(tr_line, "voluntary_excess", k=VOL_EXCESS_FACTOR_K)
++                out = out * apply_factors(va, "voluntary_excess", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
