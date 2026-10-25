@@ -1,0 +1,37 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..2c0f8c3 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -110,6 +110,11 @@ USE_PERIL_SUM = True
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# M3 (backlog tier M, agent, 25 Oct): motor occupation on top of the kept L1 gender factor.
++# occupation passed the owner's claim-count gate in both years; gated again here with
++# n_tests=1 against the L1 prediction as offset, per the backlog's single-factor item.
++# alpha 0.1 (setting 1 of 2) discarded at +0.0002 over the L1 bar; this is setting 2 of 2.
++MOTOR_OCCUPATION_ALPHA = 1.0
+ 
+ 
+ def credibility_factors(
+@@ -342,6 +347,20 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                         tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                     )
+                     p0 = p0 * mult
++                    mult_tr = offset_glm(
++                        tr_line, tr_line, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
++                    )
++                    tr_line = tr_line.assign(l1=tr_line["p0"] * mult_tr)
++                    passes_occ, _ = lr_gate(tr_line, "occupation", n_tests=1, offset="l1")
++                    if passes_occ:
++                        mult_occ = offset_glm(
++                            tr_line,
++                            va.assign(l1=p0),
++                            ["occupation"],
++                            alpha=MOTOR_OCCUPATION_ALPHA,
++                            offset="l1",
++                        )
++                        p0 = p0 * mult_occ
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
