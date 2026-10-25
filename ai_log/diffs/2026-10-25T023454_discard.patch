@@ -1,0 +1,35 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..1a7c95d 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,6 +106,16 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# E1 retry (agent, 2026-10-25, backlog Tier 0 E1): the first E1 attempt (2026-10-25
++# 01:45:52, discard 0.13515) divided raw y by base per region level, which bakes the
++# developed-to-emerging level gap into every region's factor instead of isolating the
++# relativity. credibility_factors() already normalises A/E to the line's own A/E before
++# shrinking (z = n/(n+k)), so this retry applies it correctly on top of the kept P0 base:
++# one multiplicative factor per region (E01-E06, "missing" for anything else), k=200,
++# basis "cost" (region drives both frequency and severity -- flood, hail -- so count-only
++# would miss the severity half of the shift).
++USE_REGION_FACTOR = True
++REGION_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -221,7 +231,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             continue
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+-            pred[mask] = peril_prediction(va, line, levels)
++            base_pred = peril_prediction(va, line, levels)
++            if USE_REGION_FACTOR:
++                tr_line = train[train["line"] == line]
++                factors = credibility_factors(tr_line, "region", k=REGION_K)
++                base_pred = base_pred * apply_factors(va, "region", factors)
++            pred[mask] = base_pred
+             continue
+         pred[mask] = va["base"].to_numpy()
+     return pred
