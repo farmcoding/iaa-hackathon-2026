@@ -19,7 +19,8 @@ email_domain, payment_method, channel) fail in both years.
 - **L2 Motor gender x age band.** Mains gender and driver_age_band plus the interaction
   (gender, driver_age_band), gated as one block (n_tests=1). Alpha: the best of L1 (or 0.01
   if L1 was discarded at every setting), and 10x it.
-- **L3 Motor joint GLM.** Candidate list (n_tests=8): gender, driver_age_band,
+- **L3 Motor joint GLM.** (Two crashes at 11:21/11:24 were a helper bug, a single-level
+  factor in the smoke subsample; fixed by the owner 11:35. Re-run from the first setting.) Candidate list (n_tests=8): gender, driver_age_band,
   new_business, region, cover_type, occupation, vehicle_value_group, ncb_years. Each gated
   in the fit; passing ones enter one ridge GLM on P0. Alpha 0.001, 0.01, 0.1.
 - **L4 Property joint GLMs.** Buildings list (n_tests=6): gender, policyholder_age_band,

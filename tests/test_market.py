@@ -134,3 +134,12 @@ def test_offset_glm_recovers_the_effect_direction_and_shrinks_with_alpha():
     ratio_strong = strong[m.to_numpy()].mean() / strong[~m.to_numpy()].mean()
     assert 1.15 < ratio_weak < 1.45
     assert 1.0 <= ratio_strong < ratio_weak
+
+
+def test_helpers_handle_a_single_level_factor():
+    from iaa import experiment_emerging as e
+
+    df = _synthetic(effect=1.0, n=2_000).assign(one="x")
+    assert e.lr_gate(df, "one") == (False, 1.0)
+    assert (e.offset_glm(df, df, ["one"]) == 1.0).all()
+    assert e.offset_glm(df, df, ["one", "gender"]).shape == (len(df),)

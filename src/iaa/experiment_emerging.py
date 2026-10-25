@@ -216,6 +216,9 @@ def _design(tr: pd.DataFrame, va: pd.DataFrame, cols: list[str], interactions=()
             vv = va[c].astype("string").fillna("NA")
             parts_tr.append(pd.DataFrame({f"{c}={x}": (lv == x).astype(float) for x in levels}))
             parts_va.append(pd.DataFrame({f"{c}={x}": (vv == x).astype(float) for x in levels}))
+    # a categorical with one level contributes an empty frame (no rows): give it the rows
+    parts_tr = [p if len(p) else pd.DataFrame(index=range(len(tr))) for p in parts_tr]
+    parts_va = [p if len(p) else pd.DataFrame(index=range(len(va))) for p in parts_va]
     xt = pd.concat([p.reset_index(drop=True) for p in parts_tr], axis=1)
     xv = pd.concat([p.reset_index(drop=True) for p in parts_va], axis=1)
     return xt.to_numpy(float), xv.to_numpy(float), list(xt.columns)
@@ -234,6 +237,8 @@ def offset_glm(tr, va, cols, alpha=0.01, interactions=(), offset="base"):
 
     b_tr = np.maximum(tr[offset].to_numpy(float), 1e-3)
     xt, xv, _ = _design(tr, va, cols, interactions)
+    if xt.shape[1] == 0:  # every candidate has a single level in these rows
+        return np.ones(len(va))
     m = TweedieRegressor(power=1.5, link="log", alpha=alpha, solver="newton-cholesky", max_iter=300)
     m.fit(xt, tr["y"].to_numpy(float) / b_tr, sample_weight=np.sqrt(b_tr))
     return m.predict(xv) / np.exp(m.intercept_)
@@ -264,6 +269,8 @@ def lr_gate(
     xt, _, names = _design(
         tr, tr.iloc[:1], [col] if isinstance(col, str) else list(col), interactions
     )
+    if xt.shape[1] == 0:  # a single level in these rows: nothing to test
+        return False, 1.0
     if basis == "count":
         y = tr["n_total"].to_numpy(float)
         fit = PoissonRegressor(alpha=0.0, solver="newton-cholesky", max_iter=300)
