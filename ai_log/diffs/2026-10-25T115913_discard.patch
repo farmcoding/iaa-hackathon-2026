@@ -1,0 +1,16 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..2a8c90a 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -108,8 +108,9 @@ USE_CORRECTION = False
+ USE_PERIL_SUM = True
+ # L1 (backlog tier L, agent, 25 Oct): motor gender on top of P0. The developed base has no
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+-# per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+-MOTOR_GENDER_ALPHA = 0.01
++# per the backlog's pre-registered single-factor item. alpha setting 3 of 3 (0.001/0.01/0.1);
++# alpha=0.01 (setting 2) is the current champion, kept 2026-10-25T11:16:18, primary 0.11910.
++MOTOR_GENDER_ALPHA = 0.1
+ 
+ 
+ def credibility_factors(
