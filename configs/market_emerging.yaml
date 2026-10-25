@@ -60,6 +60,12 @@ harness:
   # developed-market base prediction per row, by validation year (scripts/part2_base.py):
   # developed 2021-23 fit when scoring 2024, 2021-24 fit for 2025. Attached by harness.split
   base: {2023: part2_base_B.parquet, 2024: part2_base_B.parquet, 2025: part2_base_final.parquet}
+  # per-peril base predictions (scripts/part2_base_perils.py --fine), same fit years; the
+  # emerging peril mix differs (glass/hail and storm heavier, water lighter)
+  base_perils:
+    2023: part2_base_perils_fine_B.parquet
+    2024: part2_base_perils_fine_B.parquet
+    2025: part2_base_perils_fine_final.parquet
   # level (owner, 2026-10-25): each line balanced so its training predictions sum to the
   # trended training actuals; the 2025 mix then moves the level. Board check on the
   # transfer file: history-anchored 0.14243, mix-adjusted 0.15079

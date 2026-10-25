@@ -4,13 +4,37 @@ Ranked. The agent takes the highest open item; OWNER items are human-only. Bar: 
 developed base alone (primary 0.13663, level-neutral, folds B + R). Background:
 reports/part2_drift.md and the Part 2 section of reports/assumptions_log.md.
 
+## Tier P (first): peril mix
+
+The frames carry one developed base prediction per peril, `base_<name>`, NaN on other
+lines (motor: bodily_injury, own_damage, third_party_prop, theft, glass_hail; buildings:
+storm, flood, subsidence, water, fire, ad; contents: theft, escape_of_water,
+accidental_damage, flood). Helpers in experiment_emerging.py: `perils_of(line)`,
+`peril_levels(tr, line, k)` (each peril's emerging/base ratio, credibility-shrunk towards
+the line's ratio) and `peril_prediction(va, line, levels)`. Owner manual checks (not
+logged) on correction factors: region and age-band factors, by cost or by claim count,
+lost on both folds; new_business by count +0.0003 (noise). `credibility_factors(...,
+basis="count")` corrects frequency only.
+
+- **P0** Sum of the per-peril bases, every level 1: is the per-peril base at least as
+  good as the total base?
+- **P1** `peril_levels(k=100)` on every line.
+- **P2** P1 on motor only (glass/hail is the shifted peril; buildings fire is noisy).
+- **P3** k in {30, 300} on the better of P1/P2.
+- **P4** Geometric blend of the total base and the P1/P2 prediction, weights 0.5.
+
 ## Tier 0: structured corrections on shifted fields (credibility or ridge)
 
+Use `credibility_factors(tr, col, k)` and `apply_factors(va, col, f)` in
+experiment_emerging.py for every Tier 0 factor: they take each level's A/E relative to
+the line's own A/E before shrinking. The first E1 attempt (2026-10-25T01:45:52, discard
+0.13515) used raw y / base, which mixes the developed-to-emerging level gap into every
+region's factor in proportion to its credibility: an implementation error, not evidence
+against region. Re-test it first.
+
 - **E1 Region.** The base has never seen E01-E06 and treats region as missing. Per line,
-  a multiplicative factor per region from the training rows: credibility A/E,
-  `z = n / (n + k)` with n the region's claim count and k = 200 claims to start, so
-  factor = 1 + z * (sum y / sum base - 1) after rebalancing the line. Follow-ups: k in
-  {100, 400}; region within urban_density.
+  `credibility_factors(tr, "region", k=200)`. Follow-ups: k in {100, 400}; region
+  within urban_density.
 - **E2 Age band.** The base used the mean age of each band (features.AGE_BAND_MEAN).
   Credibility factor per driver_age_band (motor) / policyholder_age_band (property),
   same method as E1.

@@ -394,6 +394,8 @@ def _fit_predict_core(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         tr = train[train["line"] == line]
         mask = (valid["line"] == line).to_numpy()
         va = valid[mask]
+        if not mask.any() or tr.empty:  # Part 2 per-peril base fits pass one line at a time
+            continue
         if frozen is not None and line in FROZEN_LINES:
             pred[mask] = frozen.reindex(va["row_id"].astype(str)).to_numpy()
             continue

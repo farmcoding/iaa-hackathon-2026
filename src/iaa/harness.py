@@ -126,10 +126,11 @@ def split(df: pd.DataFrame, train_years, valid_year, cfg) -> tuple[pd.DataFrame,
 
 
 @lru_cache(maxsize=4)
-def _base_table(name: str, market: str) -> pd.Series:
-    b = pd.read_parquet(CACHE / name, columns=["market", "row_id", "base"])
+def _base_table(name: str, market: str) -> pd.DataFrame:
+    b = pd.read_parquet(CACHE / name)
     b = b[b["market"] == market]
-    return b.set_index(b["row_id"].astype(str))["base"]
+    cols = [c for c in b.columns if c == "base" or c.startswith("base_")]
+    return b.set_index(b["row_id"].astype(str))[cols]
 
 
 def _attach_base(df: pd.DataFrame, valid_year: int, cfg: dict) -> pd.DataFrame:
@@ -137,13 +138,22 @@ def _attach_base(df: pd.DataFrame, valid_year: int, cfg: dict) -> pd.DataFrame:
     one file per validation year). Attached here, in frozen code, so an experiment always
     sees the base fitted without its own validation year (developed 2021-23 when scoring
     2024, developed 2021-24 for 2025) and cannot pick another one."""
-    files = cfg.get("harness", {}).get("base") or {}
-    if valid_year not in files:
-        return df
-    base = df["row_id"].astype(str).map(_base_table(files[valid_year], data.MARKET))
-    if base.isna().any():
-        raise ValueError(f"{int(base.isna().sum())} rows have no base prediction")
-    return df.assign(base=base.to_numpy())
+    h = cfg.get("harness", {})
+    out = df
+    # base: total prediction; base_perils (scripts/part2_base_perils.py --fine): one
+    # base_<peril> column per peril, NaN on other lines' perils
+    for key in ("base", "base_perils"):
+        files = h.get(key) or {}
+        if valid_year not in files:
+            continue
+        table = _base_table(files[valid_year], data.MARKET)
+        got = table.reindex(out["row_id"].astype(str))
+        if key == "base" and got["base"].isna().any():
+            raise ValueError(f"{int(got['base'].isna().sum())} rows have no base prediction")
+        if got.index.isna().any() or len(got) != len(out):
+            raise ValueError(f"{key}: row mismatch")
+        out = out.assign(**{c: got[c].to_numpy() for c in got.columns})
+    return out
 
 
 def predict(exp, tr: pd.DataFrame, va: pd.DataFrame, cfg: dict) -> np.ndarray:

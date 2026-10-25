@@ -99,6 +99,87 @@ PARAMS = {
 USE_CORRECTION = False
 
 
+def credibility_factors(
+    tr: pd.DataFrame, col: str, k: float = 200.0, basis: str = "cost"
+) -> pd.Series:
+    """Multiplicative correction per level of `col` for one line's training rows.
+
+    A/E of each level is taken relative to the line's own A/E (the base carries the
+    developed level, so raw y / base mixes level and relativity), then shrunk towards 1 by
+    z = n / (n + k), n = claims in that level. Missing is its own level.
+
+    basis "cost": actual developed cost against the base. One year of cost is dominated by
+    a few large claims (bodily injury, fire), so cost factors carry severity noise.
+    basis "count": the level's share of reported claims (n_total) against its share of
+    the base prediction; assumes the base's severity relativities hold and corrects
+    frequency only. Far less noisy on a small book.
+    Use as: apply_factors(valid, col, credibility_factors(train_line, col)).
+    """
+    key = tr[col].astype("string").fillna("missing")
+    num = tr["n_total"] if basis == "count" else tr["y"]
+    g = pd.DataFrame({"num": num, "base": tr["base"], "n": tr["n_total"]}).groupby(key)
+    ae = (g["num"].sum() / num.sum()) / (g["base"].sum() / tr["base"].sum())
+    n = g["n"].sum()
+    z = n / (n + k)
+    return 1 + z * (ae - 1)
+
+
+def apply_factors(va: pd.DataFrame, col: str, factors: pd.Series) -> np.ndarray:
+    key = va[col].astype("string").fillna("missing")
+    return key.map(factors).fillna(1.0).to_numpy(dtype=float)
+
+
+def perils_of(line: str) -> list[tuple[str, str, str]]:
+    """(base column suffix, peril, peril group) for each peril of a line, following the
+    development config: single-peril groups are named by the group (buildings water,
+    fire, ad), others by the peril (scripts/part2_base_perils.py --fine)."""
+    from iaa import ultimate
+
+    groups = ultimate.load_config()["development"]["peril_groups"][line]
+    return [(p if len(perils) > 1 else g, p, g) for g, perils in groups.items() for p in perils]
+
+
+def peril_target(tr: pd.DataFrame, line: str, peril: str, group: str) -> np.ndarray:
+    """Trended developed cost of one peril on training rows: its reported cost over its
+    group's completion (the peril shares the group's development pattern), on-levelled
+    with the group's trend (config peril_trend, else the line trend)."""
+    from iaa import ultimate
+
+    cfg = ultimate.load_config()
+    line_rate = cfg["trend"][line]
+    rate = (cfg.get("peril_trend") or {}).get(line, {}).get(group, line_rate)
+    gap = np.round(np.log(tr["trend_factor"].to_numpy()) / np.log(1 + line_rate))
+    comp = tr[f"comp_{group}"].to_numpy()
+    cost = tr[f"cost_{peril}"].fillna(0.0).to_numpy() if f"cost_{peril}" in tr else 0.0
+    return np.where(comp > 0, cost / np.where(comp > 0, comp, 1.0), 0.0) * (1 + rate) ** gap
+
+
+def peril_levels(tr: pd.DataFrame, line: str, k: float = 100.0) -> dict[str, float]:
+    """Emerging level of each peril relative to the developed base, per line.
+
+    ratio_p = sum(peril cost) / sum(base_<peril>) on the training rows, shrunk towards the
+    line's overall ratio by z = n_p / (n_p + k), n_p = the peril's claim count. Only the
+    differences between perils matter (the harness rebalances the line). Prediction:
+    sum over perils of base_<peril> * ratio_p (needs harness.base_perils).
+    """
+    names = perils_of(line)
+    ys = {name: peril_target(tr, line, p, g) for name, p, g in names}
+    total_y = sum(v.sum() for v in ys.values())
+    total_b = sum(tr[f"base_{name}"].sum() for name, _, _ in names)
+    line_ratio = total_y / total_b
+    out = {}
+    for name, peril, _ in names:
+        n = float(tr[f"n_{peril}"].sum()) if f"n_{peril}" in tr else 0.0
+        z = n / (n + k)
+        r = ys[name].sum() / max(tr[f"base_{name}"].sum(), 1e-9)
+        out[name] = z * r + (1 - z) * line_ratio
+    return out
+
+
+def peril_prediction(va: pd.DataFrame, line: str, levels: dict[str, float]) -> np.ndarray:
+    return sum(va[f"base_{name}"].to_numpy() * levels[name] for name, _, _ in perils_of(line))
+
+
 def _feature_cols(df: pd.DataFrame, line: str) -> list[str]:
     drop = NON_FEATURES | INADMISSIBLE | DUPLICATES | LINE_DROP.get(line, set())
     drop |= {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
