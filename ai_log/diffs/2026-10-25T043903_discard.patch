@@ -1,0 +1,36 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..467ec3b 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,21 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): region, buildings only. The two most recent attempts
++# (household_size all-lines, 04:29:43, clean loss; flood_zone+basement, 04:38:37, discard
++# 0.14514) both lost, so trying a fresh single field rather than another pairing.
++# diagnostics.md against this exact champion (6da0d19, 0.14459) flags buildings region E06
++# PERSISTENT at 19.9% exposure -- the largest exposure share of any untried buildings field
++# (licence_points 6 is larger-gap but inadmissible on buildings; previous_insurer/occupation
++# levels are already corrected). region was only tried twice before (backlog E1,
++# 2026-10-25T01:45:52 discard 0.13515 and retest 02:36:05 discard 0.13575), both applied
++# across all three lines against a far weaker champion (pre-P0/pre-stacking), so any
++# buildings-specific gain could have been swamped by noisier motor/contents region levels
++# (motor's only persistent region miss, E01, is smaller at 12.7% exposure; contents' region
++# miss, E04, is only 4.2% exposure with a wild B/R split suggesting a noisy single level).
++# Deterministic credibility shrinkage (no SEEDS), so a fresh-seed rerun reproduces exactly.
++USE_REGION_FACTOR = True
++REGION_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +396,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_REGION_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "region", k=REGION_FACTOR_K)
++                out = out * apply_factors(va, "region", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
