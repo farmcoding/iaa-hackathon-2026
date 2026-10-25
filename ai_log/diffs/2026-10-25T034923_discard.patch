@@ -1,0 +1,38 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 60b78f8..6da53ab 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -139,6 +139,23 @@ USE_COVER_FACTOR = True
+ COVER_FACTOR_K = 200.0
+ USE_ELEVATION_FACTOR = True
+ ELEVATION_FACTOR_K = 200.0
++# v5 (agent, 2026-10-25): add a previous_insurer credibility factor, all three lines, onto
++# the kept champion (v4, 2026-10-25T03:44:51, primary 0.14061). diagnostics.md against that
++# champion flags previous_insurer PERSISTENT at 5 motor levels (INS31/22/19/29/21, ~2.6-2.8%
++# exposure each, both folds the same direction) and 3 buildings levels (INS32/08/01); it's
++# admissible (not in INADMISSIBLE) and never tried as a structured factor -- the only prior
++# runs touching it excluded it as a free high-cardinality categorical from the failed v1
++# boosting (program_emerging.md) and from the E7/E8 whitelists, because an unshrunk tree
++# split overfits it. part2_drift.md's adversarial-validation table shows previous_insurer is
++# one of the strongest real signals on every line even on the core (customer+address) field
++# set (gain share 0.16 motor, 0.21 buildings, 0.23 contents) -- a distribution-channel/risk
++# proxy, not noise -- which is exactly why the unshrunk split overfit it rather than evidence
++# against the field. Applied per line (it's a customer-level field on all three, like the
++# renewal factor) with the same credibility_factors/apply_factors recipe already validated
++# for fuel_type/cover_type/elevation (k=200, basis="cost", shrunk by claim count towards the
++# line's own A/E), so a fresh-seed rerun reproduces exactly (deterministic, no SEEDS).
++USE_PREV_INSURER_FACTOR = True
++PREV_INSURER_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -269,6 +286,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     basis="count",
+                 )
+                 out = out * apply_factors(va.assign(renewal_count=va_cap), "renewal_count", factors)
++            if USE_PREV_INSURER_FACTOR:
++                factors = credibility_factors(tr_line, "previous_insurer", k=PREV_INSURER_FACTOR_K)
++                out = out * apply_factors(va, "previous_insurer", factors)
+             if USE_FUEL_FACTOR and line == "motor":
+                 factors = credibility_factors(tr_line, "fuel_type", k=FUEL_FACTOR_K)
+                 out = out * apply_factors(va, "fuel_type", factors)
