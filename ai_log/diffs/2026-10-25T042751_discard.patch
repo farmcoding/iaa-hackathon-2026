@@ -1,0 +1,33 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..2b48852 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,18 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): occupation (v7, kept 0.14459) was flagged PERSISTENT on all
++# three lines in diagnostics.md and won once shrunk by count, despite program_emerging.md's
++# warning that it overfit as a free categorical split in boosting -- a different failure
++# mode than a shrunk credibility factor. `household_size` shows the same multi-line
++# PERSISTENT signature against this exact champion, all three in the same direction
++# (actual < predicted): motor 8.2% exposure (A/E 0.884 B / 0.897 R), buildings 14.0%
++# (0.744 B / 0.597 R), contents 14.1% (0.784 B / 0.806 R). Untried, admissible, no
++# line-specific exclusion. Apply it on all three lines with occupation's exact recipe
++# (basis "cost", k=200) as a fourth multiplicative factor. Deterministic credibility
++# shrinkage, no SEEDS, so a fresh-seed rerun reproduces exactly.
++USE_HOUSEHOLD_FACTOR = True
++HOUSEHOLD_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +393,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_HOUSEHOLD_FACTOR:
++                factors = credibility_factors(tr_line, "household_size", k=HOUSEHOLD_FACTOR_K)
++                out = out * apply_factors(va, "household_size", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
