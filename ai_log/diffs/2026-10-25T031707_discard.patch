@@ -1,0 +1,18 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..64f2eb1 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -221,7 +221,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             continue
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+-            pred[mask] = peril_prediction(va, line, levels)
++            p = peril_prediction(va, line, levels)
++            if line == "motor":
++                tr_line = train[train["line"] == line]
++                factors = credibility_factors(tr_line, "fuel_type", k=200.0)
++                p = p * apply_factors(va, "fuel_type", factors)
++            pred[mask] = p
+             continue
+         pred[mask] = va["base"].to_numpy()
+     return pred
