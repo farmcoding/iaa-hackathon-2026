@@ -1,0 +1,54 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..0e9e3c5 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -110,6 +110,29 @@ USE_PERIL_SUM = True
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# L4 (backlog tier L, agent, 25 Oct): property joint GLMs on top of P0, alongside the kept L1
++# motor gender factor. Buildings and contents each have their own pre-registered candidate
++# list (n_tests=6 each); every candidate is gated individually against p0 and only the ones
++# that pass enter one ridge GLM per line. Alpha setting 1 of 3 (0.01/0.1/1).
++PROPERTY_GLM_ALPHA = 0.01
++PROPERTY_GLM_COLS = {
++    "buildings": [
++        "gender",
++        "policyholder_age_band",
++        "new_business",
++        "region",
++        "construction_type",
++        "energy_rating",
++    ],
++    "contents": [
++        "gender",
++        "policyholder_age_band",
++        "new_business",
++        "region",
++        "tenure",
++        "works_from_home",
++    ],
++}
+ 
+ 
+ def credibility_factors(
+@@ -342,6 +365,19 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                         tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                     )
+                     p0 = p0 * mult
++            elif line in PROPERTY_GLM_COLS:
++                tr_line = train[train["line"] == line].assign(
++                    p0=peril_prediction(train[train["line"] == line], line, levels)
++                )
++                candidates = PROPERTY_GLM_COLS[line]
++                cols = [
++                    c
++                    for c in candidates
++                    if lr_gate(tr_line, c, n_tests=len(candidates), offset="p0")[0]
++                ]
++                if cols:
++                    mult = offset_glm(tr_line, va, cols, alpha=PROPERTY_GLM_ALPHA, offset="p0")
++                    p0 = p0 * mult
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
