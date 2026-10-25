@@ -1,0 +1,40 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..e4fa875 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,22 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): pair the one confirmed near-miss left open, buildings
++# `flood_zone` (discard 2026-10-25T04:31:55, +0.00038 both folds alone vs. this champion;
++# a later pairing with `marital_status` made it worse, and a three-way stack with
++# `basement`+`soil_type` at 2026-10-25T04:45:22 cleared only +0.00072, short of the 0.001
++# margin -- stacking two already-discarded near-misses, not a fresh signal), with a fresh
++# diagnostics-driven candidate on an orthogonal line: contents `security_level`, PERSISTENT
++# at the "missing" level in diagnostics.md (12.1% exposure, A/E 0.824 B / 0.632 R, run_id
++# 20261025T042722 -- read against this exact champion), untried, with a clear actuarial
++# mechanism (security devices lower theft frequency) distinct from every contents factor
++# already applied (energy_rating, occupation, works_from_home). Both factors are
++# deterministic credibility shrinkage (basis "cost", k=200), no SEEDS, so a fresh-seed
++# rerun reproduces exactly.
++USE_FLOOD_FACTOR = True
++FLOOD_FACTOR_K = 200.0
++USE_SECURITY_FACTOR = True
++SECURITY_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +397,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_FLOOD_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "flood_zone", k=FLOOD_FACTOR_K)
++                out = out * apply_factors(va, "flood_zone", factors)
++            if USE_SECURITY_FACTOR and line == "contents":
++                factors = credibility_factors(tr_line, "security_level", k=SECURITY_FACTOR_K)
++                out = out * apply_factors(va, "security_level", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
