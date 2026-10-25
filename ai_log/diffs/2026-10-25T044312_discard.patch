@@ -1,0 +1,43 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..4c45b84 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,22 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): stack the two orthogonal near-misses left open against this
++# champion (6da0d19, 0.14459) instead of testing either alone again. flood_zone+basement
++# on buildings (2026-10-25T04:38:37, discard 0.14514, +0.00055 both folds) and soil_type
++# on motor+contents (2026-10-25T04:42:45, discard 0.14475, +0.00016 both folds) touch
++# disjoint lines (buildings vs. motor/contents) and disjoint fields, so today's other
++# near-miss stacks (fuel-on-E12, cover+elevation, energy+prev_insurer, missed_payments+
++# trees) were all near-additive to slightly super-additive when combined this way --
++# projecting roughly +0.0007-0.0009 combined, close to the 0.001 keep margin. Both
++# factors are deterministic credibility shrinkage (basis "cost", k=200), no SEEDS, so a
++# fresh-seed rerun reproduces exactly.
++USE_FLOOD_ZONE_FACTOR = True
++FLOOD_ZONE_FACTOR_K = 200.0
++USE_BASEMENT_FACTOR = True
++BASEMENT_FACTOR_K = 200.0
++USE_SOIL_FACTOR = True
++SOIL_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +397,15 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_FLOOD_ZONE_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "flood_zone", k=FLOOD_ZONE_FACTOR_K)
++                out = out * apply_factors(va, "flood_zone", factors)
++            if USE_BASEMENT_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "basement", k=BASEMENT_FACTOR_K)
++                out = out * apply_factors(va, "basement", factors)
++            if USE_SOIL_FACTOR and line in ("motor", "contents"):
++                factors = credibility_factors(tr_line, "soil_type", k=SOIL_FACTOR_K)
++                out = out * apply_factors(va, "soil_type", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
