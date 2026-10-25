@@ -1,0 +1,43 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index d3eb647..db98d00 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -190,6 +190,23 @@ USE_MISSED_PAYMENTS_FACTOR = True
+ MISSED_PAYMENTS_FACTOR_K = 200.0
+ USE_TREES_FACTOR = True
+ TREES_FACTOR_K = 200.0
++# v7 (agent, 2026-10-25): pair the one confirmed near-miss left unpaired, contents
++# works_from_home (2026-10-25T04:15:49, discard 0.14378 alone on this exact champion,
++# +0.00036 both folds), with a fresh diagnostics-driven candidate on the same line,
++# high_value_items, instead of retrying it with the two fields that already failed as
++# partners (years_licensed, voluntary_excess -- both untested alone, and backing out their
++# marginals from the pairing discards shows both were net-negative, ~-0.0009 and ~-0.0002
++# respectively, which is why those pairings lost; the pairing mechanism itself isn't at
++# fault). high_value_items is PERSISTENT at two contents levels moving opposite ways
++# (level 4.0, 4.2% exposure, A/E 0.561 B/0.667 R; level 2.0, 10.3% exposure, A/E 1.219
++# B/1.211 R), both folds the same direction, with a clear mechanism (security/theft and
++# accidental-damage risk scale with the number of high-value items) distinct from
++# works_from_home's exposure story. Both factors are deterministic credibility shrinkage
++# (cost basis, k=200), contents only, no SEEDS, so a fresh-seed rerun reproduces exactly.
++USE_WFH_FACTOR = True
++WFH_FACTOR_K = 200.0
++USE_HIGH_VALUE_ITEMS_FACTOR = True
++HIGH_VALUE_ITEMS_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -352,6 +369,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_TREES_FACTOR and line == "buildings":
+                 factors = credibility_factors(tr_line, "trees_within_5m", k=TREES_FACTOR_K)
+                 out = out * apply_factors(va, "trees_within_5m", factors)
++            if USE_WFH_FACTOR and line == "contents":
++                factors = credibility_factors(tr_line, "works_from_home", k=WFH_FACTOR_K)
++                out = out * apply_factors(va, "works_from_home", factors)
++            if USE_HIGH_VALUE_ITEMS_FACTOR and line == "contents":
++                factors = credibility_factors(
++                    tr_line, "high_value_items", k=HIGH_VALUE_ITEMS_FACTOR_K
++                )
++                out = out * apply_factors(va, "high_value_items", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
