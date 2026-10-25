@@ -1,0 +1,40 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..a73c8ef 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,22 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): pair the still-open confirmed near-miss buildings `flood_zone`
++# factor (2026-10-25T04:31:55, discard 0.14497, +0.00038 both folds alone vs. this
++# champion) with a fresh diagnostics-driven candidate on the same line, buildings
++# `policyholder_age_band` -- untried in the ledger and by far the largest gap in the whole
++# diagnostics table (16.2% exposure, A/E 0.710 fold B / 0.318 fold R, both folds badly
++# over-predicted). Every prior flood_zone pairing used a small field (marital_status: net
++# negative; basement, soil_type, security_level, document_preference: each added only
++# ~+0.0001-0.0004) and topped out well short of the 0.001 margin -- the ceiling looks like
++# weak partners, not a dead pattern, so pairing with the single largest untouched
++# diagnostic miss on the same line is the natural next step. Both factors are deterministic
++# credibility shrinkage (basis "cost", k=200, z = n/(n+k)), no SEEDS, so a fresh-seed rerun
++# reproduces exactly.
++USE_FLOOD_FACTOR = True
++FLOOD_FACTOR_K = 200.0
++USE_AGE_BAND_FACTOR = True
++AGE_BAND_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +397,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_FLOOD_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "flood_zone", k=FLOOD_FACTOR_K)
++                out = out * apply_factors(va, "flood_zone", factors)
++            if USE_AGE_BAND_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "policyholder_age_band", k=AGE_BAND_FACTOR_K)
++                out = out * apply_factors(va, "policyholder_age_band", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
