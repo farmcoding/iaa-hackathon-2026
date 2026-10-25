@@ -1,0 +1,19 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..5aa1487 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -362,7 +362,13 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line.assign(elev_band=tr_band), "elev_band", k=ELEVATION_FACTOR_K
+                 )
+                 out = out * apply_factors(va.assign(elev_band=va_band), "elev_band", factors)
+-            if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
++            # v8 (agent, 2026-10-25): energy_rating is an address attribute, not a vehicle
++            # one, so it is present (and currently untouched) on motor rows too; diagnostics.md
++            # against the current champion still flags it PERSISTENT on motor (level A, 14.0%
++            # exposure, A/E 0.891 B / 0.927 R, both folds under-predicted), the same direction
++            # as the already-factored buildings/contents levels. Extend the existing factor to
++            # all three lines rather than add a new field.
++            if USE_ENERGY_FACTOR:
+                 factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
+                 out = out * apply_factors(va, "energy_rating", factors)
+             if USE_MISSED_PAYMENTS_FACTOR and line in ("motor", "buildings"):
