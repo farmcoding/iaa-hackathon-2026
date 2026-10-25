@@ -190,6 +190,27 @@ USE_MISSED_PAYMENTS_FACTOR = True
 MISSED_PAYMENTS_FACTOR_K = 200.0
 USE_TREES_FACTOR = True
 TREES_FACTOR_K = 200.0
+# v7 (agent, 2026-10-25): the last three iterations paired contents `works_from_home`
+# (confirmed near-miss alone, discard 0.14378 at 04:15:49, +0.00036 both folds vs. this
+# champion) with small single-line contents fields (years_licensed motor -- a net loss;
+# voluntary_excess and high_value_items contents -- both near-misses but contributed only
+# ~+0.00008 net on top of works_from_home, well short of 0.001 even combined). None of
+# those partners showed up as PERSISTENT on more than one line. `occupation` does: it is
+# PERSISTENT on all three lines in diagnostics.md (motor: Retail assistant 3.6%, Doctor
+# 3.8%, Hairdresser 3.9%, Retired 15.9%; buildings: Nurse 3.8%, Sales representative 3.8%,
+# Doctor 3.8%; contents: occupation missing 11.9%) and is untried as a structured factor --
+# program_emerging.md flags occupation as a field that overfit in free-form boosting, but
+# that was an unshrunk tree split, not a credibility factor; previous_insurer carried the
+# same warning and still gained on both folds (kept, 03:57:33) once shrunk by count. Apply
+# it on all three lines (basis "cost", k=200, same recipe as previous_insurer) and keep
+# pairing it with the one still-open near-miss, works_from_home on contents, since the
+# pattern that produced three keeps today was pairing a confirmed near-miss with a fresh,
+# larger diagnostic signal, not with another small one. Both factors are deterministic
+# credibility shrinkage, no SEEDS, so a fresh-seed rerun reproduces exactly.
+USE_OCCUPATION_FACTOR = True
+OCCUPATION_FACTOR_K = 200.0
+USE_WORKS_FROM_HOME_FACTOR = True
+WORKS_FROM_HOME_FACTOR_K = 200.0
 
 
 def credibility_factors(
@@ -352,6 +373,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             if USE_TREES_FACTOR and line == "buildings":
                 factors = credibility_factors(tr_line, "trees_within_5m", k=TREES_FACTOR_K)
                 out = out * apply_factors(va, "trees_within_5m", factors)
+            if USE_OCCUPATION_FACTOR:
+                factors = credibility_factors(tr_line, "occupation", k=OCCUPATION_FACTOR_K)
+                out = out * apply_factors(va, "occupation", factors)
+            if USE_WORKS_FROM_HOME_FACTOR and line == "contents":
+                factors = credibility_factors(
+                    tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                )
+                out = out * apply_factors(va, "works_from_home", factors)
             pred[mask] = out
             continue
         pred[mask] = va["base"].to_numpy()
