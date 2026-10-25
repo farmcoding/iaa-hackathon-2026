@@ -1,0 +1,39 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..a54dc5a 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -109,7 +109,12 @@ USE_PERIL_SUM = True
+ # L1 (backlog tier L, agent, 25 Oct): motor gender on top of P0. The developed base has no
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
++# Kept (board 0.15933); the other two L1 settings and L2-L8 all discarded.
+ MOTOR_GENDER_ALPHA = 0.01
++# M2 (tier M, agent, 25 Oct): motor cover_type on top of the kept L1 gender factor, offset
++# by the L1 prediction (not P0), gated (n_tests=1, single-factor item). alpha 0.01 (setting
++# 1 of 2) discarded (+0.0002 over the L1 bar, under the 0.002 margin); this is setting 2 of 2.
++MOTOR_COVER_TYPE_ALPHA = 0.1
+ 
+ 
+ def credibility_factors(
+@@ -341,7 +346,21 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     mult = offset_glm(
+                         tr_line, va, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
+                     )
++                    mult_tr = offset_glm(
++                        tr_line, tr_line, ["gender"], alpha=MOTOR_GENDER_ALPHA, offset="p0"
++                    )
+                     p0 = p0 * mult
++                    tr_line = tr_line.assign(p0_l1=tr_line["p0"].to_numpy() * mult_tr)
++                    passes2, _ = lr_gate(tr_line, "cover_type", n_tests=1, offset="p0_l1")
++                    if passes2:
++                        mult2 = offset_glm(
++                            tr_line,
++                            va,
++                            ["cover_type"],
++                            alpha=MOTOR_COVER_TYPE_ALPHA,
++                            offset="p0_l1",
++                        )
++                        p0 = p0 * mult2
+             pred[mask] = p0
+             continue
+         pred[mask] = va["base"].to_numpy()
