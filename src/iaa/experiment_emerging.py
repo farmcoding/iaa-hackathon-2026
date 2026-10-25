@@ -167,6 +167,29 @@ USE_ENERGY_FACTOR = True
 ENERGY_FACTOR_K = 200.0
 USE_PREV_INSURER_FACTOR = True
 PREV_INSURER_FACTOR_K = 200.0
+# v6 (agent, 2026-10-25): pair the one confirmed near-miss left in the ledger with a fresh
+# diagnostics-driven candidate, the same two-near-miss stacking pattern that produced
+# today's three keeps (fuel-on-E12 at 03:29, cover+elevation at 03:44, energy+prev_insurer
+# at 03:57). missed_payments_12m (motor+buildings, cost basis, k=200) was tested alone
+# against this exact champion twice -- raw basis (2026-10-25T04:01:17, discard 0.14279,
+# +0.00075 both folds) and residual basis against the champion's own output (2026-10-25
+# T04:08:33, discard 0.14285, +0.00081) -- both short of the 0.001 margin by the same
+# ~0.0002-0.0003 pattern as the other paired near-misses. Using the raw-basis recipe here
+# (the 0.00006 gap to residual basis isn't worth the extra code to rebuild the champion's
+# own stacked prediction on training rows). The two intervening single-field tries
+# (construction_type buildings 03:59, years_at_address buildings 04:04) were both losses,
+# not near-misses, so they are not candidates to pair. trees_within_5m (buildings) is the
+# largest untouched PERSISTENT buildings miss by exposure x gap not yet tried (11.7%
+# exposure, A/E 1.316 B / 1.641 R, both folds the same direction) and has a clear
+# actuarial mechanism distinct from payment history: root subsidence, storm and
+# blocked-gutter escape-of-water risk, which the developed base's tree relativity
+# transfers imperfectly given the emerging market's wider climate range. Orthogonal field
+# from missed_payments_12m. Both factors are deterministic credibility shrinkage (basis
+# "cost", k=200, z = n/(n+k)), no SEEDS, so a fresh-seed rerun reproduces exactly.
+USE_MISSED_PAYMENTS_FACTOR = True
+MISSED_PAYMENTS_FACTOR_K = 200.0
+USE_TREES_FACTOR = True
+TREES_FACTOR_K = 200.0
 
 
 def credibility_factors(
@@ -321,6 +344,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
                 factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
                 out = out * apply_factors(va, "energy_rating", factors)
+            if USE_MISSED_PAYMENTS_FACTOR and line in ("motor", "buildings"):
+                factors = credibility_factors(
+                    tr_line, "missed_payments_12m", k=MISSED_PAYMENTS_FACTOR_K
+                )
+                out = out * apply_factors(va, "missed_payments_12m", factors)
+            if USE_TREES_FACTOR and line == "buildings":
+                factors = credibility_factors(tr_line, "trees_within_5m", k=TREES_FACTOR_K)
+                out = out * apply_factors(va, "trees_within_5m", factors)
             pred[mask] = out
             continue
         pred[mask] = va["base"].to_numpy()
