@@ -41,6 +41,23 @@ email_domain, payment_method, channel) fail in both years.
   columns to the config): fixed blends of P0 with each family, weights 0.25 / 0.5 / 0.75
   on the family; and the family alone.
 
+## Tier M (agent, in order; pre-registered 25 Oct 12:30 after tier L)
+
+Tier L result: only L1 (motor gender, alpha 0.01) kept (board 0.15933, +0.0074 over P0).
+Joint GLMs (L3, L4) lost: extra factors diluted gender. Tier M tests, one at a time on top
+of L1, the single factors that passed the claim-count gate in both years.
+
+- **M1 Gender by motor peril group.** Replace L1's single motor gender GLM by two: one on
+  the bodily-injury base (offset base_bodily_injury) and one on the sum of the other motor
+  peril bases, each gated; alpha 0.01. One setting.
+- **M2 Motor cover_type** (gate passed both years): offset GLM on the L1 prediction (pass
+  the L1 motor prediction as the offset column), gated; alpha 0.01 and 0.1.
+- **M3 Motor occupation** (passed both years): as M2; alpha 0.1 and 1.
+- **M4 Contents tenure** (passed both years): offset GLM on P0 for contents, gated; alpha
+  0.01 and 0.1.
+- **M5 Pooled base family** (only if the owner has added `base_pooled*` to the config):
+  as L9, with the L1 gender GLM re-fitted on top of whichever base is used.
+
 ## OWNER
 
 - O1 Schema-compatible developed bases (running): total and per-peril, compared with P0
