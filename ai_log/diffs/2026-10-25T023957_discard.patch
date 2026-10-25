@@ -1,0 +1,42 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..c75419a 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,6 +106,18 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# v4 (agent, 2026-10-25, backlog P4): P0 (peril-sum, level 1, kept 0.13778) beats the
++# owner bar (`base` alone, 0.13663) only on fold R (d2_R 0.12508 vs 0.12128); the bar
++# wins fold B (0.15199 vs 0.15048, both property lines worse under the peril sum). P1-P3
++# (peril_levels on motor, k in {100,30}) each nudged primary by <0.0005, below the 0.001
++# keep margin and inside the 0.0004 seed sd -- z = n/(n+k) is already >0.9 at these k for
++# motor's peril claim counts, so there's little shrinkage left to turn; not worth a third
++# k. P4 blends the two fold-B/fold-R winners instead: geometric mean (w=0.5, the
++# "penalised towards no change" shrinkage, back towards the owner bar) of `base` and the
++# P2 motor-level peril sum (k=100, buildings/contents at level 1, per P1's regression on
++# buildings fire). Deterministic: no SEEDS involved.
++USE_BASE_PERIL_BLEND = True
++BLEND_MOTOR_LEVEL_K = 100.0
+ 
+ 
+ def credibility_factors(
+@@ -220,8 +232,16 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             pred[mask] = _fit_line(train[train["line"] == line], va)
+             continue
+         if USE_PERIL_SUM:
+-            levels = {name: 1.0 for name, _, _ in perils_of(line)}
+-            pred[mask] = peril_prediction(va, line, levels)
++            if USE_BASE_PERIL_BLEND and line == "motor":
++                levels = peril_levels(train[train["line"] == line], line, k=BLEND_MOTOR_LEVEL_K)
++            else:
++                levels = {name: 1.0 for name, _, _ in perils_of(line)}
++            peril_pred = peril_prediction(va, line, levels)
++            if USE_BASE_PERIL_BLEND:
++                base_pred = va["base"].to_numpy()
++                pred[mask] = np.sqrt(np.maximum(base_pred, 0.0) * np.maximum(peril_pred, 0.0))
++            else:
++                pred[mask] = peril_pred
+             continue
+         pred[mask] = va["base"].to_numpy()
+     return pred
