@@ -1,0 +1,35 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..00554e2 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,20 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): the last seven attempts past the kept champion (6da0d19,
++# 0.14459) were all near-misses or losses on fields with no clear mechanism or a
++# confound with an owner-ruled-out field (document_preference vs. age band; region
++# buildings alone was a net loss). `licence_points` on motor is the one remaining
++# PERSISTENT diagnostic field with an actuarial reason -- points reflect driving
++# behaviour, and enforcement/scoring differs by market, so the developed relativity
++# transferring weakly here is plausible, not spurious. It is admissible on motor (the
++# owner's licence_points ban is property-only, LINE_DROP). 12.1% exposure, A/E 1.121 B /
++# 1.239 R, untried. Testing alone, same recipe as fuel/cover (cost basis, k=200), so the
++# result is comparable with the ledger and a loss is informative rather than confounded
++# with a second new field. Deterministic credibility shrinkage, no SEEDS, so a
++# fresh-seed rerun reproduces exactly.
++USE_LICENCE_POINTS_FACTOR = True
++LICENCE_POINTS_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +395,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_LICENCE_POINTS_FACTOR and line == "motor":
++                factors = credibility_factors(tr_line, "licence_points", k=LICENCE_POINTS_FACTOR_K)
++                out = out * apply_factors(va, "licence_points", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
