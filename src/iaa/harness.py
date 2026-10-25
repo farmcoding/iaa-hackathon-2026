@@ -343,7 +343,11 @@ def _confirm(res: dict, saved: list, module: str, df: pd.DataFrame, cfg: dict, o
     same = np.allclose(pd.concat(saved)["pred"].to_numpy(), pd.concat(saved2)["pred"].to_numpy())
     if same:
         print("confirmation run reproduced the first run exactly: the seed hook is not used")
-    ok = not same and verdict(res2, cfg) == "keep"
+    # Part 1: an exact reproduction meant a fixed literal seed, so the run could not be
+    # confirmed. Part 2 (config harness.deterministic_ok): credibility factors, peril levels
+    # and blends of fixed bases have no randomness; for them there is no luck to guard against
+    deterministic_ok = cfg["harness"].get("deterministic_ok", False)
+    ok = (not same or deterministic_ok) and verdict(res2, cfg) == "keep"
     print(
         f"confirmation (seed offset {offset}): primary={res2['primary']:.5f} "
         f"min_fold={res2['min_fold']:.5f} -> {'confirmed' if ok else 'not confirmed'}"

@@ -74,6 +74,9 @@ harness:
   # is frozen above, and fold B's level swings with one fire-heavy year
   metric: level_neutral
   confirm_seed_offset: 100
+  # structured corrections on fixed bases are deterministic; an exact reproduction on the
+  # fresh-seed rerun then confirms instead of failing (Part 1 rule: it meant a fixed seed)
+  deterministic_ok: true
   use_premium: false
 
 large_loss:

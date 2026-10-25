@@ -52,7 +52,9 @@ total before scoring, so the metric measures ranking and spread only. Two folds:
 Primary = mean of B and R. A run is kept when the primary beats the best kept run by more
 than 0.001 (measured seed sd 0.0004), the worse fold falls by no more than 0.002, and a
 rerun on fresh seeds (`IAA_SEED_OFFSET`) passes again. So every random choice must derive
-from `SEED_OFFSET` or `SEEDS`.
+from `SEED_OFFSET` or `SEEDS`. A method with no randomness at all (credibility factors,
+peril levels, blends of the fixed bases) reproduces exactly on the rerun and passes; don't
+add randomness to it.
 
 ## One iteration
 
@@ -125,5 +127,11 @@ listed_building, bedrooms, energy_rating, solar_panels, property_age;
 weather (the row's own year): hail_days, wind_exposure_index, freezing_days,
 dry_summer_index, wildfire_index, rainfall_mm, mean_temperature_c;
 derived: customer_tenure, hist_n_policy, hist_cost_policy, lines_held; `base`.
+per-peril bases (`base_<name>`, NaN on other lines): motor base_bodily_injury,
+base_own_damage, base_third_party_prop, base_theft, base_glass_hail; buildings base_storm,
+base_flood, base_subsidence, base_water, base_fire, base_ad; contents base_theft,
+base_escape_of_water, base_accidental_damage, base_flood (shared column names across lines
+hold each line's own peril). Training rows also carry cost_<peril>, n_<peril> and
+comp_<group> for targets; see the peril helpers in experiment_emerging.py.
 Line-specific columns are NaN on other lines. new_business and similar flags are
 categoricals with string levels "True"/"False".
