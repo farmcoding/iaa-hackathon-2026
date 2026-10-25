@@ -1,0 +1,31 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 813496c..0733cbe 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -110,6 +110,10 @@ USE_PERIL_SUM = True
+ # gender field (admissible in this market, owner decision 25 Oct); gated with n_tests=1
+ # per the backlog's pre-registered single-factor item. alpha setting 2 of 3 (0.001/0.01/0.1).
+ MOTOR_GENDER_ALPHA = 0.01
++# L6 (backlog tier L, agent, 25 Oct): per-peril emerging levels on every line, stacked under
++# the kept L1 motor gender factor. k=100 (setting 1 of 2) discarded (primary 0.12007, +0.00097
++# over the L1 bar, under the 0.002 margin). k=300 is the second and last pre-registered setting.
++PERIL_LEVELS_K = 300.0
+ 
+ 
+ def credibility_factors(
+@@ -330,12 +334,11 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             pred[mask] = _fit_line(train[train["line"] == line], va)
+             continue
+         if USE_PERIL_SUM:
+-            levels = {name: 1.0 for name, _, _ in perils_of(line)}
++            tr_line = train[train["line"] == line]
++            levels = peril_levels(tr_line, line, k=PERIL_LEVELS_K)
+             p0 = peril_prediction(va, line, levels)
+             if line == "motor":
+-                tr_line = train[train["line"] == line].assign(
+-                    p0=peril_prediction(train[train["line"] == line], line, levels)
+-                )
++                tr_line = tr_line.assign(p0=peril_prediction(tr_line, line, levels))
+                 passes, _ = lr_gate(tr_line, "gender", n_tests=1, offset="p0")
+                 if passes:
+                     mult = offset_glm(
