@@ -1,0 +1,41 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index d3eb647..f2943c7 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -190,6 +190,23 @@ USE_MISSED_PAYMENTS_FACTOR = True
+ MISSED_PAYMENTS_FACTOR_K = 200.0
+ USE_TREES_FACTOR = True
+ TREES_FACTOR_K = 200.0
++# v7 (agent, 2026-10-25): pair the one confirmed near-miss against this exact champion
++# with a fresh diagnostics-driven candidate on an orthogonal line/field, the same
++# two-near-miss stacking pattern that produced today's four keeps. works_from_home
++# (contents, cost basis, k=200) was tested alone against the kept champion
++# (2026-10-25T04:15:49, discard 0.14378, +0.00036 both folds: foldB 0.15586 vs
++# champion's 0.15547, foldR 0.13171 vs 0.13137) and fell short of the 0.001 margin by the
++# same pattern as every other paired near-miss today. years_licensed (motor, cost basis,
++# k=200) is the largest untouched PERSISTENT motor miss by exposure (20.3%, A/E 0.878 B /
++# 0.840 R, both folds over-predicted for the 33-51-years-licensed band) -- a standard
++# driving-experience rating mechanism, distinct from every factor already on motor
++# (peril mix, renewal tenure, previous insurer, fuel, cover, elevation). Orthogonal line
++# (contents vs. motor) from works_from_home. Both deterministic credibility shrinkage
++# (no SEEDS), so a fresh-seed rerun reproduces exactly.
++USE_WORK_FROM_HOME_FACTOR = True
++WORK_FROM_HOME_FACTOR_K = 200.0
++USE_YEARS_LICENSED_FACTOR = True
++YEARS_LICENSED_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -352,6 +369,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_TREES_FACTOR and line == "buildings":
+                 factors = credibility_factors(tr_line, "trees_within_5m", k=TREES_FACTOR_K)
+                 out = out * apply_factors(va, "trees_within_5m", factors)
++            if USE_WORK_FROM_HOME_FACTOR and line == "contents":
++                factors = credibility_factors(tr_line, "works_from_home", k=WORK_FROM_HOME_FACTOR_K)
++                out = out * apply_factors(va, "works_from_home", factors)
++            if USE_YEARS_LICENSED_FACTOR and line == "motor":
++                factors = credibility_factors(tr_line, "years_licensed", k=YEARS_LICENSED_FACTOR_K)
++                out = out * apply_factors(va, "years_licensed", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
