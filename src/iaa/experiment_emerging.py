@@ -106,6 +106,24 @@ USE_CORRECTION = False
 # same developed information is already a better shape than the single total-cost fit,
 # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
 USE_PERIL_SUM = True
+# v3 (agent, 2026-10-25): stack a third factor onto the kept E12 pair instead of
+# discarding it. E12 (2026-10-25T03:16:40, discard 0.13852) stacks P3's motor
+# peril_levels(k=30) and E5's renewal_count-capped-at-3 count-basis credibility factor on
+# orthogonal fields (motor's glass/hail peril mix; tenure shift across all lines, PSI
+# 2.0-2.1 in part2_drift.md) -- each alone gained on both folds vs. plain P0, and stacking
+# them was ~additive (P3 +0.00052, E5 +0.00027, E12 +0.00074 over P0's 0.13778). The
+# closest single miss in the whole ledger is the motor-only fuel_type factor
+# (2026-10-25T03:21:06, discard 0.13877, k=200 cost-basis on diesel's 29.5%-exposure
+# PERSISTENT A/E miss, both folds up): it fell short of the 0.001 keep margin over kept
+# P0 by only 0.00001. Adding it as a third orthogonal motor-only multiplier on top of E12
+# projects past the margin if the stacking stays additive. All three factors are
+# deterministic credibility shrinkage (no SEEDS), so a fresh-seed rerun reproduces exactly.
+USE_PERIL_LEVELS_MOTOR = True
+PERIL_LEVEL_MOTOR_K = 30.0
+USE_RENEWAL_FACTOR = True
+RENEWAL_FACTOR_K = 200.0
+USE_FUEL_FACTOR = True
+FUEL_FACTOR_K = 200.0
 
 
 def credibility_factors(
@@ -220,8 +238,26 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             pred[mask] = _fit_line(train[train["line"] == line], va)
             continue
         if USE_PERIL_SUM:
-            levels = {name: 1.0 for name, _, _ in perils_of(line)}
-            pred[mask] = peril_prediction(va, line, levels)
+            tr_line = train[train["line"] == line]
+            if USE_PERIL_LEVELS_MOTOR and line == "motor":
+                levels = peril_levels(tr_line, line, k=PERIL_LEVEL_MOTOR_K)
+            else:
+                levels = {name: 1.0 for name, _, _ in perils_of(line)}
+            out = peril_prediction(va, line, levels)
+            if USE_RENEWAL_FACTOR:
+                tr_cap = tr_line["renewal_count"].clip(upper=3)
+                va_cap = va["renewal_count"].clip(upper=3)
+                factors = credibility_factors(
+                    tr_line.assign(renewal_count=tr_cap),
+                    "renewal_count",
+                    k=RENEWAL_FACTOR_K,
+                    basis="count",
+                )
+                out = out * apply_factors(va.assign(renewal_count=va_cap), "renewal_count", factors)
+            if USE_FUEL_FACTOR and line == "motor":
+                factors = credibility_factors(tr_line, "fuel_type", k=FUEL_FACTOR_K)
+                out = out * apply_factors(va, "fuel_type", factors)
+            pred[mask] = out
             continue
         pred[mask] = va["base"].to_numpy()
     return pred
