@@ -1,0 +1,39 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 6af20c5..c879aee 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -167,6 +167,22 @@ USE_ENERGY_FACTOR = True
+ ENERGY_FACTOR_K = 200.0
+ USE_PREV_INSURER_FACTOR = True
+ PREV_INSURER_FACTOR_K = 200.0
++# v6 (agent, 2026-10-25): a fresh field, not a stack of known near-misses -- the last two
++# single-field tries since the v5 keep (construction_type, missed_payments_12m) both
++# landed under the margin or moved the wrong way, so this run tests one new diagnostic
++# signal on its own before trying to combine anything again. diagnostics.md against the
++# current champion (run 20261025T035732) flags buildings years_at_address with two
++# PERSISTENT bands that move in *opposite* directions on both folds: 0-3 years
++# under-predicted (A/E 1.248 B / 1.280 R, 17.4% exposure) and 7-10 years over-predicted
++# (A/E 0.720 B / 0.702 R, 17.5% exposure) -- together over a third of buildings exposure,
++# with the same sign on both folds for each band. That shape (two bands pulling opposite
++# ways, not one level drifting) is exactly what a per-level credibility factor is built to
++# fix, and tenure-at-address is a standard, admissible rating field (not inadmissible,
++# not a duplicate, not line-dropped). Restricted to buildings, where the diagnostic fires;
++# motor/contents don't show it as PERSISTENT. Same recipe as fuel_type/cover_type/energy:
++# cost-basis credibility_factors at k=200.
++USE_YEARS_AT_ADDRESS_FACTOR = True
++YEARS_AT_ADDRESS_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -321,6 +337,11 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
+                 factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
+                 out = out * apply_factors(va, "energy_rating", factors)
++            if USE_YEARS_AT_ADDRESS_FACTOR and line == "buildings":
++                factors = credibility_factors(
++                    tr_line, "years_at_address", k=YEARS_AT_ADDRESS_FACTOR_K
++                )
++                out = out * apply_factors(va, "years_at_address", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
