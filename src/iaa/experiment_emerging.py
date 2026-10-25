@@ -97,6 +97,15 @@ PARAMS = {
 # previous_insurer and occupation took most of the split gain (overfitting ~350 claims a
 # year on contents). Corrections need structure: few factors, strong shrinkage.
 USE_CORRECTION = False
+# v2 (agent, 2026-10-25, backlog P0): each base_<peril> column is its own refit of the
+# Part 1 property/motor specification on that peril's trended developed cost (fine split,
+# scripts/part2_base_perils.py), not an algebraic share of `base` -- only the motor BI/
+# other split is anchored to sum exactly to `base`. So summing the fine per-peril bases at
+# level 1 (no emerging-fitted shrinkage, nothing estimated here) is a different prediction
+# from `base` for buildings and contents, and P0 asks whether that peril-level view of the
+# same developed information is already a better shape than the single total-cost fit,
+# before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+USE_PERIL_SUM = True
 
 
 def credibility_factors(
@@ -207,8 +216,12 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         if not mask.any():
             continue
         va = valid[mask]
-        if not USE_CORRECTION:
-            pred[mask] = va["base"].to_numpy()
+        if USE_CORRECTION:
+            pred[mask] = _fit_line(train[train["line"] == line], va)
             continue
-        pred[mask] = _fit_line(train[train["line"] == line], va)
+        if USE_PERIL_SUM:
+            levels = {name: 1.0 for name, _, _ in perils_of(line)}
+            pred[mask] = peril_prediction(va, line, levels)
+            continue
+        pred[mask] = va["base"].to_numpy()
     return pred
