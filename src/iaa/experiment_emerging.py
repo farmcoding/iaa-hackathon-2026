@@ -124,6 +124,21 @@ USE_RENEWAL_FACTOR = True
 RENEWAL_FACTOR_K = 200.0
 USE_FUEL_FACTOR = True
 FUEL_FACTOR_K = 200.0
+# v4 (agent, 2026-10-25): stack two more orthogonal motor-only factors onto the kept
+# champion (E12 + fuel, 2026-10-25T03:29:33, primary 0.13948) -- five multiplicative
+# factors on motor from one training year (peril levels, renewal, fuel, cover, elevation).
+# Both were tried individually on top of this same champion and discarded for falling
+# short of the 0.001 keep margin despite moving both folds the right way: cover_type
+# (2026-10-25T03:35:36, +0.00027) and elevation_m quintile (2026-10-25T03:40:44, +0.00088).
+# Stacking in this run has been near-additive (E12's P3+E5 stack: 0.00074 vs 0.00079 summed
+# individually; fuel on E12: +0.00096 vs +0.00099 alone), so the projected combined gain
+# (~0.00015 net of the ~0.00005 sub-additivity seen before) should clear the margin. Both
+# factors act on different fields from each other and from the existing three, and both are
+# deterministic credibility shrinkage (no SEEDS), so a fresh-seed rerun reproduces exactly.
+USE_COVER_FACTOR = True
+COVER_FACTOR_K = 200.0
+USE_ELEVATION_FACTOR = True
+ELEVATION_FACTOR_K = 200.0
 
 
 def credibility_factors(
@@ -257,6 +272,21 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             if USE_FUEL_FACTOR and line == "motor":
                 factors = credibility_factors(tr_line, "fuel_type", k=FUEL_FACTOR_K)
                 out = out * apply_factors(va, "fuel_type", factors)
+            if USE_COVER_FACTOR and line == "motor":
+                factors = credibility_factors(tr_line, "cover_type", k=COVER_FACTOR_K)
+                out = out * apply_factors(va, "cover_type", factors)
+            if USE_ELEVATION_FACTOR and line == "motor":
+                edges = pd.qcut(tr_line["elevation_m"], 5, duplicates="drop", retbins=True)[1]
+                edges = np.asarray(edges, dtype=float)
+                edges[0], edges[-1] = -np.inf, np.inf
+                tr_band = pd.cut(tr_line["elevation_m"], edges, include_lowest=True).astype(
+                    "string"
+                )
+                va_band = pd.cut(va["elevation_m"], edges, include_lowest=True).astype("string")
+                factors = credibility_factors(
+                    tr_line.assign(elev_band=tr_band), "elev_band", k=ELEVATION_FACTOR_K
+                )
+                out = out * apply_factors(va.assign(elev_band=va_band), "elev_band", factors)
             pred[mask] = out
             continue
         pred[mask] = va["base"].to_numpy()
