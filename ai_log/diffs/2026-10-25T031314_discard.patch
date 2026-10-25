@@ -1,0 +1,50 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..4f8b1cc 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,6 +106,19 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# v3 (agent, 2026-10-25, backlog E12): stack the two best-performing correction forms on
++# top of kept P0 instead of discarding both. P3 (motor peril_levels(k=30), primary 0.13830,
++# both folds up vs P0) and E5 (renewal_count-capped-at-3 count-basis credibility factor,
++# primary 0.13805, fold R up) are the two highest-primary attempts in the ledger; E12 says
++# "seed-bag or average the two best correction forms" but these act on orthogonal fields
++# (motor's glass/hail peril mix vs. tenure shift across all lines, the largest train/test
++# PSI in part2_drift.md at 2.0-2.1), so multiplying them stacks two independent, already
++# individually credibility-shrunk gains instead of halving each via a geometric average
++# (the right move only when two forms estimate the same signal noisily).
++USE_PERIL_LEVELS_MOTOR = True
++PERIL_LEVEL_MOTOR_K = 30.0
++USE_RENEWAL_FACTOR = True
++RENEWAL_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -220,8 +233,23 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             pred[mask] = _fit_line(train[train["line"] == line], va)
+             continue
+         if USE_PERIL_SUM:
+-            levels = {name: 1.0 for name, _, _ in perils_of(line)}
+-            pred[mask] = peril_prediction(va, line, levels)
++            tr_line = train[train["line"] == line]
++            if USE_PERIL_LEVELS_MOTOR and line == "motor":
++                levels = peril_levels(tr_line, line, k=PERIL_LEVEL_MOTOR_K)
++            else:
++                levels = {name: 1.0 for name, _, _ in perils_of(line)}
++            out = peril_prediction(va, line, levels)
++            if USE_RENEWAL_FACTOR:
++                tr_cap = tr_line["renewal_count"].clip(upper=3)
++                va_cap = va["renewal_count"].clip(upper=3)
++                factors = credibility_factors(
++                    tr_line.assign(renewal_count=tr_cap),
++                    "renewal_count",
++                    k=RENEWAL_FACTOR_K,
++                    basis="count",
++                )
++                out = out * apply_factors(va.assign(renewal_count=va_cap), "renewal_count", factors)
++            pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
+     return pred
