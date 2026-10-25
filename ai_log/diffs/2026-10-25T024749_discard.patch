@@ -1,0 +1,51 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 3d3ab7b..39591aa 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -106,6 +106,12 @@ USE_CORRECTION = False
+ # same developed information is already a better shape than the single total-cost fit,
+ # before any peril gets its own emerging level (P1+). Deterministic: no SEEDS involved.
+ USE_PERIL_SUM = True
++# v3 (agent, 2026-10-25, backlog E4): hail_days and wildfire_index sit far outside the
++# developed training range (part2_drift.md PSI 1.8-6.5; hail_days ~14-17 days/yr emerging
++# vs ~6 developed; motor glass_hail frequency 1.55-1.84x developed), so the base's trees
++# extrapolate flat there. Quintile-binned, count-basis credibility factor (frequency only,
++# less noisy than cost on ~350-500 claims/yr), on top of the kept P0 peril-sum base.
++USE_WEATHER_FACTOR = True
+ 
+ 
+ def credibility_factors(
+@@ -189,6 +195,17 @@ def peril_prediction(va: pd.DataFrame, line: str, levels: dict[str, float]) -> n
+     return sum(va[f"base_{name}"].to_numpy() * levels[name] for name, _, _ in perils_of(line))
+ 
+ 
++def weather_factor(tr: pd.DataFrame, va: pd.DataFrame, col: str, k: float = 200.0) -> np.ndarray:
++    """Quintile-binned credibility factor (backlog E4): bin edges from the training rows
++    of this line, count-basis credibility_factors on the bin label, applied to valid."""
++    edges = np.unique(np.quantile(tr[col].dropna().to_numpy(), np.linspace(0, 1, 6)))
++    key = f"_{col}_q"
++    tr2 = tr.assign(**{key: pd.cut(tr[col], edges, include_lowest=True, duplicates="drop")})
++    va2 = va.assign(**{key: pd.cut(va[col], edges, include_lowest=True, duplicates="drop")})
++    factors = credibility_factors(tr2, key, k=k, basis="count")
++    return apply_factors(va2, key, factors)
++
++
+ def _feature_cols(df: pd.DataFrame, line: str) -> list[str]:
+     drop = NON_FEATURES | INADMISSIBLE | DUPLICATES | LINE_DROP.get(line, set())
+     drop |= {c for c in df.columns if c.startswith(("cost_", "n_", "ult_", "comp_"))}
+@@ -221,7 +238,14 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             continue
+         if USE_PERIL_SUM:
+             levels = {name: 1.0 for name, _, _ in perils_of(line)}
+-            pred[mask] = peril_prediction(va, line, levels)
++            pred_line = peril_prediction(va, line, levels)
++            if USE_WEATHER_FACTOR:
++                tr_line = train[train["line"] == line]
++                if line in ("motor", "buildings"):
++                    pred_line = pred_line * weather_factor(tr_line, va, "hail_days")
++                if line in ("buildings", "contents"):
++                    pred_line = pred_line * weather_factor(tr_line, va, "wildfire_index")
++            pred[mask] = pred_line
+             continue
+         pred[mask] = va["base"].to_numpy()
+     return pred
