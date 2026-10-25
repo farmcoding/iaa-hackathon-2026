@@ -1,0 +1,41 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index e6a0b76..058a8d2 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -124,6 +124,17 @@ USE_RENEWAL_FACTOR = True
+ RENEWAL_FACTOR_K = 200.0
+ USE_FUEL_FACTOR = True
+ FUEL_FACTOR_K = 200.0
++# v4 (agent, 2026-10-25): a fourth orthogonal motor-only factor on top of the kept
++# champion, same recipe as the fuel_type factor that just cleared the keep margin
++# (cost-basis credibility, k=200). diagnostics.md against this champion flags elevation_m
++# PERSISTENT on motor at both tails (15.3-60: A/E 0.83/0.80, 19.9% exposure; 0-3: 1.19/1.10,
++# 20.0% exposure) -- the largest residual motor miss by exposure x gap after fuel_type and
++# cover_type (the latter tried and discarded, 2026-10-25T03:35:36). Address-level relativity
++# learned on developed terrain, applied to region E01-E06 the base has never seen. Quintile
++# edges come from the training rows only (deterministic, no SEEDS), orthogonal to the fields
++# in the existing three factors (peril mix, tenure, fuel).
++USE_ELEVATION_FACTOR = True
++ELEVATION_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -257,6 +268,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             if USE_FUEL_FACTOR and line == "motor":
+                 factors = credibility_factors(tr_line, "fuel_type", k=FUEL_FACTOR_K)
+                 out = out * apply_factors(va, "fuel_type", factors)
++            if USE_ELEVATION_FACTOR and line == "motor":
++                edges = pd.qcut(tr_line["elevation_m"], 5, duplicates="drop", retbins=True)[1]
++                edges = np.asarray(edges, dtype=float)
++                edges[0], edges[-1] = -np.inf, np.inf
++                tr_band = pd.cut(tr_line["elevation_m"], edges, include_lowest=True).astype(
++                    "string"
++                )
++                va_band = pd.cut(va["elevation_m"], edges, include_lowest=True).astype("string")
++                factors = credibility_factors(
++                    tr_line.assign(elev_band=tr_band), "elev_band", k=ELEVATION_FACTOR_K
++                )
++                out = out * apply_factors(va.assign(elev_band=va_band), "elev_band", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
