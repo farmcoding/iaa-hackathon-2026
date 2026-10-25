@@ -1,0 +1,33 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 60b78f8..dcbf5ff 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -139,6 +139,18 @@ USE_COVER_FACTOR = True
+ COVER_FACTOR_K = 200.0
+ USE_ELEVATION_FACTOR = True
+ ELEVATION_FACTOR_K = 200.0
++# v5 (agent, 2026-10-25): buildings and contents currently carry no line-specific
++# correction at all (only the shared peril-sum + renewal factor) while motor has picked up
++# five. diagnostics.md against the kept champion flags energy_rating PERSISTENT on
++# buildings (level E, 10.0% exposure, A/E 1.509 B / 1.839 R -- the single largest gap in
++# the buildings table) and, independently, on three of contents' four energy_rating
++# levels at once (A, B, C; 14.5-17.4% exposure each), the same field mis-ranking two
++# different lines in the same direction -- a stronger signal than a single-line miss.
++# energy_rating is untried in the ledger (E1/E2/E6 covered region/age/sum_insured, not
++# this field) and is not in INADMISSIBLE or LINE_DROP. Same recipe as the motor factors:
++# cost-basis credibility_factors, k=200, orthogonal to every existing factor.
++USE_ENERGY_FACTOR = True
++ENERGY_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -287,6 +299,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line.assign(elev_band=tr_band), "elev_band", k=ELEVATION_FACTOR_K
+                 )
+                 out = out * apply_factors(va.assign(elev_band=va_band), "elev_band", factors)
++            if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
++                factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
++                out = out * apply_factors(va, "energy_rating", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
