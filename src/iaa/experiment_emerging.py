@@ -139,6 +139,34 @@ USE_COVER_FACTOR = True
 COVER_FACTOR_K = 200.0
 USE_ELEVATION_FACTOR = True
 ELEVATION_FACTOR_K = 200.0
+# v5 (agent, 2026-10-25): stack the two near-miss factors from the last two discarded runs
+# instead of a fresh field. Both beat the kept champion (v4, 2026-10-25T03:44:51, primary
+# 0.14061) on both folds but individually fell short of the 0.001 keep margin -- exactly the
+# pattern that produced today's two earlier keeps (fuel-on-E12 at 03:29:33, cover+elevation
+# at 03:44:51):
+#   energy_rating, buildings+contents (2026-10-25T03:47:04, discard 0.14132, +0.00071):
+#     diagnostics flags it PERSISTENT on buildings (level E, 10.0% exposure, A/E 1.509 B /
+#     1.839 R) and three contents levels (A/B/C, 14.5-17.4% exposure each) -- one field
+#     mis-ranking two lines the same way. Both lines' component D2 rose (buildings
+#     0.11544->0.11647, contents 0.09727->0.09853); motor untouched (energy_rating is a
+#     property field).
+#   previous_insurer (2026-10-25T03:51:40, discard 0.14127, +0.00066): PERSISTENT on 5 motor
+#     levels and 3 buildings levels; part2_drift.md's adversarial-validation table shows it's
+#     one of the strongest real signals on every line (gain share 0.16-0.23), which is why an
+#     unshrunk tree split overfit it (program_emerging.md) rather than evidence against the
+#     field as a shrunk factor. Restricted here to motor+buildings, dropping contents: that
+#     run's own component D2 shows motor (0.09539->0.09726) and buildings (0.11544->0.11574)
+#     rose but contents fell (0.09727->0.09664), and the agent's own EXPECTED line at the time
+#     noted no previous_insurer level showed in contents' PERSISTENT list -- there is no
+#     diagnostic reason for it to help there.
+# Summed individually (+0.00071 and +0.00066, on disjoint line/field combinations) projects
+# ~+0.0013-0.0014 before the ~0.00005-0.0003 sub-additivity seen in today's two stacks, still
+# clearing 0.001. Both factors are deterministic credibility shrinkage (no SEEDS), so a
+# fresh-seed rerun reproduces exactly.
+USE_ENERGY_FACTOR = True
+ENERGY_FACTOR_K = 200.0
+USE_PREV_INSURER_FACTOR = True
+PREV_INSURER_FACTOR_K = 200.0
 
 
 def credibility_factors(
@@ -269,6 +297,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
                     basis="count",
                 )
                 out = out * apply_factors(va.assign(renewal_count=va_cap), "renewal_count", factors)
+            if USE_PREV_INSURER_FACTOR and line in ("motor", "buildings"):
+                factors = credibility_factors(tr_line, "previous_insurer", k=PREV_INSURER_FACTOR_K)
+                out = out * apply_factors(va, "previous_insurer", factors)
             if USE_FUEL_FACTOR and line == "motor":
                 factors = credibility_factors(tr_line, "fuel_type", k=FUEL_FACTOR_K)
                 out = out * apply_factors(va, "fuel_type", factors)
@@ -287,6 +318,9 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
                     tr_line.assign(elev_band=tr_band), "elev_band", k=ELEVATION_FACTOR_K
                 )
                 out = out * apply_factors(va.assign(elev_band=va_band), "elev_band", factors)
+            if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
+                factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
+                out = out * apply_factors(va, "energy_rating", factors)
             pred[mask] = out
             continue
         pred[mask] = va["base"].to_numpy()
