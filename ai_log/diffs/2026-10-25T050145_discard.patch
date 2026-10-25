@@ -1,0 +1,58 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index cae5884..ef3c577 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -211,6 +211,27 @@ USE_OCCUPATION_FACTOR = True
+ OCCUPATION_FACTOR_K = 200.0
+ USE_WORKS_FROM_HOME_FACTOR = True
+ WORKS_FROM_HOME_FACTOR_K = 200.0
++# v8 (agent, 2026-10-25): pair the one open confirmed near-miss, buildings `flood_zone`
++# (tested alone on this champion at 2026-10-25T04:31:55, discard 0.14497, +0.00038 both
++# folds), with a fresh, large diagnostic signal on the orthogonal line, motor
++# `mean_temperature_c` (PERSISTENT in diagnostics.md against this exact champion: 19.9%
++# exposure, A/E 0.875 B / 0.922 R, both folds over-predicted the same way) -- untried, and
++# the only remaining sizeable PERSISTENT motor field not yet attempted as a factor or
++# absorbed by an existing one (fuel_type, cover_type, elevation_m, previous_insurer,
++# occupation, soil_type, licence_points, years_licensed, household_size, marital_status,
++# energy_rating are all tried). The last five attempts paired flood_zone with small
++# single-line buildings/contents fields (marital_status, basement, soil_type,
++# security_level, document_preference, policyholder_age_band) and all failed to clear the
++# margin; the pattern that produced this session's three keeps (fuel-on-E12,
++# cover+elevation, energy+prev_insurer) always paired a near-miss with a larger signal on
++# a different line, which none of those five did. mean_temperature_c is continuous, so it
++# is quintile-banded exactly like the kept `elevation_m` factor before shrinkage.
++# Deterministic credibility shrinkage (basis "cost", k=200), no SEEDS, so a fresh-seed
++# rerun reproduces exactly.
++USE_FLOOD_ZONE_FACTOR = True
++FLOOD_ZONE_FACTOR_K = 200.0
++USE_TEMP_FACTOR = True
++TEMP_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -381,6 +402,25 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line, "works_from_home", k=WORKS_FROM_HOME_FACTOR_K
+                 )
+                 out = out * apply_factors(va, "works_from_home", factors)
++            if USE_FLOOD_ZONE_FACTOR and line == "buildings":
++                factors = credibility_factors(tr_line, "flood_zone", k=FLOOD_ZONE_FACTOR_K)
++                out = out * apply_factors(va, "flood_zone", factors)
++            if USE_TEMP_FACTOR and line == "motor":
++                edges = pd.qcut(tr_line["mean_temperature_c"], 5, duplicates="drop", retbins=True)[
++                    1
++                ]
++                edges = np.asarray(edges, dtype=float)
++                edges[0], edges[-1] = -np.inf, np.inf
++                tr_band = pd.cut(tr_line["mean_temperature_c"], edges, include_lowest=True).astype(
++                    "string"
++                )
++                va_band = pd.cut(va["mean_temperature_c"], edges, include_lowest=True).astype(
++                    "string"
++                )
++                factors = credibility_factors(
++                    tr_line.assign(temp_band=tr_band), "temp_band", k=TEMP_FACTOR_K
++                )
++                out = out * apply_factors(va.assign(temp_band=va_band), "temp_band", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
