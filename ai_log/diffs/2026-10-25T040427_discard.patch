@@ -1,0 +1,77 @@
+diff --git a/src/iaa/experiment_emerging.py b/src/iaa/experiment_emerging.py
+index 6af20c5..ffe9e15 100644
+--- a/src/iaa/experiment_emerging.py
++++ b/src/iaa/experiment_emerging.py
+@@ -167,6 +167,23 @@ USE_ENERGY_FACTOR = True
+ ENERGY_FACTOR_K = 200.0
+ USE_PREV_INSURER_FACTOR = True
+ PREV_INSURER_FACTOR_K = 200.0
++# v6 (agent, 2026-10-25): retest missed_payments_12m (2026-10-25T04:01:17, discard
++# 0.14279, +0.00075 both folds but under the 0.001 margin) on a residual basis instead of
++# raw `base`. credibility_factors() always measures A/E against tr["base"], so every
++# factor in this stack so far has been estimated against the developed level, not against
++# what the champion already predicts after the five prior multipliers -- fields that
++# correlate with an already-applied factor (missed_payments_12m with renewal_count: new
++# business has no 12-month payment history to miss) get partially double-counted,
++# understating the residual and likely explaining why the last two buildings factors
++# (construction_type, years_at_address -- both correlated with energy_rating / renewal_count)
++# lost outright rather than landing as a clean near-miss. Mirroring every applied factor
++# onto the training rows (out_tr) and fitting this one against out_tr isolates the true
++# residual signal. Material change from the discarded run: same field and lines, factor
++# denominator is the stacked prediction, not raw base. Actuarial reason: missed payments
++# are the emerging book's only proxy for the credit band the developed base can't see
++# (backlog O2).
++USE_MISSED_PAYMENTS_FACTOR = True
++MISSED_PAYMENTS_FACTOR_K = 200.0
+ 
+ 
+ def credibility_factors(
+@@ -287,6 +304,7 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+             else:
+                 levels = {name: 1.0 for name, _, _ in perils_of(line)}
+             out = peril_prediction(va, line, levels)
++            out_tr = peril_prediction(tr_line, line, levels)
+             if USE_RENEWAL_FACTOR:
+                 tr_cap = tr_line["renewal_count"].clip(upper=3)
+                 va_cap = va["renewal_count"].clip(upper=3)
+@@ -297,15 +315,21 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     basis="count",
+                 )
+                 out = out * apply_factors(va.assign(renewal_count=va_cap), "renewal_count", factors)
++                out_tr = out_tr * apply_factors(
++                    tr_line.assign(renewal_count=tr_cap), "renewal_count", factors
++                )
+             if USE_PREV_INSURER_FACTOR and line in ("motor", "buildings"):
+                 factors = credibility_factors(tr_line, "previous_insurer", k=PREV_INSURER_FACTOR_K)
+                 out = out * apply_factors(va, "previous_insurer", factors)
++                out_tr = out_tr * apply_factors(tr_line, "previous_insurer", factors)
+             if USE_FUEL_FACTOR and line == "motor":
+                 factors = credibility_factors(tr_line, "fuel_type", k=FUEL_FACTOR_K)
+                 out = out * apply_factors(va, "fuel_type", factors)
++                out_tr = out_tr * apply_factors(tr_line, "fuel_type", factors)
+             if USE_COVER_FACTOR and line == "motor":
+                 factors = credibility_factors(tr_line, "cover_type", k=COVER_FACTOR_K)
+                 out = out * apply_factors(va, "cover_type", factors)
++                out_tr = out_tr * apply_factors(tr_line, "cover_type", factors)
+             if USE_ELEVATION_FACTOR and line == "motor":
+                 edges = pd.qcut(tr_line["elevation_m"], 5, duplicates="drop", retbins=True)[1]
+                 edges = np.asarray(edges, dtype=float)
+@@ -318,9 +342,18 @@ def fit_predict(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
+                     tr_line.assign(elev_band=tr_band), "elev_band", k=ELEVATION_FACTOR_K
+                 )
+                 out = out * apply_factors(va.assign(elev_band=va_band), "elev_band", factors)
++                out_tr = out_tr * apply_factors(
++                    tr_line.assign(elev_band=tr_band), "elev_band", factors
++                )
+             if USE_ENERGY_FACTOR and line in ("buildings", "contents"):
+                 factors = credibility_factors(tr_line, "energy_rating", k=ENERGY_FACTOR_K)
+                 out = out * apply_factors(va, "energy_rating", factors)
++                out_tr = out_tr * apply_factors(tr_line, "energy_rating", factors)
++            if USE_MISSED_PAYMENTS_FACTOR and line in ("motor", "buildings"):
++                factors = credibility_factors(
++                    tr_line.assign(base=out_tr), "missed_payments_12m", k=MISSED_PAYMENTS_FACTOR_K
++                )
++                out = out * apply_factors(va, "missed_payments_12m", factors)
+             pred[mask] = out
+             continue
+         pred[mask] = va["base"].to_numpy()
