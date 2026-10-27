@@ -22,6 +22,10 @@ One-line description of what this project does.
 - Quality gates: `pre-commit` (ruff + gitleaks) locally, `quality.yml` in CI
   (ruff + gitleaks secrets + pytest). Run `pre-commit install` on a fresh clone.
 - Deploying to Fly.io? Follow the `flyio-deploy` skill — pre-flight checklist, `fly.toml` template, and lessons learned.
+- One full-dataset process at a time (7-11 GB each on a 16 GB machine). `harness.dataset()`
+  takes the `iaa.runguard` lock, so a second harness/explain/analysis run waits for the
+  first. Don't work around it with `IAA_RUN_LOCK=off` or parallel launches; on 25 Oct three
+  concurrent runs exhausted swap. `scripts/loop.sh` also stops below 3 GB free disk.
 
 ## Run / test
 

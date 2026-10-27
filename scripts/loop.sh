@@ -22,6 +22,12 @@ ITER="${1:-5}"
 LOCK="$ROOT/.loop.lock"
 LOG_DIR="$ROOT/ai_log"
 HARNESS_TIMEOUT=4200  # two full runs when a keep is confirmed
+# Stop with margin instead of at 0 bytes: on 25 Oct the disk filled mid-loop and
+# took Docker's engine down with it. df's "available" excludes purgeable space.
+MIN_FREE_GB=3
+# coreutils timeout (brew coreutils): kills the harness's whole process group,
+# loky workers included, and escalates to KILL. Exit 124 on timeout.
+TIMEOUT=(/opt/homebrew/bin/gtimeout -k 30)
 mkdir -p "$LOG_DIR"
 DAYLOG="$LOG_DIR/loop_$(date +%Y-%m-%d).md"
 MARKET="${LOOP_MARKET:-developed}"
@@ -47,7 +53,22 @@ trap 'rm -rf "$LOCK"' EXIT
 ALLOWED=("Read" "Grep" "Glob" "Edit")
 PROFILE_ARGS=(${(z)$(llmp args coder)})
 
+free_gb() { df -Pk "$ROOT" | awk 'NR == 2 { print int($4 / 1048576) }'; }
+stop_if_low_disk() {
+  local free; free=$(free_gb)
+  if (( free < MIN_FREE_GB )); then
+    echo "only ${free} GB free (margin ${MIN_FREE_GB} GB) $1; stopping" | tee -a "$DAYLOG"
+    git restore --source=HEAD -- "$EXP" 2>/dev/null
+    git add "$DAYLOG"; git -c core.hooksPath=/dev/null commit -q -m "loop log: stop on low disk (${free} GB free)" || true
+    exit 4
+  fi
+}
+
 for i in $(seq 1 "$ITER"); do
+  stop_if_low_disk "before iteration $i"
+  # queue behind any other full-dataset run (explain, analysis scripts) so the
+  # smoke and harness timeouts below measure work, not waiting; see runguard.py
+  .venv/bin/python -I -c 'from iaa import runguard; runguard.wait_free()'
   if ! .venv/bin/python -m pytest -q >/dev/null 2>&1; then
     echo "tests failing before iteration $i; stopping" | tee -a "$DAYLOG"; exit 1
   fi
@@ -103,12 +124,12 @@ Fix only these (usually a missing import at the top of the file). Change nothing
   smoke_rc=0
   if [[ "$verdict" == "pending" ]]; then
     # 20-second crash check on a subsample before spending a full run
-    perl -e 'alarm shift; exec @ARGV' 300 \
+    "${TIMEOUT[@]}" 300 \
       "${HARNESS[@]}" --smoke x > "$LOG_DIR/last_run.txt" 2>&1
     smoke_rc=$?
   fi
   if (( smoke_rc != 0 )); then
-    if (( smoke_rc == 142 )); then
+    if (( smoke_rc == 124 )); then
       err="timed out after 300 s on 50k rows per line"
     else
       err=$(grep -v -E "^\s*$|Warning|warn" "$LOG_DIR/last_run.txt" | tail -1 | tr '\t' ' ' | cut -c1-200)
@@ -123,8 +144,9 @@ Fix only these (usually a missing import at the top of the file). Change nothing
     desc="SMOKE CRASH ($err): $desc"
     printf '%s\t%s\tcrash\t\t\t\t\t\t\t\t\t\t\t\t\t%s\t\n' "$ts" "$(git rev-parse --short HEAD)+dirty" "$desc" >> "$RESULTS"
   elif [[ "$verdict" == "pending" ]]; then
+    stop_if_low_disk "before the full run of iteration $i"
     # The driver, not the agent, runs the harness and writes the ledger.
-    if perl -e 'alarm shift; exec @ARGV' "$HARNESS_TIMEOUT" \
+    if "${TIMEOUT[@]}" "$HARNESS_TIMEOUT" \
          "${HARNESS[@]}" "$desc" > "$LOG_DIR/last_run.txt" 2>&1; then
       verdict=$(tail -1 "$RESULTS" | cut -f3)
     else

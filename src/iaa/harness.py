@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from iaa import data, features, score, target, ultimate
+from iaa import data, features, runguard, score, target, ultimate
 
 CACHE = data.ROOT / "data" / "cache"
 RESULTS = data.ROOT / (
@@ -88,6 +88,7 @@ def _fingerprint() -> str:
 
 def dataset() -> pd.DataFrame:
     """Train (2021-2024, with developed targets) and test (2025) rows, cached."""
+    runguard.acquire()  # one full-dataset process at a time; see runguard.py
     CACHE.mkdir(parents=True, exist_ok=True)
     path = CACHE / f"dataset_{_fingerprint()}.parquet"
     if path.exists():
