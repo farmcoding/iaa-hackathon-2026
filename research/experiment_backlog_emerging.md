@@ -299,6 +299,44 @@ there; the final pools both years. Motor renewals stay about 10% below the board
 no own-data mechanism found yet (candidates: bodily-injury severity and development, the
 borrowed motor trend).
 
-Also noted: historical motor new business came mostly from three previous insurers (INS29
-16%, INS13 9%, INS34 8%); in 2025 every one of the 40 codes is 2.5% of both new business and
-renewals, and 2025 new business and renewals have the same channel and lead-time mix.
+Correction (same day): the previous-insurer concentration was an artefact. 511 historical
+new-business rows from INS29/13/34 carry a bad raw exposure (about 2.7 years a row); the
+pipeline recomputes exposure from the dates, and on that exposure those codes are 8% of
+motor new business with 8% of its claims. No confound. In 2025 every one of the 40 codes is
+2.5% of the book, and new business and renewals share the same channel and lead-time mix.
+
+### Amended rule applied (28 Oct evening): factor sweep and the mechanism candidate
+
+Factor sweep on O4 (owner bench, count-basis gate, ridge offset GLM): renewal-count band
+(motor; all lines) fails the gate on motor and gives -0.0012 where buildings passes in one
+fold; new business x age band +0.0004 (q10 -0.0005); channel fails on every line.
+None kept. The out-of-time cost A/E on first renewals and comparison site is severity noise:
+no claim-count signal.
+
+New-business cost factor dropped: level-neutral motor D2 on fold B -0.0013, NB/renewal ratio
+1.20 where the board says 1.10; motor NB cost A/E is 1.75 in 2023 and 0.92 in 2024 (one
+year's bodily-injury large claims).
+
+Motor renewals: renewal loss cost rose 14.8% from 2023 to 2024 (bodily injury +36%, other
++4%). A 12% bodily-injury trend (config peril_trend, other perils stay 3%) moves out-of-time
+motor renewal A/E from 1.023 / 0.923 (B / R) to 0.992 / 0.952, both nearer 1; primary
+-0.0008 (inside the margin), level-neutral flat. 2025 motor x1.05.
+
+Candidate `o4_mech_lvl_20261028.csv` (sha256 dabd894e8644f416): O4 + contents trend 0% +
+motor bodily-injury trend 12% + shrunk board residuals motor NB x1.124 and renewals x1.019
+(totals vs O4: motor NB x1.185, renewal x1.07, contents x0.93, buildings x1.00). Checks:
+motor level-neutral fold D2 B -0.0004, R +0.0037 (margin 0.002); transfer 97% (motor),
+89% (contents). Public **0.16621** (multiplier-only file 0.16590, O4 0.16326).
+
+Deliverable to update: report section 4 and video slide 7 need the level selection (what
+the folds cannot see, the shrunk board read, the two checks, which parts our own data
+reproduced: contents trend, bodily-injury trend).
+
+## Tier P2 (pre-registered 28 Oct, for 29 Oct): new-business/renewal split on property
+
+Inside the amended rule (line and new-business/renewal reads only). Buildings: O4 prices new
+business 4% above renewals, while history has it cheaper (392 vs 471 per exposure; NB count
+A/E 1.06 / 0.69). Contents NB count A/E 1.18 / 1.43. Two probes each on the new candidate
+(new-business rows x0.8 and x1.25), solved with the line probes by subtraction for the
+renewal part. Same shrinkage and the same two checks before any change is used. 4
+submissions; at least 4 kept for 30 Oct.
