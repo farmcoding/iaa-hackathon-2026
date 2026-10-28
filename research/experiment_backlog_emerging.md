@@ -340,3 +340,19 @@ A/E 1.06 / 0.69). Contents NB count A/E 1.18 / 1.43. Two probes each on the new 
 (new-business rows x0.8 and x1.25), solved with the line probes by subtraction for the
 renewal part. Same shrinkage and the same two checks before any change is used. 4
 submissions; at least 4 kept for 30 Oct.
+
+### Development signal in the emerging claims (28 Oct, `scripts/part2_dev_check.py`)
+
+Report-delay patterns fitted on emerging claims, spliced onto the developed tail, against the
+borrowed developed pattern: every group within 1.5% at a 12-month splice except buildings
+weather 2024 (-2.6%, reports faster). At an 18-month splice motor bodily injury is +3.7% (2023)
+and +6.9% (2024), bootstrap p10-p90 0.99-1.11 and 0.95-1.24: emerging BI reports more slowly
+from 6 to 18 months. Motor line ultimate +1.8% / +3.4%, the board's direction. Not built into
+the target: the band is wide, it would need a dataset rebuild, and the 2025 motor level is
+already set by the shrunk board read. Logged as a sensitivity and as part of the explanation
+for the motor gap.
+
+TabM read scheduled with the P2 probes (owner approval 28 Oct): `cand_tabm25_20261028.csv`
+(sha256 09cdf89518f0d1bb), candidate x (TabM base / base)^0.25 rescaled to the candidate's
+line x new-business totals. Folds (N15 w 0.25): primary +0.0016, level-neutral B -0.0006,
+buildings fold B -0.0046. Used only if the board gains more than 0.002.
