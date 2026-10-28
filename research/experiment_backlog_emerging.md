@@ -249,3 +249,25 @@ buildings 1.00, contents 0.912, public 0.1659 predicted. Submitted as
 `o4_lvl_p1_20261028.csv` (sha256 cb6c561cf0db7137), a candidate pending owner sign-off:
 it breaks the 25 Oct Part 2 selection rule (best primary), because its level comes from
 the board. Level alone does not reach the top 5 (5th 0.16774 on 28 Oct).
+
+### Tier P follow-up: is the board level a trend? (28 Oct, owner bench `trend.py`, not logged)
+
+Raw emerging loss cost per exposure, 2023 to 2024: motor +7.5%, contents -2%, against the
+carried-over developed trends of 3% and 5%. Refitting O4 with other trends (2023-24 ->
+2025 final, balance-on-train level):
+
+| Trends | primary | fold A/E motor B / R | fold A/E contents B / R | 2025 vs O4: motor | contents |
+|---|---|---|---|---|---|
+| 3% / 5% (O4) | 0.12217 | 1.011 / 0.986 | 0.948 / 1.061 | x1.000 | x1.000 |
+| contents 0% | 0.12202 | same | 0.995 / 1.011 | x1.000 | x0.930 |
+| motor 4.5%, contents 0% | 0.12167 | 0.997 / 1.001 | 0.995 / 1.011 | x1.022 | x0.930 |
+| motor 7.5%, contents 0% | 0.12091 | heavy on B | 0.995 / 1.011 | x1.065 | x0.930 |
+| as above, NB k=50 / 20 | 0.12099 / 0.12097 | | | NB x1.081 / x1.085 | |
+
+Contents: a 0% trend balances both folds (A/E 0.995 and 1.011 against 0.948 and 1.061)
+and gives 2025 x0.93, the board's direction (x0.897). Primary is flat (-0.00016, inside the
+margin). A data-supported selection.
+Motor: the 7.5% raw change is mostly mix. The fold A/E balances at about 4.5% (2025
+x1.02). The board's x1.10 on renewals and x1.21 on new business is a 2025-book effect that
+the 2023-24 experience does not show. It stays a board read, so it needs the owner's
+amendment to the selection rule.
