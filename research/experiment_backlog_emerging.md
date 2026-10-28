@@ -58,6 +58,42 @@ of L1, the single factors that passed the claim-count gate in both years.
 - **M5 Pooled base family** (only if the owner has added `base_pooled*` to the config):
   as L9, with the L1 gender GLM re-fitted on top of whichever base is used.
 
+## Tier N (owner bench then loop; pre-registered 27 Oct 21:00 from the four-model ideation, reports/reviews/2026-10-27_ideation/)
+
+Bar: O4 (primary 0.12217). Same keep rule. At most three settings per item. Count-basis
+items fit claim counts n_total with offset log(O4 prediction) (frequency proportional to
+the cost prediction), ridge Poisson, and apply the fitted multiplier to cost; gender stays
+as fitted in O4 (not re-estimated). Shape recalibration (spline of log O4 rate, alpha 10 /
+1 / 0.1) was run first, 20:55: -0.00000 / -0.00003 / -0.00061, discarded.
+
+- **N1 Motor count block.** One ridge Poisson on motor counts: previous_insurer,
+  missed_payments_12m, licence_points, driver_age_band, years_licensed (quintiles),
+  elevation_m (quintiles), region, fuel_type, cover_type, occupation. Alpha 1 / 10 / 100
+  (statsmodels-free sklearn scale on mean deviance).
+- **N2 Property count block.** Per line (buildings, contents), ridge Poisson: construction_type,
+  energy_rating, trees_within_5m, flood_zone, missed_payments_12m, years_at_address,
+  previous_insurer, policyholder_age_band, region. Alpha 1 / 10 / 100.
+- **N3 New-business regime.** Replace O4's NB factor by a ridge Poisson on counts with
+  new_business, new_business x driver_age_band (motor) / x policyholder_age_band (property),
+  on every line. Alpha 1 / 10 / 100.
+- **N4 Weather row factor for 2025.** Per-peril count elasticities to the row's own weather
+  (hail_days, wind_exposure_index, rainfall_mm, freezing_days), estimated on developed data
+  across region x year (region fixed effects), applied to each base_<peril> as
+  exp(beta (w - mean w on training rows)). The folds cannot see 2025 weather: judged by
+  mechanism and one board check, two submissions at most.
+- **N5 Temperature.** O4 rate to the power t per line, t fitted on training rows. One setting.
+- **N6 Base blend under O4.** Motor and buildings geometric 50:50 with base_compat, as
+  contents is with pooled. One setting.
+- **N7 Shift weights in the local fits.** O4's local GLMs (gender, NB) fitted with
+  training-row weights from a classifier on new_business, age bands, years_licensed,
+  previous_insurer, vehicle_value_group, cover_type (no weather, tenure or year), clipped
+  at 10. Weights 0.5 / 1 power.
+- **N8 Pooled per-peril base, sample-weighted** (Kaggle CPU): developed + emerging with
+  `sample_weight` (emerging 5 / 20), min_sum_hessian instead of min_data_in_leaf, compat
+  schema; then O4 adaptation on top.
+- **N9 Frequency-severity base family** (Kaggle CPU): per peril, developed count model and
+  severity model; emerging credibility on frequency and severity separately.
+
 ## OWNER
 
 - O1 Schema-compatible developed bases (running): total and per-peril, compared with P0

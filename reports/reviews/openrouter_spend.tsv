@@ -1,0 +1,6 @@
+timestamp	profile	model	pack	cost_usd	prompt_tokens	completion_tokens
+2026-10-27T20:43:14	ideate-glm	z-ai/glm-5.3	2026-10-27_ideation_brief.md	0.0706	3618	19521
+2026-10-27T20:44:22	ideate-gemini	google/gemini-4-argon	2026-10-27_ideation_brief.md	0.0000	3238	2518
+2026-10-27T20:46:52	ideate-grok	x-ai/grok-4.7	2026-10-27_ideation_brief.md	0.1675	4917	26568
+2026-10-27T20:50:35	ideate-openai	openai/gpt-6-astra	2026-10-27_ideation_brief.md	1.1623	3609	22343
+2026-10-27T20:53:52	ideate-gemini	google/gemini-4-argon	2026-10-27_ideation_brief.md	0.4081	4060	40000
