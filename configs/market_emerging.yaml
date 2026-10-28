@@ -95,6 +95,11 @@ harness:
     2023: part2_pooled_sw20_R.parquet
     2024: part2_pooled_sw20_B.parquet
     2025: part2_pooled_sw20_final.parquet
+  # per-peril bases averaged over in-band ages (N12, owner 27 Oct, Kaggle CPU)
+  base_age_perils:
+    2023: part2_base_perils_fine_age_B.parquet
+    2024: part2_base_perils_fine_age_B.parquet
+    2025: part2_base_perils_fine_age_final.parquet
   # level (owner, 2026-10-25): each line balanced so its training predictions sum to the
   # trended training actuals; the 2025 mix then moves the level. Board check on the
   # transfer file: history-anchored 0.14243, mix-adjusted 0.15079

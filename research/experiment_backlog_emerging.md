@@ -151,6 +151,8 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
   (mean exposure 0.47). Developed market (3M rows): NB claim frequency 1.37 / 1.40 / 1.43x renewal
   for exposure <=0.5 / 0.5-0.9 / ~1 (loss cost 1.51 / 1.47 / 1.29x), so the NB load is not a
   part-year artefact and O4's ~1.27x motor NB relativity is consistent with the developed market.
+- 23:15: N12 in-band age averaging 50:50: 0.12122 (motor B -0.0010, R -0.0004), discarded; full
+  swap diagnostic 0.12011. Band-mean ages transfer better than the in-band average.
 - **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
   cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
   2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.
