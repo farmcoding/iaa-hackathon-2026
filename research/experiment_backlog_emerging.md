@@ -74,6 +74,10 @@ of L1, the single factors that passed the claim-count gate in both years.
   0.11477 blended, not adopted (duplicated emerging rows let the trees memorise claims).
 - O5 Target sensitivity: bodily-injury tail, recoveries on open own-damage claims (~1.5% of
   2024 motor), completion as offset.
+  Done 27 Oct as a level sensitivity (`scripts/part2_o5_levels.py`, assumptions log): every
+  variant moves the 2025 level 2.6% or less on one family, 3.4% on all open claims; no
+  directional evidence on emerging case reserves, so the v1 target stays. Completion as
+  offset not run.
 
 ## Parked (evidence against, 25 Oct)
 
