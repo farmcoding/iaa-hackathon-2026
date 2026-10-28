@@ -97,6 +97,39 @@ written below would shrink everything to zero on this objective). Shape recalibr
 - **N9 Frequency-severity base family** (Kaggle CPU): per peril, developed count model and
   severity model; emerging credibility on frequency and severity separately.
 
+### Tier N results and round 2 (27 Oct 21:15, adversarial review by three models, reports/reviews/2026-10-27_adversarial/)
+
+Run 20:55-21:05 on the owner bench (primary vs O4 0.12217): N1 motor count block k 50/200/800
+0.11441 / 0.11881 / 0.12140 (B +0.0010 at best, R -0.0026 to -0.0155); N2 property 0.12070 /
+0.12215 / 0.12227; N3 NB regime 0.11791 / 0.11977 / 0.12066; N5 temperature 0.11926; shape
+spline see above. All discarded. N4 dropped: developed elasticities (12 regions x 4 years)
+give a 2025 weather effect of motor -0.4%, buildings +0.5%. N6 not run (no compat final base).
+Reviewers' verdict: local residual learning on emerging rows is exhausted; fold R is a valid
+veto for it. Two flagged a construction flaw: a count model offset by a *cost* prediction
+estimates frequency relative to cost and learns inverse-severity effects (N1-N3, and O4's NB
+factor). Killed: N7 shift weights, N9 frequency-severity family, blend grids, weather.
+
+Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O4 alone):
+
+- **N10 Mix decomposition of the 2025 motor level** (diagnostic, no submission): reweight the
+  2024 book one margin at a time to 2025 (driver_age_band, new_business, previous_insurer,
+  years_licensed, vehicle_value_group, make_model, fuel_type, cover_type, region, occupation,
+  and age x NB jointly); age band and NB cost and count A/E against O4 by year.
+- **N11 Motor NB on total cost**: replace O4's count-basis NB factor on motor by one Tweedie
+  (p=1.5) coefficient on O4 as offset, unpenalised year intercepts, Gaussian prior
+  delta ~ N(0, 0.10^2) with dispersion fixed at O4's training Pearson value. Setting 2:
+  the same on contents as well.
+- **N12 Age-band teacher integration** (Kaggle CPU): score the developed per-peril bases at
+  five ages inside each band, uniform on [max(band low, 17 + years_licensed), band high]
+  (65+ at 65/70/75/80/85 weighted 0.3/0.25/0.2/0.15/0.1), average, then 50:50 with the
+  current band-mean bases; O4 adaptation unchanged. One setting.
+- **N13 Pooled base, sample weight 5**: 25% geometric weight on base_pooled_sw5 for motor and
+  buildings at the base stage (before gender and NB); contents unchanged. Weight 20 is a
+  diagnostic only. One setting.
+- **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
+  cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
+  2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.
+
 ## OWNER
 
 - O1 Schema-compatible developed bases (running): total and per-peril, compared with P0
