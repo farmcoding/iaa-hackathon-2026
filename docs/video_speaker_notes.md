@@ -10,7 +10,7 @@ Only the first 5 minutes are graded, so the timings are hard limits.
 
 I'm Karl, a P&C actuary and a Fellow of the CIA, entering on my own.
 
-The task was to price 2025 risk premium for motor, buildings and contents from four years of policy and claims data. My final model scores [0.1xx] on the Part 1 leaderboard. I'll spend most of the time on how I got there - because the AI did a lot of the work, and an actuary still signed off every number.
+The task was to price 2025 risk premium for motor, buildings and contents - first in a developed market, then in a new one with two years of data. My Part 1 model scored 0.134 on the private board, and the Part 2 model scores 0.163 on the public board. I'll spend most of the time on how I got there - because the AI did a lot of the work, and an actuary still signed off every number.
 
 ## Slide 2 - The data had traps (0:30 to 1:15)
 
@@ -30,7 +30,7 @@ The test I set: developed 2024 has to land on the 2021 to 2023 trend. Raw motor 
 
 ## Slide 4 - The model and how we know it works (2:00 to 2:45)
 
-The production model is a gradient boosted Tweedie model per line [update with final blend]. The model gives the relativities. The overall level comes from trended history, which is how we'd price in practice.
+The production model is a blend of LightGBM, an explainable boosting machine and CatBoost per line, with bodily injury as a frequency model. The model gives the relativities. The overall level comes from trended history, which is how we'd price in practice.
 
 Validation is out of time - train on earlier years, score the next one, twice. Local score and leaderboard agreed almost exactly: 0.1056 locally, 0.1060 public. That's why I trusted my own validation and didn't chase the leaderboard.
 
@@ -38,7 +38,7 @@ Validation is out of time - train on earlier years, score the next one, twice. L
 
 AI was in every step. It profiled the data, researched methods - Richman and Wüthrich's work, past Kaggle winners, UK bodily injury law - and wrote most of the code.
 
-The core is an experiment loop in the style of Karpathy's autoresearch. An agent changes one file, runs it against a frozen harness, and the result goes in a ledger. It can't touch the data, the target, the folds or the scorer. A change only stays if it beats the best run by more than seed noise on both folds. [N] experiments ran, [K] were kept - the chart shows the score climbing from 0.106 to [0.1xx].
+The core is an experiment loop in the style of Karpathy's autoresearch. An agent changes one file, runs it against a frozen harness, and the result goes in a ledger. It can't touch the data, the target, the folds or the scorer. A change only stays if it beats the best run by more than seed noise on both folds. About 250 experiments ran across both parts and 33 were kept - the chart shows the Part 1 score climbing from 0.106 to 0.143.
 
 Nothing the AI produced went in unchecked. It found the leakage, and I confirmed it against the test file before anything changed. Every kept change has a commit, a test and a reason.
 
@@ -50,9 +50,9 @@ In practice that means automated tests on the core, a human sign-off before ever
 
 ## Slide 7 - Part 2, the new market (4:20 to 4:50)
 
-[Fill after Part 2.] What changed in the emerging market, how we detected it, what we kept from Part 1, what we re-estimated, and how much uncertainty is left.
+The new market has cheaper claims, more of them, more hail, and a 2025 book that's 77% new business. Two years of data couldn't rebuild the model, so I kept the developed relativities, refitted them by peril, and let each peril take its own emerging level. Gender was new and admissible here, and it mattered.
 
-Everything market-specific lives in one config file, so the same pipeline ran on the new data from day one.
+The lesson I'd keep - the loop stacked eleven small wins that looked great on my folds and lost on the board. So I tightened the rule, and twenty more ideas from five AI models all failed it.
 
 ## Slide 8 - Limits and close (4:50 to 5:00)
 

@@ -13,5 +13,5 @@ results at that point, and refreshed after Part 2.
 | 4 | Model and validation | Fold diagram; CV vs leaderboard; lift chart | Pricing performance; guardrails | 1450 |
 | 5 | AI workflow and the experiment loop | Loop diagram; score-by-iteration chart from results.tsv | Effective use of AI | IAA AITF testing, CAS primer |
 | 6 | Guardrails and standards | Frozen vs editable files; sign-off log extract; test list | Guardrails; communication | 1460, 1470, 1490, IAA AITF governance and documentation |
-| 7 | Part 2 adaptation | Drift report; what changed and what was re-estimated | Pricing performance and adaptation | |
+| 7 | Part 2 adaptation | Drift table (severity, frequency, hail, new business); the board ladder 0.142 to 0.163 (report section 4); the stacked-factor lesson (+0.0068 folds, -0.0029 board) | Pricing performance and adaptation | |
 | 8 | Limitations and uncertainty | BI severity sensitivity range | Communication | 1700 |
