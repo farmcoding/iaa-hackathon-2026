@@ -163,6 +163,14 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
     (alpha 0.01). Otherwise logged as flat.
   - **N19 start-up year check** (diagnostic): O4's in-sample A/E on the final fit by year for
     region, NB and young band.
+- 23:35 results: N17 self_employed gate fails except buildings 2024 (p 0.003), which costs fold R
+  0.0051: 0.12132, discarded. N18 contents shows the pattern (no missing fields A/E 1.26 / 1.39,
+  one missing 0.74 / 0.81) but the count gate fails (p 0.21 / 0.12): no change. N19 in-sample by
+  year on the final fit: motor NB A/E 1.70 in 2023 (the insurer's first year) vs 0.95 in 2024;
+  buildings 1.25 / 0.76 (fire year); motor region E01 1.18 / 1.13, the one segment consistent in
+  both years.
+  - **N20 motor region** (pre-registered 23:36): L1-style, lr_gate(n_tests=1) count basis,
+    offset_glm alpha 0.01; one setting.
 - **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
   cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
   2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.
