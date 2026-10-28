@@ -10,7 +10,7 @@ Only the first 5 minutes are graded, so the timings are hard limits.
 
 I'm Karl, a P&C actuary and a Fellow of the CIA, entering on my own.
 
-The task was to price 2025 risk premium for motor, buildings and contents - first in a developed market, then in a new one with two years of data. My Part 1 model scored 0.134 on the private board, and the Part 2 model scores 0.163 on the public board. I'll spend most of the time on how I got there - because the AI did a lot of the work, and an actuary still signed off every number.
+The task was to price 2025 risk premium for motor, buildings and contents - first in a developed market, then in a new one with two years of data. My Part 1 model scored 0.134 on the private board, and the Part 2 model scores 0.166 on the public board. I'll spend most of the time on how I got there - because the AI did a lot of the work, and an actuary still signed off every number.
 
 ## Slide 2 - The data had traps (0:30 to 1:15)
 
@@ -50,9 +50,9 @@ In practice that means automated tests on the core, a human sign-off before ever
 
 ## Slide 7 - Part 2, the new market (4:20 to 4:50)
 
-The new market has cheaper claims, more of them, more hail, and a 2025 book that's 77% new business. Two years of data couldn't rebuild the model, so I kept the developed relativities, refitted them by peril, and let each peril take its own emerging level. Gender was new and admissible here, and it mattered.
+The new market's claims are cheaper and more frequent, and the 2025 book is 77% new business. I kept the developed relativities, refitted them by peril, and let each peril find its own emerging level. Gender was new here and it mattered.
 
-The lesson I'd keep - the loop stacked eleven small wins that looked great on my folds and lost on the board. So I tightened the rule, and twenty more ideas from five AI models all failed it.
+My folds couldn't see a book that's mostly new business, so the AI found an exact way to read the 2025 level off the leaderboard. I shrank it, checked it on the folds, and kept what our own trends explained.
 
 ## Slide 8 - Limits and close (4:50 to 5:00)
 

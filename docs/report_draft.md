@@ -1,6 +1,6 @@
 # Pricing across two markets with an AI agent inside an actuarial harness
 
-IAA AI-Assisted Hackathon 2026, team "The KMR" (solo entry, FCIA). Draft 1, 28 October 2026.
+IAA AI-Assisted Hackathon 2026, team "The KMR" (solo entry, FCIA). Draft 2, 28 October 2026.
 Numbers are from the repository: `docs/SIGNOFF.md`, `reports/assumptions_log.md`,
 `results.tsv`, `results_emerging.tsv`.
 
@@ -20,7 +20,8 @@ signed off by the actuary.
 | | Internal validation | Public | Private |
 |---|---|---|---|
 | Part 1 final (710775e) | 0.14252 (folds 0.14234 / 0.14261) | 0.12622 | 0.13363 |
-| Part 2 current selection (O4, 0c4e403) | 0.12217 (deploy metric, folds B / R 0.14199 / 0.10236) | 0.16326 | after close |
+| Part 2 relativity model (O4, 0c4e403) | 0.12217 (deploy metric, folds B / R 0.14199 / 0.10236) | 0.16326 | after close |
+| Part 2 current selection (O4 with the 2025 level, section 4) | folds cannot score a 2025 level; checks in section 4 | 0.16621 | after close |
 
 ## 2. Data and target (both parts)
 
@@ -93,7 +94,8 @@ board:
 | Same base, level from the 2025 mix (balance on train) | 0.15079 |
 | P0: one developed refit per peril, summed | 0.15195 |
 | L1: + motor gender (ridge offset GLM, likelihood-ratio gated) | 0.15933 |
-| O4: + per-peril emerging levels (credibility k=100), contents 50:50 with a pooled two-market base, new-business claim-count factor (motor, contents) | **0.16326** |
+| O4: + per-peril emerging levels (credibility k=100), contents 50:50 with a pooled two-market base, new-business claim-count factor (motor, contents) | 0.16326 |
+| O4 with the 2025 level: contents trend 0%, motor bodily-injury trend 12%, shrunk board read on motor (below) | **0.16621** |
 
 Per-peril bases let each peril take its own emerging level, which moves the relativities
 towards the risks exposed to the perils that are heavier here. Gender is admissible in this
@@ -105,6 +107,35 @@ trains 2024 and scores 2023. The metric is D² at the production level, two-thir
 natural book and one-third on the book reweighted to the 2025 mix. A keep needs a gain over
 0.002, neither fold down more than 0.003, and a paired bootstrap whose 10th percentile is
 above zero.
+
+**Setting the 2025 level.** The folds can judge relativities but not the 2025 level. Each
+fold trains on a book with about 8% new business and scores another historical year, while
+2025 is 77% new business. The public leaderboard scores a random third of the 2025 book, so
+it shares the 2025 year effect with the private two-thirds. For Tweedie power 1.5, scaling
+one group of rows by c changes the score exactly as A - B c^-½ - G c^½. Two probe
+submissions per group (c = 0.8 and 1.25) therefore give the group's best level, c* = B/G,
+and groups add, so a split by new business costs two more. The method was checked on a fold
+before use (solved 0.581, direct 0.580).
+
+| Group | Best level vs O4 | Shrunk |
+|---|---|---|
+| Motor new business | 1.21 | 1.185 |
+| Motor renewals | 1.10 | 1.07 |
+| Buildings | 1.00 | 1.00 |
+| Contents | 0.90 | 0.91 |
+
+Each read is shrunk toward 1 by its sampling error on a public-sized sample (3-6%). The
+owner allowed a board-calibrated level on 28 October on condition that it holds on cross
+validation, defined before use: the new-business/renewal split must not lower level-neutral
+motor D² on either fold by more than 0.002 (B -0.0004, R +0.0037), and a read on a random
+third of the fold rows must improve the other two-thirds in at least 85% of 500 splits
+(motor 97%, contents 89%). Where 2023-24 experience reproduces a read, the mechanism is used
+instead of the multiplier. Contents at a 0% trend, instead of the developed 5%, brings both
+folds' actual-to-expected to 0.99-1.01 and moves 2025 contents by 0.93. Motor renewal cost
+rose 15% from 2023 to 2024, almost all of it bodily injury (+36%); a 12% bodily-injury
+trend moves both folds' renewal actual-to-expected towards 1 and supplies half the renewal
+gap. The rest of the motor level is the shrunk read. The result scored 0.16621, against
+0.16590 for the multipliers alone.
 
 ## 5. Use of AI
 
@@ -137,7 +168,9 @@ bases, in-band age averaging, square-root-exposure weights and a TabM neural bas
 the rule (`research/experiment_backlog_emerging.md`, tier N). The pattern was consistent:
 anything learned on emerging rows helped the forward fold a little at best and hurt the
 reverse fold every time; anything that replaced the developed base hurt the forward fold.
-O4 was kept.
+O4 was kept as the relativity model. What the folds could not judge was the 2025 level: the
+leaderboard probes and their exact solution (section 4) came from an advisor review of the
+drift numbers, and they found the largest single gain of Part 2 (+0.0030).
 
 ## 6. Guardrails and reproducibility
 
@@ -160,8 +193,9 @@ reporting) and the IAA AI Task Force papers on governance, testing and documenta
 | Case reserves on open claims taken as adequate | +/-10% moves the 2025 motor level +/-3.4%, buildings +/-1.9% |
 | Bodily-injury development tail | +/-5% moves motor +/-1.9% |
 | New business priced about 1.27 times renewal on motor (developed relativity times an emerging factor) | Raises the 2025 motor level 17%; the developed market's own new-business loss-cost relativity is 1.29-1.51 at every exposure length, so the level is defensible, but the emerging evidence is thin (new-business A/E 0.92 and 1.75 on the two folds) |
+| 2025 motor level partly from the public board (new business x1.12, renewals x1.02 beyond the trends) | Sampling error of the read 3-6%; shrunk toward 1 and checked on the folds (section 4). The private board is twice the public sample from the same book |
 | Buildings level | Dominated by fire: 49 claims in 2023, 21 in 2024; A/E 0.60 and 1.70 on the folds; a 10% buildings level error is worth 0.004-0.005 of D², motor 10% about 0.001 |
-| Trends carried over from the developed market | Two emerging years cannot separate trend, weather and development |
+| Trends: developed rates except contents 0% and motor bodily injury 12% | Two emerging years cannot separate trend, weather and development; the two changes balance the folds' actual-to-expected and match the board's direction |
 | Weather year | 2025 is milder (11 hail days); developed elasticities put the effect under 1% on any line, so it is not modelled |
 
 Validation limits: each fold trains on one emerging year while the final fit uses two, and
