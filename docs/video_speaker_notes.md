@@ -38,7 +38,7 @@ Validation is out of time - train on earlier years, score the next one, twice. L
 
 AI was in every step. It profiled the data, researched methods - Richman and Wüthrich's work, past Kaggle winners, UK bodily injury law - and wrote most of the code.
 
-The core is an experiment loop in the style of Karpathy's autoresearch. An agent changes one file, runs it against a frozen harness, and the result goes in a ledger. It can't touch the data, the target, the folds or the scorer. A change only stays if it beats the best run by more than seed noise on both folds. About 250 experiments ran across both parts and 33 were kept - the chart shows the Part 1 score climbing from 0.106 to 0.143.
+The core is the harness's experiment loop. An agent changes one file, runs it against a frozen harness, and the result goes in a ledger. It can't touch the data, the target, the folds or the scorer. A change only stays if it beats the best run by more than seed noise on both folds. About 250 experiments ran across both parts and 33 were kept - the chart shows the Part 1 score climbing from 0.106 to 0.143.
 
 Nothing the AI produced went in unchecked. It found the leakage, and I confirmed it against the test file before anything changed. Every kept change has a commit, a test and a reason.
 

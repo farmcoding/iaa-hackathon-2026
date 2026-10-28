@@ -1,5 +1,5 @@
 @page { size: Letter; margin: 2cm; }
-body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.25; max-width: none; margin: 0; padding: 0; }
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.2; max-width: none; margin: 0; padding: 0; }
 table { border-collapse: collapse; font-size: 8.5pt; margin: 4pt 0; }
 td, th { border: 1px solid #999; padding: 1px 4px; vertical-align: top; }
 h1 { font-size: 16pt; margin: 0 0 4pt; } h2 { font-size: 13pt; margin: 9pt 0 3pt; }

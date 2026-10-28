@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Karpathy-style experiment loop. Each iteration:
+# Experiment loop. Each iteration:
 #   1. tests must pass and the tree must be clean;
 #   2. a headless agent (no shell access) edits src/iaa/experiment.py and states its
 #      hypothesis;

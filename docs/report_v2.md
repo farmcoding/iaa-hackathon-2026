@@ -23,10 +23,13 @@ review before the actuary adopts them (section 4).
 
 **The results.**
 
-| | Validation | Public leaderboard | Private leaderboard |
+| | Validation D² | Public leaderboard | Private leaderboard |
 |---|---|---|---|
-| Part 1, developed market (final) | 0.1425 | 0.1262 | 0.1336 |
-| Part 2, emerging market (selected) | 0.1535 / 0.1286 (folds B / R) | 0.1662 | after close |
+| Part 1, developed market (final) | 0.1425 (weighted mean of folds A and B) | 0.1262 | 0.1336 |
+| Part 2, emerging market (selected) | 0.1535 / 0.1286 (level-neutral, folds B / R) | 0.1662 | after close |
+
+Part 2 folds are scored level-neutral because they cannot test the 2025 level (section 7).
+The keep rule uses the deploy metric instead (section 6).
 
 **Key messages.** Relativities estimated on the developed market carried over better than
 two small emerging years could estimate them. The emerging data then adjusted the level of
@@ -36,13 +39,14 @@ the 2025 level, which no historical fold can test (section 7).
 
 | Term | Meaning in this report |
 |---|---|
-| Fold | One train-and-score split of the historical years. Fold B trains on 2023 and scores 2024; fold R trains on 2024 and scores 2023 |
+| Tweedie D² | The share of prediction error removed compared with one constant rate for every row. Higher is better; 0 means no better than the constant |
+| Public / private leaderboard | Kaggle scores a random third of the 2025 rows publicly during the competition; the other two-thirds decide the final ranking |
+| Fold | One train-and-score split of the historical years. In Part 2, fold B trains on 2023 and scores 2024, and fold R trains on 2024 and scores 2023 |
 | Relativity | How much one risk costs compared with another, apart from the overall level |
 | Level | The overall cost per unit of exposure for a line or group |
 | Level-neutral D² | D² after each line's predictions are rescaled to its actual total, so it scores ranking only |
 | A/E | Actual claims divided by expected (predicted) claims |
 | Keep rule | The pre-declared test a change must pass to be kept (section 6) |
-| Base model | The developed-market model whose predictions the emerging adjustments start from |
 
 ## 2. Modelling approach
 
@@ -64,6 +68,10 @@ separate frequency model with a flat severity. Monotone constraints keep excesse
 no-claims years and flood zone in the expected direction. The actuary excluded the
 incumbent's premium, email domain, sales fields and customer claim history on admissibility
 grounds, not on score.
+
+**Part 1 validation.** Two out-of-time folds tested each change. Fold A trains on 2021-22 and
+scores 2023; fold B trains on 2021-23 and scores 2024. A change was kept only if it beat the
+best run by more than seed noise on both folds and repeated on fresh seeds.
 
 ## 3. Adaptation to the new market
 
@@ -87,7 +95,7 @@ of changes, one mechanism per run. Table 1 shows what was tested and what was ke
 |---|---|---|
 | Part 1 model refitted on emerging data only | Public 0.129, against 0.142 for the developed fit | Dropped (actuary) |
 | Developed base refitted separately for each peril (P0) | Each peril takes its own emerging level | Kept (rule) |
-| Motor gender, as a gated adjustment on the base (L1) | Level-neutral D² up on both folds; public +0.007 | Kept (rule; admissibility by actuary) |
+| Motor gender, an adjustment on the base kept only if a likelihood-ratio test passes (L1) | Level-neutral D² up on both folds; public +0.007 | Kept (rule; admissibility by actuary) |
 | Joint models with six to eight emerging factors | Extra factors diluted gender | Dropped (rule) |
 | Eleven small factors stacked by the agent | Folds +0.007, public -0.003 | Reverted (actuary; rule tightened) |
 | Per-peril emerging levels, pooled contents base, new-business factor (O4) | Level-neutral D² +0.001 (B) and +0.002 (R); public +0.004 | Kept (pre-registered by actuary, passed rule) |
@@ -95,9 +103,8 @@ of changes, one mechanism per run. Table 1 shows what was tested and what was ke
 | Neural-network base (TabM), 25% blend | +0.0016 overall, fold B and buildings down | Dropped (rule) |
 | Contents trend 0% and motor bodily-injury trend 12% | Both folds' A/E move towards 1 | Kept (actuary, from emerging data) |
 
-A pattern ran through the dropped changes. Anything learned on emerging rows helped fold B
-a little at best and hurt fold R every time. Anything that replaced the developed base hurt
-fold B. The selected model is O4 with the 2023-24 trends.
+Changes learned on emerging rows helped fold B a little at best and always hurt fold R.
+Changes that replaced the developed base hurt fold B. The selected model is O4 with the 2023-24 trends.
 
 ![](../reports/figures/part2_steps_ae.png)
 
@@ -115,8 +122,8 @@ reason. Motor and contents renewals sit within 5% of 1 on both folds.
 *Figure 2. Lift by predicted risk decile, selected model, both folds. Each value is the
 decile's loss cost divided by the line average.*
 
-Figure 2 checks that the ranking holds out of time. On every line, actual cost follows the
-predicted curve on both folds. The model predicts the top motor decile at six times the
+Figure 2 checks that the ranking holds out of time. On every line, actual cost broadly follows
+the predicted curve on both folds. The model predicts the top motor decile at six times the
 bottom, and the folds show six to ten times. The scatter in the middle buildings deciles
 comes from the few fire claims.
 
@@ -142,8 +149,12 @@ leaderboard submission has a sign-off row (`docs/SIGNOFF.md`).
 - An outside model built a recommendation on 2023 being all new business. The data shows
   6.4%, so the recommendation was rejected.
 - Reviewers found that a claim-count model offset by a cost prediction learns
-  inverse-severity effects. An earlier pooled base had also duplicated rows, which let the
-  trees memorise claims. Both were fixed before selection.
+  inverse-severity effects. The agent's correction blocks built that way were dropped. O4's
+  new-business factor uses the same construction; a cost-based replacement did not pass, so
+  it stays and is listed as a limitation in section 7.
+- An earlier pooled base duplicated emerging rows to weight them, which let the trees
+  memorise claims. That version was not used, and a sample-weighted rebuild was tested
+  instead.
 - Gender is admissible in the emerging market under the brief. Its use was an owner
   decision, recorded in the assumptions log.
 
@@ -158,9 +169,8 @@ Models from other providers challenged the work. On 25 October OpenAI GPT-6.1 So
 reviewed the design. On 27 October four models proposed ideas and three reviewed the results, for
 $2.90. Heavy refits ran on private Kaggle notebooks, including a GPU neural network.
 
-AI output was verified before use. The harness scored every agent proposal, and the agent
-could not change the scorer. Each outside-model claim was checked against the data, as the
-cases in section 4 show.
+The harness scored every agent proposal, and the agent could not change the scorer.
+Outside-model claims were checked against the data (section 4).
 
 ## 6. Guardrails and reproducibility
 
@@ -196,7 +206,7 @@ multiplier. A real insurer would not have this read, so it is disclosed as a rel
 |---|---|
 | Case reserves on open claims taken as adequate | ±10% moves the 2025 motor level ±3.4% and buildings ±1.9% |
 | Emerging motor bodily injury reports more slowly than developed | Would raise motor ultimates 2-3%; logged as a sensitivity |
-| New-business factor rests on thin emerging data | New-business A/E 0.89 and 1.80 on the folds |
+| New-business factor rests on thin emerging data and a count-on-cost construction | New-business A/E 0.89 and 1.80 on the folds |
 | Buildings level rests on few fire claims | A 10% buildings level error costs 0.004-0.005 of D² |
 | Fold gap | Fold R scores about 0.025 below fold B; it trains on the less developed year |
 | Weather in 2025 is milder | Developed elasticities put the effect under 1%; not modelled |
