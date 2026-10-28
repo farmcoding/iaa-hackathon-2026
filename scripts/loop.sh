@@ -63,9 +63,22 @@ stop_if_low_disk() {
     exit 4
   fi
 }
+# joblib/loky workers outlive a parent killed by Jetsam or a timeout, reparent
+# to launchd and sit in swap (47 of them held ~2.8 GB on 2026-10-27). Only
+# ppid-1 workers started from this repo are touched; live runs keep a parent.
+reap_orphans() {
+  local p n=0
+  for p in $(ps -axo pid=,ppid=,command= | awk '$2 == 1 && /joblib|multiprocessing\.resource_tracker/ { print $1 }'); do
+    [[ "$(lsof -a -p "$p" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')" == "$ROOT" ]] || continue
+    kill -TERM "$p" 2>/dev/null && (( n++ ))
+  done
+  (( n )) && echo "reaped $n orphaned joblib workers" | tee -a "$DAYLOG"
+  return 0
+}
 
 for i in $(seq 1 "$ITER"); do
   stop_if_low_disk "before iteration $i"
+  reap_orphans
   # queue behind any other full-dataset run (explain, analysis scripts) so the
   # smoke and harness timeouts below measure work, not waiting; see runguard.py
   .venv/bin/python -I -c 'from iaa import runguard; runguard.wait_free()'
