@@ -123,9 +123,17 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
   five ages inside each band, uniform on [max(band low, 17 + years_licensed), band high]
   (65+ at 65/70/75/80/85 weighted 0.3/0.25/0.2/0.15/0.1), average, then 50:50 with the
   current band-mean bases; O4 adaptation unchanged. One setting.
+- Results 21:35: N11 motor NB on total cost 0.12176 (delta 1.14 fit on 2023, 1.03 on 2024),
+  with contents 0.12170: discarded. N10: NB alone moves the 2025 motor mean +17% (O4 prices NB
+  ~1.27x renewal; out-of-sample NB A/E 0.92 fold B, 1.75 fold R), age band +7.5%, years
+  licensed +7.5% (overlapping), previous insurer 0.0% (so N14 is not run), others < 1.5%.
 - **N13 Pooled base, sample weight 5**: 25% geometric weight on base_pooled_sw5 for motor and
   buildings at the base stage (before gender and NB); contents unchanged. Weight 20 is a
   diagnostic only. One setting.
+- **N15 TabM developed base** (Kaggle GPU, pre-registered 21:45): TabM per line on developed
+  rows (2021-23 for folds, 2021-24 for 2025), scoring emerging rows; O4 x (base_tabm /
+  base)^w per line, w = 0.25 / 0.5 (a second model class for the developed relativities;
+  in Part 1 a TabM blend added +0.0039 public).
 - **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
   cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
   2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.
