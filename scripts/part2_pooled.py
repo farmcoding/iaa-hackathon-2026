@@ -48,7 +48,7 @@ def main() -> None:
         "--emerging-weight",
         type=int,
         default=1,
-        help="repeat emerging training rows k times (sample weight via duplication)",
+        help="emerging rows' fit weight (row_weight x exposure; was duplication before 27 Oct)",
     )
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
@@ -63,8 +63,10 @@ def main() -> None:
     tr_e, _ = harness.split(emg, emg_years, cfg["predict_year"], ecfg)
     if a.dry_run:
         tr_d = tr_d.groupby("line", group_keys=False).sample(20_000, random_state=0)
-    if a.emerging_weight > 1:
-        tr_e = pd.concat([tr_e] * a.emerging_weight, ignore_index=True)
+    # 27 Oct: a fit weight, not duplicated rows: duplicates let the trees build leaves from
+    # copies of the same claims (min_data_in_leaf counted them as independent rows)
+    tr_e = tr_e.assign(row_weight=float(a.emerging_weight))
+    tr_d = tr_d.assign(row_weight=1.0)
 
     # stack, then re-type categoricals on the union of levels (E-regions, age bands, gender)
     tr_d, tr_e = tr_d.assign(market="developed"), tr_e.assign(market="emerging")
@@ -97,7 +99,7 @@ def main() -> None:
     experiment.PRUNED = {}
     pred = harness.check_predictions(experiment.fit_predict(tr, harness.hide_target(va)), len(va))
     out = emg[["row_id", "line"]].astype(str).assign(market="emerging", base_pooled=pred)
-    w = f"_w{a.emerging_weight}" if a.emerging_weight > 1 else ""
+    w = f"_sw{a.emerging_weight}" if a.emerging_weight > 1 else ""
     tag = a.tag + ("_dryrun" if a.dry_run else "")
     path = harness.CACHE / f"part2_pooled{w}_{tag}.parquet"
     out.to_parquet(path)

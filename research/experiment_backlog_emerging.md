@@ -63,7 +63,10 @@ of L1, the single factors that passed the claim-count gate in both years.
 Bar: O4 (primary 0.12217). Same keep rule. At most three settings per item. Count-basis
 items fit claim counts n_total with offset log(O4 prediction) (frequency proportional to
 the cost prediction), ridge Poisson, and apply the fitted multiplier to cost; gender stays
-as fitted in O4 (not re-estimated). Shape recalibration (spline of log O4 rate, alpha 10 /
+as fitted in O4 (not re-estimated). Penalty (restated 21:10, before any N run): the offset is scaled to expected
+claim counts, so sklearn's alpha equals k / (training claims) for a ridge worth k claims of
+credibility per coefficient; the three settings are k = 50 / 200 / 800 (the alpha 1 / 10 / 100
+written below would shrink everything to zero on this objective). Shape recalibration (spline of log O4 rate, alpha 10 /
 1 / 0.1) was run first, 20:55: -0.00000 / -0.00003 / -0.00061, discarded.
 
 - **N1 Motor count block.** One ridge Poisson on motor counts: previous_insurer,

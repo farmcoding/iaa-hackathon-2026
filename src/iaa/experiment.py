@@ -35,6 +35,7 @@ NON_FEATURES = {
     "year",
     "line",
     "exposure",
+    "row_weight",  # fit weight (Part 2 pooled bases), never a feature
     # owner 2026-10-18: tested once restored (primary 0.1334 vs 0.1339), no gain
     "lines_held",
     # owner 2026-10-19 (Karl): not an admissible rating factor. Review found it independent
@@ -333,6 +334,15 @@ def _bi_fs_ratio() -> dict[int, float]:
     return out
 
 
+def _w(tr: pd.DataFrame) -> pd.Series:
+    """Fit weight: exposure, times an optional per-row `row_weight` (Part 2 pooled bases weight
+    emerging rows this way; LightGBM's min_data_in_leaf still counts unique rows, unlike
+    duplicating them)."""
+    if "row_weight" in tr.columns:
+        return tr["exposure"] * tr["row_weight"].astype(float)
+    return tr["exposure"]
+
+
 def _bi_level(tr: pd.DataFrame) -> float:
     # remove the upward floor: years where frequency x severity is below the chain ladder
     # take the lower estimate (the developed ult already carries max(1, r))
@@ -486,14 +496,14 @@ def _fit_predict_core(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
             # keep the original Tweedie-on-cost treatment.
             bi_params = {k: v for k, v in PARAMS.items() if k != "tweedie_variance_power"}
             bi_params["objective"] = "poisson"
-            freq = bag(tr["n_bodily_injury"], tr["exposure"], bi_params)
+            freq = bag(tr["n_bodily_injury"], _w(tr), bi_params)
             bi_lc = _bi_level(tr)
             bi_rate = _anchor(freq, bi_lc, va)
 
             other = tr["ult_other"] * tr["trend_factor"]
             other_target = other / tr["exposure"]
-            other_rate = 0.5 * bag(other_target, tr["exposure"]) + 0.5 * ebm_rate(
-                other_target, tr["exposure"], mono
+            other_rate = 0.5 * bag(other_target, _w(tr)) + 0.5 * ebm_rate(
+                other_target, _w(tr), mono
             )
             other_lc = other.sum() / tr["exposure"].sum()
             other_rate = _anchor(other_rate, other_lc, va)
@@ -502,9 +512,9 @@ def _fit_predict_core(train: pd.DataFrame, valid: pd.DataFrame) -> np.ndarray:
         else:
             rate_target = tr["y"] / tr["exposure"]
             rate = (
-                bag(rate_target, tr["exposure"])
-                + ebm_rate(rate_target, tr["exposure"])
-                + cb_rate(rate_target, tr["exposure"])
+                bag(rate_target, _w(tr))
+                + ebm_rate(rate_target, _w(tr))
+                + cb_rate(rate_target, _w(tr))
             ) / 3
             rate = _anchor(rate, tr["y"].sum() / tr["exposure"].sum(), va)
         pred[mask] = rate * va["exposure"].to_numpy()
