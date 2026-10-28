@@ -142,6 +142,15 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
   the margin, fold B and buildings down). N16 sqrt(exposure) bases 0.12059: discarded.
 - Results 23:10: N13 pooled sample-weight 5, 25% at the base stage on motor and buildings:
   0.12122 (B 0.14156, R 0.10087, q10 -0.0022): discarded. Diagnostic weight 20: 0.12175.
+- 23:30 (advisor checks): N14 run after all (the N10 skip rule tested level, not ranking): no
+  effect on the folds, because its two-year sign gate cannot fire on one-year training folds.
+  TabM by line x fold (own-line D2 gain, w 0.5): motor B -0.0014 / R +0.0043, buildings -0.0096 /
+  -0.0010, contents +0.0006 / -0.0016: no line gains on both folds, so no motor-only follow-up.
+  Broker book: channel, payment method, start month unchanged; 2025 rows are January
+  inceptions to 31 Dec (exposure 0.96-0.99) while historical NB rows are mostly mid-year starts
+  (mean exposure 0.47). Developed market (3M rows): NB claim frequency 1.37 / 1.40 / 1.43x renewal
+  for exposure <=0.5 / 0.5-0.9 / ~1 (loss cost 1.51 / 1.47 / 1.29x), so the NB load is not a
+  part-year artefact and O4's ~1.27x motor NB relativity is consistent with the developed market.
 - **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
   cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
   2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.
