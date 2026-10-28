@@ -305,7 +305,7 @@ pipeline recomputes exposure from the dates, and on that exposure those codes ar
 motor new business with 8% of its claims. No confound. In 2025 every one of the 40 codes is
 2.5% of the book, and new business and renewals share the same channel and lead-time mix.
 
-### Amended rule applied (28 Oct evening): factor sweep and the mechanism candidate
+### Amended rule applied (28 Oct morning): factor sweep and the mechanism candidate
 
 Factor sweep on O4 (owner bench, count-basis gate, ridge offset GLM): renewal-count band
 (motor; all lines) fails the gate on motor and gives -0.0012 where buildings passes in one
@@ -332,7 +332,7 @@ Deliverable to update: report section 4 and video slide 7 need the level selecti
 the folds cannot see, the shrunk board read, the two checks, which parts our own data
 reproduced: contents trend, bodily-injury trend).
 
-## Tier P2 (pre-registered 28 Oct, for 29 Oct): new-business/renewal split on property
+## Tier P2 (pre-registered 28 Oct, for the quota that opens 20:00 EDT 28 Oct): new-business/renewal split on property
 
 Inside the amended rule (line and new-business/renewal reads only). Buildings: O4 prices new
 business 4% above renewals, while history has it cheaper (392 vs 471 per exposure; NB count
