@@ -171,6 +171,12 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
   both years.
   - **N20 motor region** (pre-registered 23:36): L1-style, lr_gate(n_tests=1) count basis,
     offset_glm alpha 0.01; one setting.
+- 23:50: N20 motor region gate passes on 2023 (p 8e-8), fails on 2024 (p 0.22); 0.12201, fold B
+  motor -0.0007: discarded. N14 on the two-year final fit (A/E normalised by the line's level
+  each year): 27 of 40 codes on the same side both years (chance ~20), factors 0.90-1.24,
+  67% of 2025 motor exposure. Policy-grouped 5-fold cross-fit over 2023-24 (diagnostic):
+  motor D2 gain -0.00006 on average, positive in 1 of 5 groups: no transferable signal, not
+  submitted.
 - **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
   cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
   2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.
