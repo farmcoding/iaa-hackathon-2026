@@ -36,6 +36,50 @@ from part2_transfer import align  # noqa: E402
 assert data.MARKET == "developed", "run with the developed market"
 
 
+BANDS = {"17-24": (17, 24), "25-34": (25, 34), "35-49": (35, 49), "50-64": (50, 64)}
+OLD_AGES, OLD_W = (65.0, 70.0, 75.0, 80.0, 85.0), (0.3, 0.25, 0.2, 0.15, 0.1)
+
+
+def expand_ages(emg: pd.DataFrame, k: int = 5) -> pd.DataFrame:
+    """Tier N12 (owner, 27 Oct): k copies of each emerging row at ages inside its band,
+    replacing the band-mean age, each carrying its share of the row's exposure. Ages are
+    the midpoints of k equal slices of [max(band low, 17 + years_licensed), band high]
+    (motor; property has no licensing constraint); 65+ uses fixed points and weights.
+    Summing the copies' predictions gives the average prediction over the band."""
+    out = []
+    for j in range(k):
+        c = emg.copy()
+        for band, age in (
+            ("driver_age_band", "driver_age"),
+            ("policyholder_age_band", "policyholder_age"),
+        ):
+            if band not in c.columns:
+                continue
+            b = c[band].astype("string")
+            lo = b.map({x: v[0] for x, v in BANDS.items()}).astype(float)
+            hi = b.map({x: v[1] for x, v in BANDS.items()}).astype(float)
+            if age == "driver_age" and "years_licensed" in c.columns:
+                lo = np.minimum(
+                    np.maximum(lo, 17 + c["years_licensed"].astype(float).fillna(0)), hi
+                )
+            a = lo + (hi - lo) * (j + 0.5) / k
+            a = a.where(b != "65+", OLD_AGES[j])
+            c[age] = a.where(b.notna(), c[age]).astype(float)
+        w = np.where(
+            c.get("driver_age_band", c.get("policyholder_age_band"))
+            .astype("string")
+            .fillna("")
+            .where(c["line"] == "motor", c.get("policyholder_age_band").astype("string").fillna(""))
+            == "65+",
+            OLD_W[j],
+            1.0 / k,
+        )
+        c["customer_age"] = c["driver_age"].where(c["line"] == "motor", c["policyholder_age"])
+        c["exposure"] = c["exposure"] * w
+        out.append(c)
+    return pd.concat(out, ignore_index=True)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("emerging_cache")
@@ -43,6 +87,7 @@ def main() -> None:
     ap.add_argument("--train-years", type=int, nargs="+", required=True)
     ap.add_argument("--compat", action="store_true", help="fit on the emerging schema (O2)")
     ap.add_argument("--dry-run", action="store_true", help="20k training rows per line")
+    ap.add_argument("--age-points", type=int, default=0, help="N12: average over in-band ages")
     ap.add_argument(
         "--fine",
         action="store_true",
@@ -60,6 +105,9 @@ def main() -> None:
         tr = tr.groupby("line", group_keys=False).sample(20_000, random_state=0)
         a.tag += "_dryrun"
     emg = pd.read_parquet(a.emerging_cache)
+    if a.age_points:
+        emg = expand_ages(emg, a.age_points)
+        a.tag = "age_" + a.tag
     va = harness.hide_target(align(emg, dev))
     experiment.FROZEN_LINES = ()
     out = emg[["row_id", "line"]].astype(str).assign(market="emerging")
@@ -128,6 +176,11 @@ def main() -> None:
                 out.loc[rows, f"base_{name}"] = pred
                 print(line, name, "done", flush=True)
 
+    if a.age_points:  # copies carry exposure shares: their predictions sum to the band average
+        cols = [c for c in out.columns if c.startswith("base_")]
+        out = out.groupby(["row_id", "line", "market"], as_index=False, sort=False)[cols].sum(
+            min_count=1
+        )
     path = harness.CACHE / f"part2_base_perils{'_fine' if a.fine else ''}_{a.tag}.parquet"
     out.to_parquet(path)
     print("wrote", path)
