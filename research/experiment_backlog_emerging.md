@@ -134,6 +134,9 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
   rows (2021-23 for folds, 2021-24 for 2025), scoring emerging rows; O4 x (base_tabm /
   base)^w per line, w = 0.25 / 0.5 (a second model class for the developed relativities;
   in Part 1 a TabM blend added +0.0039 public).
+- **N16 sqrt(exposure) weights in the developed per-peril bases** (Mac, pre-registered 21:30):
+  refit P0's per-peril bases with fit weight exposure^0.5 (the metric's own weight for a
+  rate fit at p=1.5) instead of exposure; swap them in for base_<peril> under O4. One setting.
 - **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
   cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
   2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.

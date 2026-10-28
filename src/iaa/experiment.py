@@ -338,9 +338,13 @@ def _w(tr: pd.DataFrame) -> pd.Series:
     """Fit weight: exposure, times an optional per-row `row_weight` (Part 2 pooled bases weight
     emerging rows this way; LightGBM's min_data_in_leaf still counts unique rows, unlike
     duplicating them)."""
+    # IAA_WEIGHT_POWER (Part 2 owner N16, default 1): the metric scores row totals, and for
+    # Tweedie p=1.5 d(e*r, e*m) = e^0.5 d(r, m), so a rate fit matching it weights by
+    # exposure^0.5; exposure^1 is the actuarial convention used in Part 1
+    e = tr["exposure"] ** float(os.environ.get("IAA_WEIGHT_POWER", "1"))
     if "row_weight" in tr.columns:
-        return tr["exposure"] * tr["row_weight"].astype(float)
-    return tr["exposure"]
+        return e * tr["row_weight"].astype(float)
+    return e
 
 
 def _bi_level(tr: pd.DataFrame) -> float:

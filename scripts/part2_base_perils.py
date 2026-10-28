@@ -21,6 +21,7 @@ base_<group> per peril group (NaN on other lines). Run under the developed marke
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -108,6 +109,8 @@ def main() -> None:
     if a.age_points:
         emg = expand_ages(emg, a.age_points)
         a.tag = "age_" + a.tag
+    if os.environ.get("IAA_WEIGHT_POWER", "1") != "1":
+        a.tag = f"wp{os.environ['IAA_WEIGHT_POWER']}_" + a.tag
     va = harness.hide_target(align(emg, dev))
     experiment.FROZEN_LINES = ()
     out = emg[["row_id", "line"]].astype(str).assign(market="emerging")
