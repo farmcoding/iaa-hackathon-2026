@@ -137,6 +137,9 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
 - **N16 sqrt(exposure) weights in the developed per-peril bases** (Mac, pre-registered 21:30):
   refit P0's per-peril bases with fit weight exposure^0.5 (the metric's own weight for a
   rate fit at p=1.5) instead of exposure; swap them in for base_<peril> under O4. One setting.
+- Results 22:45: N15 TabM w 0.25 / 0.5: primary 0.12377 / 0.12410 (+0.0016 / +0.0019), B 0.14065 /
+  0.13850 (down), R 0.10689 / 0.10970 (up), boot q10 -0.0008 / -0.0026: discarded (gain under
+  the margin, fold B and buildings down). N16 sqrt(exposure) bases 0.12059: discarded.
 - **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
   cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
   2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.

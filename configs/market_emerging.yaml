@@ -74,6 +74,17 @@ harness:
     2023: part2_pooled_R.parquet
     2024: part2_pooled_B.parquet
     2025: part2_pooled_final.parquet
+  # TabM developed base (N15, owner 27 Oct; scripts/part2_base_tabm.py on Kaggle GPU), same fit
+  # years as base_perils
+  base_tabm:
+    2023: part2_base_tabm_B.parquet
+    2024: part2_base_tabm_B.parquet
+    2025: part2_base_tabm_final.parquet
+  # per-peril bases refitted with exposure^0.5 fit weights (N16, owner 27 Oct)
+  base_wp_perils:
+    2023: part2_base_perils_fine_wp0.5_B.parquet
+    2024: part2_base_perils_fine_wp0.5_B.parquet
+    2025: part2_base_perils_fine_wp0.5_final.parquet
   # level (owner, 2026-10-25): each line balanced so its training predictions sum to the
   # trended training actuals; the 2025 mix then moves the level. Board check on the
   # transfer file: history-anchored 0.14243, mix-adjusted 0.15079
