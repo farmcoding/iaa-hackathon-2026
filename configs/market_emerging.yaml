@@ -85,6 +85,16 @@ harness:
     2023: part2_base_perils_fine_wp0.5_B.parquet
     2024: part2_base_perils_fine_wp0.5_B.parquet
     2025: part2_base_perils_fine_wp0.5_final.parquet
+  # pooled two-market base with emerging rows as a fit weight (N13, owner 27 Oct, Kaggle CPU;
+  # weight 20 is a diagnostic only)
+  base_pooled_sw5:
+    2023: part2_pooled_sw5_R.parquet
+    2024: part2_pooled_sw5_B.parquet
+    2025: part2_pooled_sw5_final.parquet
+  base_pooled_sw20:
+    2023: part2_pooled_sw20_R.parquet
+    2024: part2_pooled_sw20_B.parquet
+    2025: part2_pooled_sw20_final.parquet
   # level (owner, 2026-10-25): each line balanced so its training predictions sum to the
   # trended training actuals; the 2025 mix then moves the level. Board check on the
   # transfer file: history-anchored 0.14243, mix-adjusted 0.15079
