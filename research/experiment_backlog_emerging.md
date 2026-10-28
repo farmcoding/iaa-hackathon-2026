@@ -271,3 +271,34 @@ Motor: the 7.5% raw change is mostly mix. The fold A/E balances at about 4.5% (2
 x1.02). The board's x1.10 on renewals and x1.21 on new business is a 2025-book effect that
 the 2023-24 experience does not show. It stays a board read, so it needs the owner's
 amendment to the selection rule.
+
+### Tier P follow-up 2: tracing the board levels in our own data (28 Oct)
+
+Transfer check (fold rows split 1/3 : 2/3 at random, 500 draws, shrunk read on the third
+applied to the two thirds): with a true motor offset of x1.18 the private gain is positive
+in 97% of draws (5th percentile still positive); with no true offset the read costs
+-0.0002 at the median. Contents x0.90: positive in 89%. The motor read is about 6 sd from 1.
+
+Out-of-time O4 residuals on motor (both folds pooled, cost A/E): new business 1.23 (697
+claims), renewals 0.975; first and second renewal 1.04 / 1.05 (the 2025 renewals have twice
+the history's share of first renewals, 18% vs 9.5%); comparison site 1.17 (379 claims).
+O4's new-business factor is on claim counts, so it misses the higher new-business severity.
+
+New-business factor on a cost basis (owner bench, not logged):
+
+| Variant | primary | 2025 motor NB vs O4 | motor renewal | contents |
+|---|---|---|---|---|
+| NB cost basis, k=200 | 0.11947 | x1.180 | x0.981 | x0.99 |
+| + contents trend 0%, motor 4.5% | 0.11886 | x1.206 | x1.002 | x0.93 |
+| NB cost basis, k=100, same trends | 0.11803 | x1.236 | x0.999 | x0.93 |
+
+The final fit (two years) reproduces the board's motor new-business level (x1.206) from
+our own data. The folds reject it (-0.003): each fold estimates the factor on one year's
+cost, about 350 new-business claims dominated by bodily injury, so the factor is noisy
+there; the final pools both years. Motor renewals stay about 10% below the board read with
+no own-data mechanism found yet (candidates: bodily-injury severity and development, the
+borrowed motor trend).
+
+Also noted: historical motor new business came mostly from three previous insurers (INS29
+16%, INS13 9%, INS34 8%); in 2025 every one of the 40 codes is 2.5% of both new business and
+renewals, and 2025 new business and renewals have the same channel and lead-time mix.
