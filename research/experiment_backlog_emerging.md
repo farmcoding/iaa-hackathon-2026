@@ -206,3 +206,46 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
 
 Free boosted corrections on the base; one-way credibility factor stacks; emerging-only
 refit; region/age credibility factors on cost.
+
+## Tier P: board level reads (pre-registered 28 Oct, before any probe was scored)
+
+Why: test rows are 2025 (209k, 77% new business); every fold trains on one year with about
+8% new business and scores another year, so the folds cannot see the 2025 level. The
+year-to-year level swing is large on buildings: the board-optimal multiplier on O4's fold
+predictions is 0.58 on fold B and 1.68 on fold R (the 2023 fire year). Public rows are a
+random 33% of the 2025 book, so the 2025 year effect is shared with the private 67%.
+
+Method (`scripts/part2_level_probe.py`): pooled D2 at p=1.5 under a single-line multiplier
+c is exactly A - B c^-1/2 - G c^1/2, so O4 plus two probes per line (c = 0.8 and 1.25)
+gives that line's board-optimal c* = B/G. Checked on fold B buildings with scores rounded
+to 5 decimals: solved 0.581, direct 0.580.
+
+Noise: sd of c* on a public-size random subsample of fold B is 0.039 (motor), 0.049
+(buildings), 0.054 (contents). Shrinkage for the candidate: c = 1 + w (c* - 1), with
+w = tau^2 / (tau^2 + sd^2), tau = prior sd of the 2025 level: motor 0.10, contents 0.10,
+buildings 0.30.
+
+Probes (6 submissions, diagnostics, not candidates): O4 x {0.8, 1.25} on each line.
+Then at most one candidate: O4 with the three shrunk multipliers. Possible follow-up
+(2 more probes) only if motor or contents c* moves more than 5%: the same read on
+new-business rows only, to split the level between new business and renewals.
+Not done: probes on any feature, region or segment (public-board overfit).
+
+### Tier P results (28 Oct)
+
+| Probe on O4 (public 0.16326) | x0.8 | x1.25 | board-optimal c* | public at c* |
+|---|---|---|---|---|
+| motor | 0.15313 | 0.16533 | 1.184 | 0.16557 |
+| buildings | 0.16143 | 0.16130 | 0.996 | 0.16326 |
+| contents | 0.16323 | 0.16116 | 0.897 | 0.16351 |
+| motor new business only | 0.15454 | 0.16547 | 1.206 (renewal by subtraction 1.096) | |
+
+Buildings: O4's level is right. Motor is about 18% light on the 2025 book: new business
+1.21, renewals 1.10, so the shortfall is mostly but not only new business (a motor level
+or trend gap of about 10%, plus about 10% more on new business). Contents about 10% heavy.
+All levels at their optima: public 0.16593, +0.0027 over O4. Shrunk (public-size sd: NB
+0.034, renewal 0.06, buildings 0.037, contents 0.041): motor NB 1.185, motor renewal 1.07,
+buildings 1.00, contents 0.912, public 0.1659 predicted. Submitted as
+`o4_lvl_p1_20261028.csv` (sha256 cb6c561cf0db7137), a candidate pending owner sign-off:
+it breaks the 25 Oct Part 2 selection rule (best primary), because its level comes from
+the board. Level alone does not reach the top 5 (5th 0.16774 on 28 Oct).
