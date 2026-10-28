@@ -153,6 +153,16 @@ Round 2 queue (pre-registered 21:20, one setting each unless stated, each from O
   part-year artefact and O4's ~1.27x motor NB relativity is consistent with the developed market.
 - 23:15: N12 in-band age averaging 50:50: 0.12122 (motor B -0.0010, R -0.0004), discarded; full
   swap diagnostic 0.12011. Band-mean ages transfer better than the in-band average.
+- Pre-registered 23:20 (advisor), the profile of what kept (emerging-only information,
+  low-dimensional, gated):
+  - **N17 self_employed** (emerging-only field split from the occupation text): as L1,
+    lr_gate(n_tests=1) on count basis, offset_glm alpha 0.01 when it passes; motor and property
+    lines each, one setting.
+  - **N18 missingness**: A/E by count of missing fields (0 / 1 / 2+) per line and fold first;
+    only if a bucket misses >5% the same way in both folds, one gated factor on n_missing
+    (alpha 0.01). Otherwise logged as flat.
+  - **N19 start-up year check** (diagnostic): O4's in-sample A/E on the final fit by year for
+    region, NB and young band.
 - **N14 Previous insurer, motor** (only if N10 shows its margin moves the 2025 mean >= 3%):
   cost A/E factor z = claims / (claims + 400) toward 1, applied to a code only when 2023 and
   2024 raw A/E are on the same side of 1 with >= 30 claims each; every other code 1.
