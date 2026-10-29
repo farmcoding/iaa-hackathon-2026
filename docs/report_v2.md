@@ -202,6 +202,9 @@ multiplier. A real insurer would not have this read, so it is disclosed as a rel
 | Buildings | 1.00 | 1.00 | n/a |
 | Contents | 0.90 | 0.93 | All (contents trend 0%) |
 
+Property new business was read the same way on 28 Oct: buildings 1.09, contents 0.97. Both
+gains were inside leaderboard noise, so the model's own levels were kept.
+
 | Item | Effect |
 |---|---|
 | Case reserves on open claims taken as adequate | ±10% moves the 2025 motor level ±3.4% and buildings ±1.9% |
