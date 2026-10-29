@@ -356,3 +356,24 @@ TabM read scheduled with the P2 probes (owner approval 28 Oct): `cand_tabm25_202
 (sha256 09cdf89518f0d1bb), candidate x (TabM base / base)^0.25 rescaled to the candidate's
 line x new-business totals. Folds (N15 w 0.25): primary +0.0016, level-neutral B -0.0006,
 buildings fold B -0.0046. Used only if the board gains more than 0.002.
+
+### Tier P2 and TabM results (00:01-00:03 UTC 29 Oct, 20:01 EDT 28 Oct)
+
+| File (new-business rows only) | Public |
+|---|---|
+| candidate `o4_mech_lvl_20261028.csv` | 0.16621 |
+| buildings NB x0.8 / x1.25 | 0.16353 / 0.16586 |
+| contents NB x0.8 / x1.25 | 0.16559 / 0.16518 |
+| TabM blend `cand_tabm25_20261028.csv` | 0.16674 |
+
+Solved with `part2_level_probe.py solve`: buildings new business c* 1.090 (board at c*
+0.16643, +0.0002), contents new business c* 0.973 (+0.00001). Both gains are under a quarter
+of the board noise between near-identical files (sd about 0.0009), before shrinkage; the
+new-business slice of buildings is noisier than the line, so the shrunk read is nearer 1, and
+fold A/E on that cell is 0.44 / 1.43. No change: the board confirms the property
+new-business/renewal split the model takes from its own data. The two checks were not run
+because no read was carried forward.
+
+TabM: +0.0005 over the candidate, against the pre-set bar of 0.002 (noise between different
+models). Not used. Candidate unchanged; report v2 stays valid. 5 submissions left on the
+29 Oct UTC day, 10 on 30 Oct.
