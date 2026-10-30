@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "reports" / "reviews" / "openrouter_spend.tsv"
-KEY_FILE = Path.home() / "Projects" / "HomeDashBoard" / ".env"
+KEY_FILE = Path(os.environ.get("IAA_KEY_FILE", ROOT / ".env"))  # gitignored, chmod 600
 
 
 def api_key(env: str) -> str:

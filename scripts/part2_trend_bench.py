@@ -19,7 +19,7 @@ import pandas as pd
 from iaa import experiment_emerging as e
 from iaa import harness, ultimate
 
-ROOT = Path.home() / "Projects/iaa-hackathon-2026"
+ROOT = Path(__file__).resolve().parents[1]
 kw = dict(a.split("=", 1) for a in sys.argv[1:])
 df = harness.dataset()  # before the override: the dataset fingerprint hashes the config
 cfg = ultimate.load_config()
