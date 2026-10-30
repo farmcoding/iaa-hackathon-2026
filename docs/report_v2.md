@@ -2,7 +2,7 @@
 <p class="kicker">IAA AI-Assisted Hackathon 2026 · Written report, Parts 1 and 2</p>
 <h1>Pricing a new market with an AI-assisted actuarial workflow</h1>
 <div class="meta">
-<div><b>Prepared by</b>Team “The KMR”, a solo entry by a Fellow of the CIA</div>
+<div><b>Prepared by</b>Team “The KMR”, a solo entry, supported by AI agents</div>
 <div><b>Date</b>30 October 2026</div>
 <div><b>Scope</b>2025 risk premium: private motor, home buildings, home contents</div>
 <div><b>Basis</b>Every number is reproducible from the submitted repository</div>
@@ -11,7 +11,7 @@
 
 ## 1. Summary
 
-**The task.** The insurer is expanding from a developed market into an emerging one. We
+**The task.** The insurer is expanding from a developed market into an emerging one. I
 predict the risk premium for every 2025 policy row in three lines: private motor, home
 buildings and home contents. The risk premium is the expected ultimate cost of claims with
 a loss date in the row's period. It is net of excess and recoveries, includes claims not
@@ -21,10 +21,10 @@ annual rate, and it is not the premium charged. Accuracy is scored by Tweedie D�
 reference policies (section 8).
 
 **The approach.** An AI agent proposes model changes, and a frozen validation harness
-decides which ones pass. The actuary owns everything that defines the problem: data
+decides which ones pass. I own everything that defines the problem: data
 treatment, the claims target, development, trend, the validation design and the scorer.
 The agent cannot edit any of these. Changes that pass the harness then go through a formal
-review before the actuary adopts them (section 4).
+review before I adopt them (section 4).
 
 **The results.**
 
@@ -59,7 +59,7 @@ Table: Table 2. Terms used in this report
 
 ## 2. Modelling approach
 
-**Data.** AI profiling found eight data-quality issues, and the actuary confirmed each one
+**Data.** AI profiling found eight data-quality issues, and I confirmed each one
 (`reports/data_quality.md`). Two would have broken the model. Customer-service contacts
 include claim calls in training but not in the test files, so the field is excluded as
 leakage. About 0.4% of exposures were recorded in days, so exposure is recomputed from the
@@ -74,7 +74,7 @@ trended to 2025.
 **Part 1 model.** Each line is a blend of gradient-boosted trees (LightGBM, CatBoost) and
 an Explainable Boosting Machine, fitted with Tweedie loss. Motor bodily injury uses a
 separate frequency model with a flat severity. Monotone constraints keep excesses,
-no-claims years and flood zone in the expected direction. The actuary excluded the
+no-claims years and flood zone in the expected direction. I excluded the
 incumbent's premium, email domain, sales fields and customer claim history on admissibility
 grounds, not on score.
 
@@ -102,15 +102,15 @@ of changes, one mechanism per run. Table 3 shows what was tested and what was ke
 
 | Change tested | Evidence | Decision |
 |:--------------------------------|:------------------------------|:----------------------|
-| Part 1 model refitted on emerging data only | Public 0.129, against 0.142 for the developed fit | Dropped (actuary) |
+| Part 1 model refitted on emerging data only | Public 0.129, against 0.142 for the developed fit | Dropped (my review) |
 | Developed base refitted separately for each peril (P0) | Each peril takes its own emerging level | Kept (rule) |
-| Motor gender, an adjustment on the base kept only if a likelihood-ratio test passes (L1) | Level-neutral D² up on both folds; public +0.007 | Kept (rule; admissibility by actuary) |
+| Motor gender, an adjustment on the base kept only if a likelihood-ratio test passes (L1) | Level-neutral D² up on both folds; public +0.007 | Kept (rule; admissibility my call) |
 | Joint models with six to eight emerging factors | Extra factors diluted gender | Dropped (rule) |
-| Eleven small factors stacked by the agent | Folds +0.007, public -0.003 | Reverted (actuary; rule tightened) |
-| Per-peril emerging levels, pooled contents base, new-business factor (O4) | Level-neutral D² +0.001 (B) and +0.002 (R); public +0.004 | Kept (pre-registered by actuary, passed rule) |
+| Eleven small factors stacked by the agent | Folds +0.007, public -0.003 | Reverted (my review; rule tightened) |
+| Per-peril emerging levels, pooled contents base, new-business factor (O4) | Level-neutral D² +0.001 (B) and +0.002 (R); public +0.004 | Kept (pre-registered by me, passed rule) |
 | 20 further mechanisms: weather, region, previous insurer, missingness, new-business regime, recalibration | Each lowered fold R or gained less than 0.002 | Dropped (rule; three-model review) |
 | Neural-network base (TabM), 25% blend | +0.0016 overall, fold B and buildings down | Dropped (rule) |
-| Contents trend 0% and motor bodily-injury trend 12% | Both folds' A/E move towards 1 | Kept (actuary, from emerging data) |
+| Contents trend 0% and motor bodily-injury trend 12% | Both folds' A/E move towards 1 | Kept (my review, from emerging data) |
 
 Table: Table 3. Part 2 changes tested, with the evidence and the decision
 
@@ -132,35 +132,35 @@ the predicted curve on both folds. The model predicts the top motor decile at si
 bottom, and the folds show six to ten times. The scatter in the middle buildings deciles
 comes from the few fire claims.
 
-## 4. Major decisions and human review
+## 4. Major decisions and my review
 
 **The review process.** The harness runs the agent's experiments in batches, and each run
 has a time limit. Batches continue until the agent reports the list exhausted or a batch
 cap is reached. A formal review follows before anything enters the model. The review uses
 statistical validation: fold scores, a paired bootstrap, and A/E by line, fold and
 segment. It also uses review plots of the kind used in traditional empirical pricing. In
-Part 1 the actuary reviewed a dashboard rebuilt after each of 27 batches. In Part 2 the
+Part 1 I reviewed a dashboard rebuilt after each of 27 batches. In Part 2 the
 reviews on 25 and 27 October used the fold statistics and A/E tables. Figures 1 and 2 are
-the final review of the selected model. Only the actuary adopts a change, and every
+the final review of the selected model. Only I adopt a change, and every
 leaderboard submission has a sign-off row (`docs/SIGNOFF.md`).
 
 **Where the review changed the method.**
 
 - On 25 October the agent kept eleven small factors, stacked in pairs that each just missed
   the margin. The folds gained and the leaderboard lost, because each factor was chosen on
-  the claims it was scored on. The actuary reverted them. The keep rule now requires a
+  the claims it was scored on. I reverted them. The keep rule now requires a
   pre-registered list, one mechanism per run, a claim-count test on every factor and no
   stacking of rejected runs.
 - An outside model built a recommendation on 2023 being all new business. The data shows
   6.4%, so the recommendation was rejected.
-- Reviewers found that a claim-count model offset by a cost prediction learns
+- Outside-model reviewers found that a claim-count model offset by a cost prediction learns
   inverse-severity effects. The agent's correction blocks built that way were dropped. O4's
   new-business factor uses the same construction; a cost-based replacement did not pass, so
   it stays and is listed as a limitation in section 7.
 - An earlier pooled base duplicated emerging rows to weight them, which let the trees
   memorise claims. That version was not used, and a sample-weighted rebuild was tested
   instead.
-- Gender is admissible in the emerging market under the brief. Its use was an owner
+- Gender is admissible in the emerging market under the brief. Using it was my
   decision, recorded in the assumptions log.
 
 ## 5. Use of AI
@@ -197,7 +197,7 @@ trains on a book with about 8% new business, while 2025 is 77% new business. The
 leaderboard scores a random third of the same 2025 book. Two probe submissions per group
 therefore give the best level for that group on the public rows. Each read was shrunk towards 1 by its
 sampling error, and was used only after it held on the folds under checks set in advance.
-Where our own data explained a read, the trend was changed instead of applying a
+Where the emerging data itself explained a read, the trend was changed instead of applying a
 multiplier. A real insurer would not have this read, so it is disclosed as a reliance.
 
 | Group | Leaderboard read vs O4 | Used | Explained by own data |

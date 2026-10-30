@@ -1,8 +1,7 @@
 # Pricing a new market with an AI-assisted actuarial workflow
 
 Entry to the IAA AI-Assisted Hackathon 2026 (Parts 1 and 2, Kaggle) by team "The KMR", a
-solo entry by a Fellow of the Canadian Institute of Actuaries. Released under the Apache
-License 2.0 (`LICENSE`).
+solo entry supported by AI agents. Released under the Apache License 2.0 (`LICENSE`).
 
 The written report is [`docs/report_v2.pdf`](docs/report_v2.pdf) (5 pages). This README
 explains the competition, the results, and how to follow the work through the repository.
@@ -57,9 +56,9 @@ Every submission and its sign-off is in [`docs/SIGNOFF.md`](docs/SIGNOFF.md).
 
 An AI agent proposes model changes, one at a time, by editing a single experiment file. A
 frozen harness scores every change the same way on out-of-time folds, and a rule declared in
-advance decides what is kept. The actuary owns everything that defines the problem: data
+advance decides what is kept. I own everything that defines the problem: data
 treatment, the claims target, development, trend, the folds and the scorer. The agent cannot
-edit any of these. Kept changes go through a human review before they are used, and every
+edit any of these. I review kept changes before they are used, and every
 leaderboard submission has a sign-off row.
 
 ## Reading the work as an actuary
@@ -172,7 +171,7 @@ scripts/tabm_run_folds.sh A B final      # about 25-40 minutes per fold on an M4
 Claude Code agents profiled the data, researched methods, wrote most of the code and ran the
 experiment loop. Models from other providers reviewed the design and the results through
 `scripts/alt_call.py`, with only aggregates and code structure sent out. Every model claim
-was checked against the data before it changed anything, and the actuary approved every
+was checked against the data before it changed anything, and I approved every
 submission. Report section 5 has the detail.
 
 ## Licence
