@@ -50,8 +50,8 @@ all new business. The data says 6%, so it was rejected.
 
 ## Slide 6 - Guardrails and professional standards (3:00 to 3:25)
 
-I ran this the way I'd run client work under the CIA Standards of Practice, with the IAA AI
-Task Force papers for structure. In practice that means 41 automated tests, a keep rule
+I ran this the way I'd run client work under the CIA Standards of Practice, with the AI
+Task Force papers from the IAA for structure. In practice that means 41 automated tests, a keep rule
 declared before anything was scored, a human sign-off before every submission, and a final
 file that rebuilds from the repo with a hash check.
 
