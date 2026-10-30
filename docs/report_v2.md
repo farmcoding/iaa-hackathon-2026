@@ -1,8 +1,13 @@
-# Pricing a new market with an AI-assisted actuarial workflow
-
-IAA AI-Assisted Hackathon 2026. Team "The KMR", a solo entry by a Fellow of the CIA. Report v2,
-28 October 2026. Every number comes from the submitted repository; file paths are given
-where a reader may want the detail.
+<div class="titleblock">
+<p class="kicker">IAA AI-Assisted Hackathon 2026 · Written report, Parts 1 and 2</p>
+<h1>Pricing a new market with an AI-assisted actuarial workflow</h1>
+<div class="meta">
+<div><b>Prepared by</b>Team “The KMR”, a solo entry by a Fellow of the CIA</div>
+<div><b>Date</b>30 October 2026</div>
+<div><b>Scope</b>2025 risk premium: private motor, home buildings, home contents</div>
+<div><b>Basis</b>Every number is reproducible from the submitted repository</div>
+</div>
+</div>
 
 ## 1. Summary
 
@@ -23,10 +28,12 @@ review before the actuary adopts them (section 4).
 
 **The results.**
 
-| | Validation D² | Public leaderboard | Private leaderboard |
-|---|---|---|---|
+| Submission | Validation D² | Public leaderboard | Private leaderboard |
+|:-----------------------|:---------------------------------|----------:|----------:|
 | Part 1, developed market (final) | 0.1425 (weighted mean of folds A and B) | 0.1262 | 0.1336 |
 | Part 2, emerging market (selected) | 0.1535 / 0.1286 (level-neutral, folds B / R) | 0.1662 | after close |
+
+Table: Table 1. Results (Tweedie D², power 1.5; higher is better)
 
 Part 2 folds are scored level-neutral because they cannot test the 2025 level (section 7).
 The keep rule uses the deploy metric instead (section 6).
@@ -38,7 +45,7 @@ because they did not hold on both validation folds. The largest remaining uncert
 the 2025 level, which no historical fold can test (section 7).
 
 | Term | Meaning in this report |
-|---|---|
+|:--------------|:-----------------------------------------------------|
 | Tweedie D² | The share of prediction error removed compared with one constant rate for every row. Higher is better; 0 means no better than the constant |
 | Public / private leaderboard | Kaggle scores a random third of the 2025 rows publicly during the competition; the other two-thirds decide the final ranking |
 | Fold | One train-and-score split of the historical years. In Part 2, fold B trains on 2023 and scores 2024, and fold R trains on 2024 and scores 2023 |
@@ -47,6 +54,8 @@ the 2025 level, which no historical fold can test (section 7).
 | Level-neutral D² | D² after each line's predictions are rescaled to its actual total, so it scores ranking only |
 | A/E | Actual claims divided by expected (predicted) claims |
 | Keep rule | The pre-declared test a change must pass to be kept (section 6) |
+
+Table: Table 2. Terms used in this report
 
 ## 2. Modelling approach
 
@@ -89,10 +98,10 @@ them. The level method carries over too: the 2025 level comes from balancing the
 its training rows, so the 2025 business mix moves the level through the relativities.
 
 **How the relativity model was developed.** The agent worked through a pre-registered list
-of changes, one mechanism per run. Table 1 shows what was tested and what was kept.
+of changes, one mechanism per run. Table 3 shows what was tested and what was kept.
 
 | Change tested | Evidence | Decision |
-|---|---|---|
+|:--------------------------------|:------------------------------|:----------------------|
 | Part 1 model refitted on emerging data only | Public 0.129, against 0.142 for the developed fit | Dropped (actuary) |
 | Developed base refitted separately for each peril (P0) | Each peril takes its own emerging level | Kept (rule) |
 | Motor gender, an adjustment on the base kept only if a likelihood-ratio test passes (L1) | Level-neutral D² up on both folds; public +0.007 | Kept (rule; admissibility by actuary) |
@@ -103,13 +112,12 @@ of changes, one mechanism per run. Table 1 shows what was tested and what was ke
 | Neural-network base (TabM), 25% blend | +0.0016 overall, fold B and buildings down | Dropped (rule) |
 | Contents trend 0% and motor bodily-injury trend 12% | Both folds' A/E move towards 1 | Kept (actuary, from emerging data) |
 
+Table: Table 3. Part 2 changes tested, with the evidence and the decision
+
 Changes learned on emerging rows helped fold B a little at best and always hurt fold R.
 Changes that replaced the developed base hurt fold B. The selected model is O4 with the 2023-24 trends.
 
-![](../reports/figures/part2_steps_ae.png)
-
-*Figure 1. Left: score of each kept step on the two folds (level-neutral) and on the public
-leaderboard. Right: A/E of the selected model by line and new business, on each fold.*
+![Figure 1. Left: score of each kept step on the two folds (level-neutral) and on the public leaderboard. Right: A/E of the selected model by line and new business, on each fold.](../reports/figures/part2_steps_ae.png)
 
 Figure 1 shows the relativities improving on both folds through O4. The last step changes
 the level, not the ranking, so its fold scores are flat. The right panel shows the main
@@ -117,10 +125,7 @@ weakness. Buildings A/E is 0.6 on one fold and 1.7 on the other, because fire cl
 few (49 in 2023, 21 in 2024). Motor new business swings from 0.89 to 1.80 for the same
 reason. Motor and contents renewals sit within 5% of 1 on both folds.
 
-![](../reports/figures/part2_lift.png)
-
-*Figure 2. Lift by predicted risk decile, selected model, both folds. Each value is the
-decile's loss cost divided by the line average.*
+![Figure 2. Lift by predicted risk decile, selected model, both folds. Each value is the decile’s loss cost divided by the line average.](../reports/figures/part2_lift.png)
 
 Figure 2 checks that the ranking holds out of time. On every line, actual cost broadly follows
 the predicted curve on both folds. The model predicts the top motor decile at six times the
@@ -196,23 +201,27 @@ Where our own data explained a read, the trend was changed instead of applying a
 multiplier. A real insurer would not have this read, so it is disclosed as a reliance.
 
 | Group | Leaderboard read vs O4 | Used | Explained by own data |
-|---|---|---|---|
+|:----------------|----------:|------:|:--------------------------|
 | Motor new business | 1.21 | 1.185 | 5% (bodily-injury trend) |
 | Motor renewals | 1.10 | 1.07 | 5% (bodily-injury trend) |
 | Buildings | 1.00 | 1.00 | n/a |
 | Contents | 0.90 | 0.93 | All (contents trend 0%) |
 
+Table: Table 4. 2025 level multipliers by group, relative to O4
+
 Property new business was read the same way on 28 Oct: buildings 1.09, contents 0.97. Both
 gains were inside leaderboard noise, so the model's own levels were kept.
 
-| Item | Effect |
-|---|---|
+| Assumption or limitation | Effect |
+|:------------------------------|:------------------------------|
 | Case reserves on open claims taken as adequate | ±10% moves the 2025 motor level ±3.4% and buildings ±1.9% |
 | Emerging motor bodily injury reports more slowly than developed | Would raise motor ultimates 2-3%; logged as a sensitivity |
 | New-business factor rests on thin emerging data and a count-on-cost construction | New-business A/E 0.89 and 1.80 on the folds |
 | Buildings level rests on few fire claims | A 10% buildings level error costs 0.004-0.005 of D² |
 | Fold gap | Fold R scores about 0.025 below fold B; it trains on the less developed year |
 | Weather in 2025 is milder | Developed elasticities put the effect under 1%; not modelled |
+
+Table: Table 5. Key assumptions, limitations and their effect
 
 **Reliance and deviations.** The data is synthetic and supplied by the host; it was used
 as given after the data-quality treatment in section 2. Neither fold contains a broker
@@ -223,8 +232,7 @@ book. With more time, the first change would be a grouped multi-year validation 
 The office premium adds expenses, commission, tax, catastrophe reinsurance and profit to
 the predicted risk premium, using the emerging assumptions in the `expenses` table supplied with the data:
 
-Office premium = (risk premium + fixed expense + cat reinsurance) / (1 - variable expense -
-commission - premium tax - profit margin).
+<div class="formula"><span>Office premium =</span><span class="frac"><span>Risk premium + Fixed expense + Cat reinsurance</span><span>1 − Variable expense − Commission − Premium tax − Profit margin</span></span></div>
 
 The fixed expense is 85 CU per policy. Cat reinsurance is 12% of the risk premium on
 buildings and contents. Variable expense is 15%, premium tax 8% and profit margin 8%.
@@ -233,7 +241,7 @@ office premium. Risk
 premiums come from the selected file (`scripts/part2_office_premium.py`).
 
 | Policy | Line | Channel | Exposure | Risk premium | Cat reins. | Fixed | Variable | Commission | Tax | Profit | Office premium |
-|---|---|---|---|---|---|---|---|---|---|---|---|
+|:---------|:---------|:-------|-------:|---------:|-------:|------:|-------:|---------:|------:|------:|---------:|
 | M00161473 | motor | broker | 0.964 | 1,446.02 | 0.00 | 85.00 | 468.68 | 624.90 | 249.96 | 249.96 | 3,124.52 |
 | M00176777 | motor | broker | 0.992 | 1,128.34 | 0.00 | 85.00 | 371.43 | 495.24 | 198.10 | 198.10 | 2,476.20 |
 | M00185311 | motor | direct | 0.964 | 969.51 | 0.00 | 85.00 | 229.24 | 0.00 | 122.26 | 122.26 | 1,528.28 |
@@ -254,3 +262,5 @@ premiums come from the selected file (`scripts/part2_office_premium.py`).
 | C00314425 | contents | broker | 0.069 | 5.03 | 0.60 | 85.00 | 27.75 | 36.99 | 14.80 | 14.80 | 184.97 |
 | C00302985 | contents | broker | 0.992 | 44.42 | 5.33 | 85.00 | 41.25 | 55.00 | 22.00 | 22.00 | 275.00 |
 | C00286287 | contents | broker | 0.967 | 110.04 | 13.21 | 85.00 | 63.75 | 85.00 | 34.00 | 34.00 | 425.00 |
+
+Table: Table 6. Office premium build-up for the 20 reference policies (CU)
