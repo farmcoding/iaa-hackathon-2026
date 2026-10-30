@@ -95,7 +95,6 @@ def build(sub: pd.DataFrame) -> pd.DataFrame:
     ]
     assert (out[parts].sum(axis=1) - out["office_premium"]).abs().max() < 1e-6
     out["loss_ratio"] = out["risk_premium"] / out["office_premium"]
-    out["incumbent_premium"] = df["written_premium"]
     return out
 
 
@@ -121,10 +120,9 @@ def main() -> None:
         "profit",
         "office_premium",
         "loss_ratio",
-        "incumbent_premium",
     ]
     fmt = out[cols].copy()
-    for c in cols[4:-2] + ["incumbent_premium"]:
+    for c in cols[4:-1]:
         fmt[c] = fmt[c].map(lambda x: f"{x:,.2f}")
     fmt["loss_ratio"] = out["loss_ratio"].map(lambda x: f"{x:.1%}")
     lines = [
@@ -140,8 +138,7 @@ def main() -> None:
         "buildings and contents only. Share-of-premium items are shares of the office premium, so each",
         "row adds back exactly. The fixed expense is charged in full per policy, so short-period",
         "policies (exposure 0.07 and 0.11 here) carry it in full; pro-rating it by exposure is the",
-        "alternative if the expense is incurred over the policy year. `incumbent_premium` is the",
-        "broker book's existing written premium, for comparison only (not a model input).",
+        "alternative if the expense is incurred over the policy year.",
         "",
         md(fmt),
         "",
